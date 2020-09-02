@@ -3,3 +3,4 @@ saved/
 *.pyc
 .ipynb_checkpoints/
 __pycache__/
+figures/
