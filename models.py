@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data import TensorDataset
 from torch.autograd import Variable
 from torch import Tensor
+from torch.nn import Dropout
 #import scipy.io as sio
 import numpy as np
 import pandas as pd
@@ -43,16 +44,15 @@ class AE(nn.Module):
 class AEBase(nn.Module):
     def __init__(self,
                  input_dim,
-                 latent_dim,
-                 hidden_dims):
+                 latent_dim=128,
+                 hidden_dims=[512],
+                 drop_out=0.3):
                  
         super(AEBase, self).__init__()
 
         self.latent_dim = latent_dim
 
         modules = []
-        if hidden_dims is None:
-            hidden_dims = [512]
         
         hidden_dims.insert(0,input_dim)
 
@@ -64,8 +64,9 @@ class AEBase(nn.Module):
             modules.append(
                 nn.Sequential(
                     nn.Linear(i_dim, o_dim),
-                    nn.BatchNorm2d(o_dim),
-                    nn.LeakyReLU())
+                    nn.BatchNorm1d(o_dim),
+                    nn.LeakyReLU(),
+                    nn.Dropout(drop_out))
             )
             #in_channels = h_dim
 
@@ -84,8 +85,9 @@ class AEBase(nn.Module):
                 nn.Sequential(
                     nn.Linear(hidden_dims[i],
                                        hidden_dims[i + 1]),
-                    nn.BatchNorm2d(hidden_dims[i + 1]),
-                    nn.LeakyReLU())
+                    nn.BatchNorm1d(hidden_dims[i + 1]),
+                    nn.LeakyReLU(),
+                    nn.Dropout(drop_out))
             )
 
 
