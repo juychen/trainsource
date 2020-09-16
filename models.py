@@ -122,6 +122,50 @@ class AEBase(nn.Module):
         embedding = self.encode(input)
         output = self.decode(embedding)
         return  output
+
+# Model of AE
+class Predictor(nn.Module):
+    def __init__(self,
+                 input_dim,
+                 output_dim=1,
+                 hidden_dims=[512],
+                 drop_out=0.3):
+                 
+        super(Predictor, self).__init__()
+
+        self.latent_dim = latent_dim
+
+        modules = []
+        
+        hidden_dims.insert(0,input_dim)
+
+        # Build Encoder
+        for i in range(1,len(hidden_dims)):
+            i_dim = hidden_dims[i-1]
+            o_dim = hidden_dims[i]
+
+            modules.append(
+                nn.Sequential(
+                    nn.Linear(i_dim, o_dim),
+                    nn.BatchNorm1d(o_dim),
+                    #nn.ReLU(),
+                    nn.Dropout(drop_out))
+            )
+            #in_channels = h_dim
+
+        self.predictor = nn.Sequential(*modules)
+        #self.output = nn.Linear(hidden_dims[-1], output_dim)
+
+        self.output = nn.Sequential(
+                            nn.Linear(hidden_dims[-1],
+                                       output_dim),
+                                       nn.Sigmoid()
+                            )            
+
+    def forward(self, input: Tensor, **kwargs):
+        embedding = self.predictor(input)
+        output = self.output(embedding)
+        return  output
     
 
 class DNN(nn.Module):
