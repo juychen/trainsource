@@ -123,7 +123,7 @@ class AEBase(nn.Module):
         output = self.decode(embedding)
         return  output
 
-# Model of AE
+# Model of Predictor
 class Predictor(nn.Module):
     def __init__(self,
                  input_dim,
@@ -132,8 +132,6 @@ class Predictor(nn.Module):
                  drop_out=0.3):
                  
         super(Predictor, self).__init__()
-
-        self.latent_dim = latent_dim
 
         modules = []
         
@@ -167,6 +165,52 @@ class Predictor(nn.Module):
         output = self.output(embedding)
         return  output
     
+# Model of Pretrained P
+class PretrainedPredictor(AEBase):
+    def __init__(self,
+                 input_dim,
+                 latent_dim=128,
+                 hidden_dims=[512],
+                 drop_out=0.3,
+                 pretrained_weights=None,                 
+                 hidden_dims_predictor=[256],
+                 drop_out_predictor=0.3,
+                 output_dim = 1,
+                 freezed = False):
+                 
+        super(PretrainedPredictor, self).__init__(input_dim,output_dim,hidden_dims,drop_out)
+
+        modules = []
+        
+        hidden_dims.insert(0,input_dim)
+
+        # Build Encoder
+        for i in range(1,len(hidden_dims)):
+            i_dim = hidden_dims[i-1]
+            o_dim = hidden_dims[i]
+
+            modules.append(
+                nn.Sequential(
+                    nn.Linear(i_dim, o_dim),
+                    nn.BatchNorm1d(o_dim),
+                    #nn.ReLU(),
+                    nn.Dropout(drop_out))
+            )
+            #in_channels = h_dim
+
+        self.predictor = nn.Sequential(*modules)
+        #self.output = nn.Linear(hidden_dims[-1], output_dim)
+
+        self.output = nn.Sequential(
+                            nn.Linear(hidden_dims[-1],
+                                       output_dim),
+                                       nn.Sigmoid()
+                            )            
+
+    def forward(self, input: Tensor, **kwargs):
+        embedding = self.predictor(input)
+        output = self.output(embedding)
+        return  output
 
 class DNN(nn.Module):
     def __init__(self,dim_dnn_in,dim_dnn_out):
