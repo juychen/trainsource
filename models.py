@@ -65,7 +65,7 @@ class AEBase(nn.Module):
                 nn.Sequential(
                     nn.Linear(i_dim, o_dim),
                     nn.BatchNorm1d(o_dim),
-                    nn.LeakyReLU(),
+                    #nn.ReLU(),
                     nn.Dropout(drop_out))
             )
             #in_channels = h_dim
@@ -86,7 +86,7 @@ class AEBase(nn.Module):
                     nn.Linear(hidden_dims[i],
                                        hidden_dims[i + 1]),
                     nn.BatchNorm1d(hidden_dims[i + 1]),
-                    nn.LeakyReLU(),
+                    #nn.ReLU(),
                     nn.Dropout(drop_out))
             )
 
@@ -95,8 +95,8 @@ class AEBase(nn.Module):
 
         self.final_layer = nn.Sequential(
                             nn.Linear(hidden_dims[-2],
-                                       hidden_dims[-1]),
-                            nn.Tanh()
+                                       hidden_dims[-1])
+                                       ,nn.Sigmoid()
                             )            
                     
     def encode(self, input: Tensor):
