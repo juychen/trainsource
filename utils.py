@@ -8,6 +8,8 @@ from torch import nn, optim
 from torch.autograd import Variable
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, TensorDataset
+import matplotlib.pyplot as plt
+
 
 
 def highly_variable_genes(data, 
@@ -173,3 +175,19 @@ def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,sche
     net.load_state_dict(best_model_wts)           
     
     return net, loss_train
+
+
+# Fixing random state for reproducibility
+np.random.seed(19680801)
+# the histogram of the data
+n, bins, patches = plt.hist(Y_train, 50, density=True, facecolor='g', alpha=0.75)
+
+
+plt.xlabel('Aucs')
+plt.ylabel('Probability')
+plt.title('Histogram of training')
+# plt.text(60, .025, r'$\mu=100,\ \sigma=15$')
+# plt.xlim(40, 160)
+# plt.ylim(0, 0.03)
+# plt.grid(True)
+plt.show()
