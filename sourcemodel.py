@@ -7,6 +7,7 @@ import time
 
 import numpy as np
 import pandas as pd
+from pandas.core.arrays import boolean
 import torch
 from scipy import stats
 from sklearn import preprocessing
@@ -50,8 +51,9 @@ def run_main(args):
     valid_size = args.valid_size
     g_disperson = args.var_genes_disp
     model_path = args.model_store_path
-    pretrain_path = args.pretrained
+    pretrain_path = args.pretrain_path
     log_path = args.logging_file
+    batch_size = args.batch_size
 
     # Read data
     data_r=pd.read_csv(data_path,index_col=0)
@@ -130,22 +132,37 @@ def run_main(args):
     test_dataset = TensorDataset(X_testTensor, X_testTensor)
     all_dataset = TensorDataset(X_allTensor, X_allTensor)
 
-    X_trainDataLoader = DataLoader(dataset=train_dataset, batch_size=200, shuffle=True)
-    X_validDataLoader = DataLoader(dataset=valid_dataset, batch_size=200, shuffle=True)
-    X_allDataLoader = DataLoader(dataset=all_dataset, batch_size=200, shuffle=True)
+    X_trainDataLoader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+    X_validDataLoader = DataLoader(dataset=valid_dataset, batch_size=batch_size, shuffle=True)
+    X_allDataLoader = DataLoader(dataset=all_dataset, batch_size=batch_size, shuffle=True)
 
     # construct TensorDataset
     trainreducedDataset = TensorDataset(X_trainTensor, Y_trainTensor)
     validreducedDataset = TensorDataset(X_validTensor, Y_validTensor)
 
-    trainDataLoader_p = DataLoader(dataset=trainreducedDataset, batch_size=200, shuffle=True)
-    validDataLoader_p = DataLoader(dataset=trainreducedDataset, batch_size=200, shuffle=True)
+    trainDataLoader_p = DataLoader(dataset=trainreducedDataset, batch_size=batch_size, shuffle=True)
+    validDataLoader_p = DataLoader(dataset=trainreducedDataset, batch_size=batch_size, shuffle=True)
 
     dataloaders_train = {'train':trainDataLoader_p,'val':validDataLoader_p}
+
+    if(args.pretrain==True):
+        encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,hidden_dims=[2048,1024])
+        #model = VAE(dim_au_in=data_r.shape[1],dim_au_out=128)
+        if torch.cuda.is_available():
+            encoder.cuda()
+        encoder.to(device)
+        optimizer_e = optim.Adam(encoder.parameters(), lr=1e-2)
+        loss_function_e = nn.MSELoss()
+        exp_lr_scheduler_e = lr_scheduler.ReduceLROnPlateau(optimizer_e)
+        encoder,loss_report = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_train,
+                                    optimizer=optimizer_e,loss_function=loss_function_e,
+                                    n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain_path)
+
+
     # Models 
     model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,hidden_dims=[2048,1024], 
                             hidden_dims_predictor=[256,128],
-                            pretrained_weights=pretrain_path,freezed=False)
+                            pretrained_weights=pretrain_path,freezed=args.freeze_pretrain)
     
     print(model)
     if torch.cuda.is_available():
@@ -177,13 +194,16 @@ if __name__ == '__main__':
     parser.add_argument('--var_genes_disp', type=float, default=0.5)
 
     # train
-    parser.add_argument('--pretrained', type=str, default=None)
+    parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained.pkl')
+    parser.add_argument('--pretrain', type=boolean, default=False)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=512)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="AE")
     parser.add_argument('--predictor', type=str, default="DNN")
+    parser.add_argument('--freeze_pretrain', type=boolean, default=False)
+
 
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')
