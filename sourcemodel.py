@@ -143,7 +143,7 @@ def run_main(args):
 
     dataloaders_train = {'train':trainDataLoader_p,'val':validDataLoader_p}
     # Models 
-    model = PretrainedPredictor(input_dim=5116,latent_dim=dim_au_out,hidden_dims=[2048,1024], 
+    model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,hidden_dims=[2048,1024], 
                             hidden_dims_predictor=[256,128],
                             pretrained_weights=pretrain_path,freezed=False)
     
