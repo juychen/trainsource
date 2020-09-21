@@ -1,23 +1,28 @@
 
 import argparse
+import copy
 import os
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import torch
-from scipy.stats import pearsonr
-from sklearn import linear_model, preprocessing
-from sklearn.manifold import TSNE
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.model_selection import train_test_split
+from scipy import stats
+from sklearn import preprocessing
+from sklearn.metrics import r2_score
 from torch import nn, optim
 from torch.autograd import Variable
 from torch.nn import functional as F
+from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, TensorDataset
+from sklearn.model_selection import train_test_split
 
-from models import AE, DNN
+import models
+import utils as ut
+from models import AEBase, Predictor, PretrainedPredictor
+
+#import scipy.io as sio
+
+
 
 # Define parameters
 epochs = 500 #200,500,1000
@@ -29,26 +34,28 @@ dim_dnn_out=1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    # NN
-    parser.add_argument('--data_path', type=str, default='data/GDSCexpression.csv')
-    parser.add_argument('--label_path', type=str, default='data/GDSClabel.csv')
+    # data 
+    parser.add_argument('--data_path', type=str, default='data/GDSC2_expression.csv')
+    parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs.csv')
+    parser.add_argument('--drug', type=str, default='Tamoxifen')
+    parser.add_argument('--missing_value', type=int, default=1)
+    parser.add_argument('--test_size', type=float, default=0.2)
+    parser.add_argument('--valid_size', type=float, default=0.2)
+    parser.add_argument('--vairable_genes_dispersion', type=float, default=0)
 
-    parser.add_argument('--trained', type=str, default='')
-    parser.add_argument('--slope', type=float, default=0.1)
     # train
-    parser.add_argument('--lr', type=float, default=2e-4)
-    parser.add_argument('--weight_decay', type=float, default=2.5e-5)
+    parser.add_argument('--pretrained', type=str, default=None)
+    parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=512)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="AE")
     parser.add_argument('--predictor', type=str, default="DNN")
 
-
     # misc
-    parser.add_argument('--n_workers', type=int, default=0)
-    parser.add_argument('--logdir', type=str, default='outputs/garbage')
     parser.add_argument('--message', '-m',  type=str, default='')
+    parser.add_argument('--output_name', '-n',  type=str, default='')
+
     args, unknown = parser.parse_known_args()
     main(args)
 
