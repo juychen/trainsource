@@ -141,11 +141,12 @@ def run_main(args):
     validreducedDataset = TensorDataset(X_validTensor, Y_validTensor)
 
     trainDataLoader_p = DataLoader(dataset=trainreducedDataset, batch_size=batch_size, shuffle=True)
-    validDataLoader_p = DataLoader(dataset=trainreducedDataset, batch_size=batch_size, shuffle=True)
+    validDataLoader_p = DataLoader(dataset=validreducedDataset, batch_size=batch_size, shuffle=True)
 
     dataloaders_train = {'train':trainDataLoader_p,'val':validDataLoader_p}
 
     if(args.pretrain==True):
+        dataloaders_train = {'train':X_trainDataLoader,'val':X_validDataLoader}
         encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,hidden_dims=[2048,1024])
         #model = VAE(dim_au_in=data_r.shape[1],dim_au_out=128)
         if torch.cuda.is_available():
@@ -154,7 +155,7 @@ def run_main(args):
         optimizer_e = optim.Adam(encoder.parameters(), lr=1e-2)
         loss_function_e = nn.MSELoss()
         exp_lr_scheduler_e = lr_scheduler.ReduceLROnPlateau(optimizer_e)
-        encoder,loss_report = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_train,
+        encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_train,
                                     optimizer=optimizer_e,loss_function=loss_function_e,
                                     n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain_path)
 
