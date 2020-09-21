@@ -2,6 +2,8 @@
 import argparse
 import copy
 import os
+import sys
+import time
 
 import numpy as np
 import pandas as pd
@@ -15,7 +17,8 @@ from torch.nn import functional as F
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.model_selection import train_test_split
-
+from sklearn.metrics import mean_squared_error
+from scipy.stats import pearsonr
 import models
 import utils as ut
 from models import AEBase, Predictor, PretrainedPredictor
@@ -30,36 +33,6 @@ dim_au_in = 11833
 dim_au_out = 512 #8, 16, 32, 64, 128, 256,512
 dim_dnn_in = dim_au_out
 dim_dnn_out=1
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    # data 
-    parser.add_argument('--data_path', type=str, default='data/GDSC2_expression.csv')
-    parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs.csv')
-    parser.add_argument('--drug', type=str, default='Tamoxifen')
-    parser.add_argument('--missing_value', type=int, default=1)
-    parser.add_argument('--test_size', type=float, default=0.2)
-    parser.add_argument('--valid_size', type=float, default=0.2)
-    parser.add_argument('--var_genes_disp', type=float, default=0)
-
-    # train
-    parser.add_argument('--pretrained', type=str, default=None)
-    parser.add_argument('--lr', type=float, default=1e-2)
-    parser.add_argument('--epochs', type=int, default=512)
-    parser.add_argument('--batch_size', type=int, default=200)
-    parser.add_argument('--bottleneck', type=int, default=512)
-    parser.add_argument('--dimreduce', type=str, default="AE")
-    parser.add_argument('--predictor', type=str, default="DNN")
-
-    # misc
-    parser.add_argument('--message', '-m',  type=str, default='')
-    parser.add_argument('--output_name', '-n',  type=str, default='')
-    parser.add_argument('--model_store_path', '-p',  type=str, default='saved/models/model.pkl')
-
-    #
-    args, unknown = parser.parse_known_args()
-    run_main(args)
 
 # Edit in 2020 09 21 main function
 def run_main(args):
@@ -78,11 +51,21 @@ def run_main(args):
     g_disperson = args.var_genes_disp
     model_path = args.model_store_path
     pretrain_path = args.pretrained
+    log_path = args.logging_file
 
     # Read data
     data_r=pd.read_csv(data_path,index_col=0)
     label_r=pd.read_csv(label_path,index_col=0)
     label_r=label_r.fillna(na)
+
+
+    now=time.strftime("%Y-%m-%d-%H-%M-%S")
+
+    log_path = log_path+now+".txt"
+
+    log=open(log_path,"w")
+    sys.stdout=log
+
 
     data = data_r
 
@@ -110,7 +93,7 @@ def run_main(args):
 
     data = mmscaler.fit_transform(data)
     label = label.values.reshape(-1,1)
-    label = lbscaler.fit_transform(label.values.reshape(-1,1))
+    label = lbscaler.fit_transform(label)
     #label = label.values.reshape(-1,1)
 
     print(np.std(data))
@@ -176,3 +159,39 @@ def run_main(args):
 
     model,report = ut.train_predictor_model(model,dataloaders_train,
                                         optimizer,loss_function,epochs,exp_lr_scheduler,save_path=model_path)
+
+    dl_result = model(X_testTensor).detach().cpu().numpy()
+    print(r2_score(dl_result,Y_test))
+    print(pearsonr(dl_result.flatten(),Y_test.flatten()))
+    print(mean_squared_error(dl_result,Y_test))
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    # data 
+    parser.add_argument('--data_path', type=str, default='data/GDSC2_expression.csv')
+    parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs.csv')
+    parser.add_argument('--drug', type=str, default='Tamoxifen')
+    parser.add_argument('--missing_value', type=int, default=1)
+    parser.add_argument('--test_size', type=float, default=0.2)
+    parser.add_argument('--valid_size', type=float, default=0.2)
+    parser.add_argument('--var_genes_disp', type=float, default=0.5)
+
+    # train
+    parser.add_argument('--pretrained', type=str, default=None)
+    parser.add_argument('--lr', type=float, default=1e-2)
+    parser.add_argument('--epochs', type=int, default=512)
+    parser.add_argument('--batch_size', type=int, default=200)
+    parser.add_argument('--bottleneck', type=int, default=512)
+    parser.add_argument('--dimreduce', type=str, default="AE")
+    parser.add_argument('--predictor', type=str, default="DNN")
+
+    # misc
+    parser.add_argument('--message', '-m',  type=str, default='')
+    parser.add_argument('--output_name', '-n',  type=str, default='')
+    parser.add_argument('--model_store_path', '-p',  type=str, default='saved/models/model.pkl')
+    parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/log')
+
+    #
+    args, unknown = parser.parse_known_args()
+    run_main(args)
+
