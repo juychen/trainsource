@@ -41,7 +41,7 @@ if __name__ == '__main__':
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
-    parser.add_argument('--vairable_genes_dispersion', type=float, default=0)
+    parser.add_argument('--var_genes_disp', type=float, default=0)
 
     # train
     parser.add_argument('--pretrained', type=str, default=None)
@@ -55,36 +55,71 @@ if __name__ == '__main__':
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')
     parser.add_argument('--output_name', '-n',  type=str, default='')
+    parser.add_argument('--model_store_path', '-p',  type=str, default='saved/models/model.pkl')
 
+    #
     args, unknown = parser.parse_known_args()
-    main(args)
+    run_main(args)
 
-
-def main(args):
+# Edit in 2020 09 21 main function
+def run_main(args):
 
     # Define parameters
     epochs = args.epochs
     dim_au_out = args.bottleneck #8, 16, 32, 64, 128, 256,512
     dim_dnn_in = dim_au_out
     dim_dnn_out=1
-
+    select_drug = args.drug
+    na = args.missing_value
     data_path = args.data_path
     label_path = args.label_path
+    test_size = args.test_size
+    valid_size = args.valid_size
+    g_disperson = args.var_genes_disp
+    model_path = args.model_store_path
+    pretrain_path = args.pretrained
 
-    data_r=pd.read_csv(data_path)
-    label_r=pd.read_csv(label_path)
+    # Read data
+    data_r=pd.read_csv(data_path,index_col=0)
+    label_r=pd.read_csv(label_path,index_col=0)
+    label_r=label_r.fillna(na)
 
-    label_r=label_r.fillna(1)
     data = data_r
-    label = label_r.iloc[:,10]
-    scaler = preprocessing.StandardScaler(with_mean=True, with_std=True)
-    data = scaler.fit_transform(data)
+
+    if(g_disperson!=0):
+        hvg,adata = ut.highly_variable_genes(data_r,min_disp=g_disperson)
+    
+    # Select index
+    selected_idx = label_r.loc[:,select_drug]!=na
+
+    # Rename columns if duplication exist
+    data_r.columns = adata.var_names
+
+    # Extract hvgs
+    if(g_disperson!=0):
+        data = data_r.loc[selected_idx,hvg]
+    else:
+        data = data_r.loc[selected_idx,:]
+
+    # Extract labels
+    label = label_r.loc[selected_idx,select_drug]
+
+    # Scaling data
+    mmscaler = preprocessing.MinMaxScaler()
+    lbscaler = preprocessing.MinMaxScaler()
+
+    data = mmscaler.fit_transform(data)
+    label = label.values.reshape(-1,1)
+    label = lbscaler.fit_transform(label.values.reshape(-1,1))
+    #label = label.values.reshape(-1,1)
 
     print(np.std(data))
     print(np.mean(data))
 
-    X_train, X_test, Y_train, Y_test = train_test_split(data, label, test_size=0.2, random_state=42)
-
+    # Split traning valid test set
+    X_train_all, X_test, Y_train_all, Y_test = train_test_split(data, label, test_size=test_size, random_state=42)
+    X_train, X_valid, Y_train, Y_valid = train_test_split(X_train_all, Y_train_all, test_size=valid_size, random_state=42)
+    
     print(data.shape)
     print(label.shape)
     print(X_train.shape, Y_train.shape)
@@ -92,138 +127,52 @@ def main(args):
     print(X_train.max())
     print(X_train.min())
 
-
+    # Select the Training device
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # Assuming that we are on a CUDA machine, this should print a CUDA device:
     print(device)
     torch.cuda.set_device(device)
 
+    # Construct datasets and data loaders
+    X_trainTensor = torch.FloatTensor(X_train).to(device)
+    X_validTensor = torch.FloatTensor(X_valid).to(device)
+    X_testTensor = torch.FloatTensor(X_test).to(device)
+    X_allTensor = torch.FloatTensor(data).to(device)
 
-    trainData = torch.FloatTensor(X_train).to(device)
-    testData = torch.FloatTensor(X_test).to(device)
-    y = torch.FloatTensor(Y_train.values).to(device)
-    allData = torch.FloatTensor(data).to(device)
+    Y_trainTensor = torch.FloatTensor(Y_train).to(device)
+    Y_validTensor = torch.FloatTensor(Y_valid).to(device)
+
+    train_dataset = TensorDataset(X_trainTensor, X_trainTensor)
+    valid_dataset = TensorDataset(X_validTensor, X_validTensor)
+    test_dataset = TensorDataset(X_testTensor, X_testTensor)
+    all_dataset = TensorDataset(X_allTensor, X_allTensor)
+
+    X_trainDataLoader = DataLoader(dataset=train_dataset, batch_size=200, shuffle=True)
+    X_validDataLoader = DataLoader(dataset=valid_dataset, batch_size=200, shuffle=True)
+    X_allDataLoader = DataLoader(dataset=all_dataset, batch_size=200, shuffle=True)
 
     # construct TensorDataset
-    train_dataset = TensorDataset(trainData, trainData)
-    test_dataset = TensorDataset(testData, testData)
-    all_dataset = TensorDataset(allData, allData)
+    trainreducedDataset = TensorDataset(X_trainTensor, Y_trainTensor)
+    validreducedDataset = TensorDataset(X_validTensor, Y_validTensor)
 
-    trainDataLoader1 = DataLoader(dataset=train_dataset, batch_size=200, shuffle=False)
-    trainDataLoaderall = DataLoader(dataset=all_dataset, batch_size=200, shuffle=False)
+    trainDataLoader_p = DataLoader(dataset=trainreducedDataset, batch_size=200, shuffle=True)
+    validDataLoader_p = DataLoader(dataset=trainreducedDataset, batch_size=200, shuffle=True)
 
-
-    autoencoder = AE(dim_au_in = X_train.shape[1],dim_au_out=dim_au_out).to(device)
-    optimizer = optim.Adam(autoencoder.parameters(), lr=1e-3)
-    loss_func = nn.SmoothL1Loss().to(device)
-    loss_train = np.zeros((epochs, 1))
-
-
-
-    for epoch in range(epochs):
-        # 
-        for batchidx, (x, _) in enumerate(trainDataLoaderall):
-            x.requires_grad_(True)
-            # encode and decode 
-            decoded, encoded = autoencoder(x)
-            # compute loss
-            print(encoded.shape, decoded.shape)
-            loss = loss_func(decoded, x)      
-            # update
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            
-        loss_train[epoch,0] = loss.item()  
-        print('Epoch: %04d, Training loss=%.8f' %
-            (epoch+1, loss.item()))
+    dataloaders_train = {'train':trainDataLoader_p,'val':validDataLoader_p}
+    # Models 
+    model = PretrainedPredictor(input_dim=5116,latent_dim=dim_au_out,hidden_dims=[2048,1024], 
+                            hidden_dims_predictor=[256,128],
+                            pretrained_weights=pretrain_path,freezed=False)
     
-    torch.save(autoencoder.state_dict(), 'saved/models/'+data_path+args.dimreduce+'.pkl')
-    
-    # extract features
-    _, encodedTrainData = autoencoder(trainData)
-    featureTensor = encodedTrainData.double()
-    feature = featureTensor.detach().cpu().numpy()
+    print(model)
+    if torch.cuda.is_available():
+        model.cuda()
+    model.to(device)
 
+    # Define optimizer
+    optimizer = optim.Adam(model.parameters(), lr=1e-2)
+    loss_function = nn.MSELoss()
+    exp_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
-
-    print(feature.shape)
-
-
-    clf = linear_model.Lasso(alpha=0.1)
-    clf.fit(feature, Y_train.values)
-
-
-    # In[23]:
-
-
-    _,testFeature = autoencoder(testData)
-    lasso = clf.predict(testFeature.detach().cpu().numpy())
-
-
-    print(r2_score(lasso,Y_test))
-
-    tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
-    tsne_results = tsne.fit_transform(feature)
-    plt.scatter(tsne_results[:, 0], tsne_results[:, 1], label="label")
-    plt.legend()
-    plt.savefig("saved/figrues/"+data_path+args.dimreduce+args.predictor+".png")
-
-
-    EPOCH = 500
-
-
-    # In[30]:
-
-
-    # Load data
-    # data type conversion
-    B_feature = torch.FloatTensor(feature).to(device)
-    y = torch.FloatTensor(Y_train.values).to(device)
-    # construct TensorDataset
-    b_data = TensorDataset(B_feature, y)
-    trainDataLoader2 = DataLoader(dataset=b_data, batch_size=200, shuffle=False)
-
-
-    # In[31]:
-
-
-
-    predictor = DNN(dim_dnn_in, dim_dnn_out).to(device)
-    optimizer = optim.Adam(predictor.parameters(), lr=1e-3,betas=(0.9,0.99))
-    loss_func = nn.BCELoss().to(device)
-    loss_train = np.zeros((epochs, 1))
-
-    # train model
-    for epoch in range(EPOCH):
-        print('Epoch: ',epoch)
-        for step,(batch_x,batch_y) in enumerate(trainDataLoader2):
-            b_x = Variable(batch_x)
-            b_y = Variable(batch_y)
-            # predict label
-            output = predictor(b_x)
-            # b_y=F.sigmoid(b_y) 
-            
-            #print
-            #print(output)
-            #print(b_y)
-            # compute loss
-            loss = loss_func(output,b_y)
-            #loss = criterion(output, b_y)
-            
-            # update
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-        loss_train[epoch,0] = loss.item()  
-        print('Epoch: %04d, Training loss=%.8f' %
-            (epoch+1, loss.item())) 
-
-    torch.save(predictor.state_dict(), 'saved/models/'+data_path+args.predictor+'.pkl')
-
-
-    # Get tesing feature
-    _,testFeature = autoencoder(testData)
-    testpredict = predictor(testFeature)
-    r2_score(testpredict.detach().cpu().numpy(),Y_test)
-    mean_squared_error(testpredict.detach().cpu().numpy(),Y_test)
+    model,report = ut.train_predictor_model(model,dataloaders_train,
+                                        optimizer,loss_function,epochs,exp_lr_scheduler,save_path=model_path)
