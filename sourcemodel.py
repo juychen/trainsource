@@ -54,6 +54,8 @@ def run_main(args):
     pretrain_path = args.pretrain_path
     log_path = args.logging_file
     batch_size = args.batch_size
+    encoder_hdims = args.ft_h_dims.split(",")
+    preditor_hdims = args.p_h_dims.split(",")
 
     # Read data
     data_r=pd.read_csv(data_path,index_col=0)
@@ -147,7 +149,7 @@ def run_main(args):
 
     if(args.pretrain==True):
         dataloaders_train = {'train':X_trainDataLoader,'val':X_validDataLoader}
-        encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,hidden_dims=[2048,1024])
+        encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,hidden_dims=encoder_hdims)
         #model = VAE(dim_au_in=data_r.shape[1],dim_au_out=128)
         if torch.cuda.is_available():
             encoder.cuda()
@@ -161,8 +163,8 @@ def run_main(args):
 
 
     # Models 
-    model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,hidden_dims=[2048,1024], 
-                            hidden_dims_predictor=[256,128],
+    model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,hidden_dims=encoder_hdims, 
+                            hidden_dims_predictor=preditor_hdims,
                             pretrained_weights=pretrain_path,freezed=args.freeze_pretrain)
     
     print(model)
@@ -198,12 +200,14 @@ if __name__ == '__main__':
     parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained.pkl')
     parser.add_argument('--pretrain', type=boolean, default=False)
     parser.add_argument('--lr', type=float, default=1e-2)
-    parser.add_argument('--epochs', type=int, default=512)
+    parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="AE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=boolean, default=False)
+    parser.add_argument('--ft_h_dims', type=str, default="2048,1024")
+    parser.add_argument('--p_h_dims', type=str, default="256,128")
 
 
     # misc
