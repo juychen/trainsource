@@ -76,6 +76,9 @@ def run_main(args):
     sys.stdout=log
 
 
+    print(args)
+
+
     # data = data_r
 
     # Filter out na values
