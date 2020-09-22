@@ -168,48 +168,47 @@ class Predictor(nn.Module):
 # Model of Pretrained P
 class PretrainedPredictor(AEBase):
     def __init__(self,
+                 # Params from AE model
                  input_dim,
                  latent_dim=128,
                  hidden_dims=[512],
                  drop_out=0.3,
+                 ### Parameters from predictor models
                  pretrained_weights=None,                 
                  hidden_dims_predictor=[256],
                  drop_out_predictor=0.3,
                  output_dim = 1,
                  freezed = False):
-                 
-        super(PretrainedPredictor, self).__init__(input_dim,output_dim,hidden_dims,drop_out)
-
-        modules = []
         
-        hidden_dims.insert(0,input_dim)
+        # Construct an autoencoder model
+        AEBase.__init__(self,input_dim,latent_dim,hidden_dims,drop_out)
+        
+        # Load pretrained weights
+        if pretrained_weights !=None:
+            self.load_state_dict((torch.load(pretrained_weights)))
+        
+        ## Free parameters until the bottleneck layer
+        if freezed == True:
+            for p in self.parameters():
+                print("Layer weight is freezed:",format(p.shape))
+                p.requires_grad = False
+                # Stop until the bottleneck layer
+                if p.shape.numel() == self.latent_dim:
+                    break
+        # Only extract encoder
+        del self.decoder
+        del self.decoder_input
+        del self.final_layer
 
-        # Build Encoder
-        for i in range(1,len(hidden_dims)):
-            i_dim = hidden_dims[i-1]
-            o_dim = hidden_dims[i]
+        self.predictor = Predictor(input_dim=self.latent_dim,
+                 output_dim=output_dim,
+                 hidden_dims=hidden_dims_predictor,
+                 drop_out=drop_out_predictor)
+        
 
-            modules.append(
-                nn.Sequential(
-                    nn.Linear(i_dim, o_dim),
-                    nn.BatchNorm1d(o_dim),
-                    #nn.ReLU(),
-                    nn.Dropout(drop_out))
-            )
-            #in_channels = h_dim
-
-        self.predictor = nn.Sequential(*modules)
-        #self.output = nn.Linear(hidden_dims[-1], output_dim)
-
-        self.output = nn.Sequential(
-                            nn.Linear(hidden_dims[-1],
-                                       output_dim),
-                                       nn.Sigmoid()
-                            )            
-
-    def forward(self, input: Tensor, **kwargs):
-        embedding = self.predictor(input)
-        output = self.output(embedding)
+    def forward(self, input, **kwargs):
+        embedding = self.encode(input)
+        output = self.predictor(embedding)
         return  output
 
 class DNN(nn.Module):
