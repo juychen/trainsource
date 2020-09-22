@@ -208,7 +208,7 @@ if __name__ == '__main__':
     parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="AE")
     parser.add_argument('--predictor', type=str, default="DNN")
-    parser.add_argument('--freeze_pretrain', type=bool, default=False)
+    parser.add_argument('--freeze_pretrain', type=bool, default=True)
     parser.add_argument('--ft_h_dims', type=str, default="2048,1024")
     parser.add_argument('--p_h_dims', type=str, default="256,128")
 
