@@ -9,6 +9,7 @@ from torch.nn import Dropout
 #import scipy.io as sio
 import numpy as np
 import pandas as pd
+from copy import deepcopy
 
 
 # Model of AE
@@ -45,7 +46,7 @@ class AEBase(nn.Module):
     def __init__(self,
                  input_dim,
                  latent_dim=128,
-                 hidden_dims=[512],
+                 h_dims=[512],
                  drop_out=0.3):
                  
         super(AEBase, self).__init__()
@@ -53,6 +54,7 @@ class AEBase(nn.Module):
         self.latent_dim = latent_dim
 
         modules = []
+        hidden_dims = deepcopy(h_dims)
         
         hidden_dims.insert(0,input_dim)
 
@@ -128,12 +130,14 @@ class Predictor(nn.Module):
     def __init__(self,
                  input_dim,
                  output_dim=1,
-                 hidden_dims=[512],
+                 h_dims=[512],
                  drop_out=0.3):
                  
         super(Predictor, self).__init__()
 
         modules = []
+
+        hidden_dims = deepcopy(h_dims)
         
         hidden_dims.insert(0,input_dim)
 
@@ -171,7 +175,7 @@ class PretrainedPredictor(AEBase):
                  # Params from AE model
                  input_dim,
                  latent_dim=128,
-                 hidden_dims=[512],
+                 h_dims=[512],
                  drop_out=0.3,
                  ### Parameters from predictor models
                  pretrained_weights=None,                 
@@ -181,7 +185,7 @@ class PretrainedPredictor(AEBase):
                  freezed = False):
         
         # Construct an autoencoder model
-        AEBase.__init__(self,input_dim,latent_dim,hidden_dims,drop_out)
+        AEBase.__init__(self,input_dim,latent_dim,h_dims,drop_out)
         
         # Load pretrained weights
         if pretrained_weights !=None:
@@ -202,7 +206,7 @@ class PretrainedPredictor(AEBase):
 
         self.predictor = Predictor(input_dim=self.latent_dim,
                  output_dim=output_dim,
-                 hidden_dims=hidden_dims_predictor,
+                 h_dims=hidden_dims_predictor,
                  drop_out=drop_out_predictor)
         
 

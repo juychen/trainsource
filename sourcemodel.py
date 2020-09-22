@@ -57,6 +57,11 @@ def run_main(args):
     encoder_hdims = args.ft_h_dims.split(",")
     preditor_hdims = args.p_h_dims.split(",")
 
+    encoder_hdims = list(map(int, encoder_hdims) )
+    preditor_hdims = list(map(int, preditor_hdims) )
+
+
+
     # Read data
     data_r=pd.read_csv(data_path,index_col=0)
     label_r=pd.read_csv(label_path,index_col=0)
@@ -71,19 +76,16 @@ def run_main(args):
     sys.stdout=log
 
 
-    data = data_r
+    # data = data_r
 
-    if(g_disperson!=0):
-        hvg,adata = ut.highly_variable_genes(data_r,min_disp=g_disperson)
-    
-    # Select index
+    # Filter out na values
     selected_idx = label_r.loc[:,select_drug]!=na
 
-    # Rename columns if duplication exist
-    data_r.columns = adata.var_names
-
-    # Extract hvgs
-    if(g_disperson!=0):
+    if(g_disperson!=None):
+        hvg,adata = ut.highly_variable_genes(data_r,min_disp=g_disperson)
+        # Rename columns if duplication exist
+        data_r.columns = adata.var_names
+        # Extract hvgs
         data = data_r.loc[selected_idx,hvg]
     else:
         data = data_r.loc[selected_idx,:]
@@ -149,10 +151,12 @@ def run_main(args):
 
     if(args.pretrain==True):
         dataloaders_train = {'train':X_trainDataLoader,'val':X_validDataLoader}
-        encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,hidden_dims=encoder_hdims)
+        encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
         #model = VAE(dim_au_in=data_r.shape[1],dim_au_out=128)
         if torch.cuda.is_available():
             encoder.cuda()
+
+        print(encoder)
         encoder.to(device)
         optimizer_e = optim.Adam(encoder.parameters(), lr=1e-2)
         loss_function_e = nn.MSELoss()
@@ -161,9 +165,8 @@ def run_main(args):
                                     optimizer=optimizer_e,loss_function=loss_function_e,
                                     n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain_path)
 
-
-    # Models 
-    model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,hidden_dims=encoder_hdims, 
+    # Train model of predictor 
+    model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
                             hidden_dims_predictor=preditor_hdims,
                             pretrained_weights=pretrain_path,freezed=args.freeze_pretrain)
     
@@ -198,14 +201,14 @@ if __name__ == '__main__':
 
     # train
     parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained.pkl')
-    parser.add_argument('--pretrain', type=boolean, default=False)
+    parser.add_argument('--pretrain', type=bool, default=True)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="AE")
     parser.add_argument('--predictor', type=str, default="DNN")
-    parser.add_argument('--freeze_pretrain', type=boolean, default=False)
+    parser.add_argument('--freeze_pretrain', type=bool, default=False)
     parser.add_argument('--ft_h_dims', type=str, default="2048,1024")
     parser.add_argument('--p_h_dims', type=str, default="256,128")
 
