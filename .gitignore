@@ -4,3 +4,4 @@ saved/
 .ipynb_checkpoints/
 __pycache__/
 figures/
+*.bat

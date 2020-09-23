@@ -152,8 +152,8 @@ def run_main(args):
 
     dataloaders_train = {'train':trainDataLoader_p,'val':validDataLoader_p}
 
-    if(args.pretrain==True):
-        dataloaders_train = {'train':X_trainDataLoader,'val':X_validDataLoader}
+    if(bool(args.pretrain)==True):
+        dataloaders_pretrain = {'train':X_trainDataLoader,'val':X_validDataLoader}
         encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
         #model = VAE(dim_au_in=data_r.shape[1],dim_au_out=128)
         if torch.cuda.is_available():
@@ -164,7 +164,7 @@ def run_main(args):
         optimizer_e = optim.Adam(encoder.parameters(), lr=1e-2)
         loss_function_e = nn.MSELoss()
         exp_lr_scheduler_e = lr_scheduler.ReduceLROnPlateau(optimizer_e)
-        encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_train,
+        encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
                                     optimizer=optimizer_e,loss_function=loss_function_e,
                                     n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain_path)
         
@@ -173,7 +173,7 @@ def run_main(args):
     # Train model of predictor 
     model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
                             hidden_dims_predictor=preditor_hdims,
-                            pretrained_weights=pretrain_path,freezed=args.freeze_pretrain)
+                            pretrained_weights=pretrain_path,freezed=bool(args.freeze_pretrain))
     
     print(model)
     if torch.cuda.is_available():
@@ -191,6 +191,9 @@ def run_main(args):
                                         optimizer,loss_function,epochs,exp_lr_scheduler,save_path=preditor_path)
 
     dl_result = model(X_testTensor).detach().cpu().numpy()
+
+    print('Performances: R/Pearson/Mse/')
+
     print(r2_score(dl_result,Y_test))
     print(pearsonr(dl_result.flatten(),Y_test.flatten()))
     print(mean_squared_error(dl_result,Y_test))
@@ -208,14 +211,14 @@ if __name__ == '__main__':
 
     # train
     parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained.pkl')
-    parser.add_argument('--pretrain', type=bool, default=True)
+    parser.add_argument('--pretrain', type=int, default=1)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="AE")
     parser.add_argument('--predictor', type=str, default="DNN")
-    parser.add_argument('--freeze_pretrain', type=bool, default=True)
+    parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--ft_h_dims', type=str, default="2048,1024")
     parser.add_argument('--p_h_dims', type=str, default="256,128")
 
