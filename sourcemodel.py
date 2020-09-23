@@ -167,6 +167,8 @@ def run_main(args):
         encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_train,
                                     optimizer=optimizer_e,loss_function=loss_function_e,
                                     n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain_path)
+        
+        print("Pretrained finished")
 
     # Train model of predictor 
     model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
@@ -183,8 +185,10 @@ def run_main(args):
     loss_function = nn.MSELoss()
     exp_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
+    preditor_path = model_path + select_drug + '.pkl'
+
     model,report = ut.train_predictor_model(model,dataloaders_train,
-                                        optimizer,loss_function,epochs,exp_lr_scheduler,save_path=model_path)
+                                        optimizer,loss_function,epochs,exp_lr_scheduler,save_path=preditor_path)
 
     dl_result = model(X_testTensor).detach().cpu().numpy()
     print(r2_score(dl_result,Y_test))
