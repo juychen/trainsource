@@ -176,6 +176,54 @@ def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,sche
     
     return net, loss_train
 
+def train_adversarial_model(
+    source_encoder, target_encoder, discriminator,
+    source_loader, target_loader,
+    souce_loss, target_loss,
+    optimizer, d_optimizer,
+    args=None
+):
+    source_encoder.eval()
+    target_encoder.encoder.train()
+    discriminator.train()
+
+    #losses, d_losses = AverageMeter(), AverageMeter()
+    n_iters = min(len(source_loader), len(target_loader))
+    source_iter, target_iter = iter(source_loader), iter(target_loader)
+    for iter_i in range(n_iters):
+        source_data, source_target = source_iter.next()
+        target_data, target_target = target_iter.next()
+        source_data = source_data.to(args.device)
+        target_data = target_data.to(args.device)
+        bs = source_data.size(0)
+
+        D_input_source = source_encoder.encoder(source_data)
+        D_input_target = target_encoder.encoder(target_data)
+        D_target_source = torch.tensor(
+            [0] * bs, dtype=torch.long).to(args.device)
+        D_target_target = torch.tensor(
+            [1] * bs, dtype=torch.long).to(args.device)
+
+        # train Discriminator
+        D_output_source = discriminator(D_input_source)
+        D_output_target = discriminator(D_input_target)
+        D_output = torch.cat([D_output_source, D_output_target], dim=0)
+        D_target = torch.cat([D_target_source, D_target_target], dim=0)
+        d_loss = criterion(D_output, D_target)
+        d_optimizer.zero_grad()
+        d_loss.backward()
+        d_optimizer.step()
+        d_losses.update(d_loss.item(), bs)
+
+        # train Target
+        D_input_target = target_encoder.encoder(target_data)
+        D_output_target = discriminator(D_input_target)
+        loss = criterion(D_output_target, D_target_source)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        losses.update(loss.item(), bs)
+    return {'d/loss': d_losses.avg, 'target/loss': losses.avg}
 
 def plot_label_hist(Y,save=None):
 # the histogram of the data
