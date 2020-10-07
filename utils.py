@@ -192,6 +192,8 @@ def train_transfer_model(
     dataset_sizes = {x: min(target_dataset_sizes[x],source_dataset_sizes[x]) for x in ['train', 'val']}
 
     loss_train = {}
+    loss_d_train = {}
+
     
     # best_target_wts = copy.deepcopy(target_encoder.state_dict())
     # best_discm_wts = copy.deepcopy(discriminator.state_dict())
@@ -283,6 +285,8 @@ def train_transfer_model(
             d_last_lr = d_scheduler.optimizer.param_groups[0]['lr']
 
             loss_train[epoch,phase] = epoch_loss
+            loss_d_train[epoch,phase] = d_epoch_loss
+
             print('Discriminator {} Loss: {:.8f}. Learning rate = {}'.format(phase, d_epoch_loss,d_last_lr))
             print('Encoder {} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
 
@@ -296,7 +300,7 @@ def train_transfer_model(
 
     #net.load_state_dict(best_model_wts)           
     
-    return discriminator,target_encoder, loss_train
+    return discriminator,target_encoder, loss_train, loss_d_train
 
 
 def train_adversarial_model(
