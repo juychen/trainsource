@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 import torch
-from torch import nn, optim, t
+from torch import device, nn, optim, t
 from torch.autograd import Variable
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, TensorDataset
@@ -183,7 +183,7 @@ def train_transfer_model(
     dis_loss, target_loss,
     optimizer, d_optimizer,
     scheduler,d_scheduler,
-    n_epochs,save_path="model.pkl",
+    n_epochs,device,save_path="model.pkl",
     args=None):
     
     target_dataset_sizes = {x: target_loader[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
@@ -229,16 +229,16 @@ def train_transfer_model(
             for iter_i in range(n_iters):
                 source_data, source_target = source_iter.next()
                 target_data, target_target = target_iter.next()
-                source_data = source_data.to(args.device)
-                target_data = target_data.to(args.device)
+                source_data = source_data.to(device)
+                target_data = target_data.to(device)
                 bs = source_data.size(0)
 
-                D_input_source = source_encoder.encoder(source_data)
-                D_input_target = target_encoder.encoder(target_data)
+                D_input_source = source_encoder.encode(source_data)
+                D_input_target = target_encoder.encode(target_data)
                 D_target_source = torch.tensor(
-                    [0] * bs, dtype=torch.long).to(args.device)
+                    [0] * bs, dtype=torch.long).to(device)
                 D_target_target = torch.tensor(
-                    [1] * bs, dtype=torch.long).to(args.device)
+                    [1] * bs, dtype=torch.long).to(device)
 
                 # train Discriminator
                 D_output_source = discriminator(D_input_source)
@@ -256,7 +256,7 @@ def train_transfer_model(
                 
                 d_running_loss += d_loss.item()
 
-                D_input_target = target_encoder.encoder(target_data)
+                D_input_target = target_encoder.encode(target_data)
                 D_output_target = discriminator(D_input_target)
                 loss = target_loss(D_output_target, D_target_source)
 
