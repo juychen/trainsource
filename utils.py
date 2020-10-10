@@ -183,7 +183,7 @@ def train_transfer_model(
     dis_loss, target_loss,
     optimizer, d_optimizer,
     scheduler,d_scheduler,
-    n_epochs,device,save_path="model.pkl",
+    n_epochs,device,save_path="saved/models/model.pkl",
     args=None):
     
     target_dataset_sizes = {x: target_loader[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
@@ -231,15 +231,20 @@ def train_transfer_model(
                 target_data, target_target = target_iter.next()
                 source_data = source_data.to(device)
                 target_data = target_data.to(device)
-                bs = source_data.size(0)
+                s_bs = source_data.size(0)
+                t_bs = target_data.size(0)
 
                 D_input_source = source_encoder.encode(source_data)
                 D_input_target = target_encoder.encode(target_data)
                 D_target_source = torch.tensor(
-                    [0] * bs, dtype=torch.long).to(device)
+                    [0] * s_bs, dtype=torch.long).to(device)
                 D_target_target = torch.tensor(
-                    [1] * bs, dtype=torch.long).to(device)
+                    [1] * t_bs, dtype=torch.long).to(device)
 
+                # Add adversarial label    
+                D_target_adversarial = torch.tensor(
+                    [0] * t_bs, dtype=torch.long).to(device)
+                
                 # train Discriminator
                 # Please fix it here to be a classifier
                 D_output_source = discriminator(D_input_source)
@@ -259,7 +264,7 @@ def train_transfer_model(
 
                 D_input_target = target_encoder.encode(target_data)
                 D_output_target = discriminator(D_input_target)
-                loss = dis_loss(D_output_target, D_target_source)
+                loss = dis_loss(D_output_target, D_target_adversarial)
 
                 optimizer.zero_grad()
 
