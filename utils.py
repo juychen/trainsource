@@ -241,6 +241,7 @@ def train_transfer_model(
                     [1] * bs, dtype=torch.long).to(device)
 
                 # train Discriminator
+                # Please fix it here to be a classifier
                 D_output_source = discriminator(D_input_source)
                 D_output_target = discriminator(D_input_target)
                 D_output = torch.cat([D_output_source, D_output_target], dim=0)
@@ -258,7 +259,7 @@ def train_transfer_model(
 
                 D_input_target = target_encoder.encode(target_data)
                 D_output_target = discriminator(D_input_target)
-                loss = target_loss(D_output_target, D_target_source)
+                loss = dis_loss(D_output_target, D_target_source)
 
                 optimizer.zero_grad()
 

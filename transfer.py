@@ -322,7 +322,7 @@ source_encoder.to(device)
 
 
 # Set discriminator model
-discriminator = Predictor(input_dim=dim_au_out)
+discriminator = Predictor(input_dim=dim_au_out,output_dim=2)
 discriminator.to(device)
 loss_d = nn.CrossEntropyLoss()
 optimizer_d = optim.Adam(encoder.parameters(), lr=1e-2)
