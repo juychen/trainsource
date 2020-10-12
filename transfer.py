@@ -87,50 +87,18 @@ encoder_hdims = list(map(int, encoder_hdims))
 source_data_path = args.source_data 
 
 
-# In[4]:
-
-
+# Misc
 now=time.strftime("%Y-%m-%d-%H-%M-%S")
 log_path = log_path+now+".txt"
-export_name = data_path.replace("/","")
+export_name = data_path.replace("/","")+"transfer"
 pretrain_path = "saved/models/ae_"+export_name+now+".pkl"
 
 
-# In[5]:
+log=open(log_path,"w")
+sys.stdout=log
 
-
-#scv = pd.read_csv('data/GSE117872/GSE117872_good_Data_TPM.txt',sep="\t")
-
-
-# In[6]:
-
-
-#scv.shape
-
-
-# In[7]:
-
-
+# Load data and preprocessing
 adata = pp.read_sc_file('data/GSE117872/GSE117872_good_Data_TPM.txt')
-
-
-# In[8]:
-
-
-adata
-
-
-# In[9]:
-
-
-# adata = sc.read_10x_mtx(
-#  'data/GSE108394/GSM2897334/',  # the directory with the `.mtx` file 
-#  var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
-#  cache=True)                              # write a cache file for faster subsequent reading
-
-
-# In[10]:
-
 
 sc.pp.filter_cells(adata, min_genes=200)
 sc.pp.filter_genes(adata, min_cells=3)
@@ -138,78 +106,33 @@ sc.pp.filter_genes(adata, min_cells=3)
 adata = pp.cal_ncount_ngenes(adata)
 
 
-# In[11]:
-
-
-adata
-
-
-# In[12]:
-
-
 sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt'],
              jitter=0.4, multi_panel=True,save=export_name)
-
-
-# In[13]:
-
-
 sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt')
 sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts')
 
-
-# In[14]:
-
-
+#Preprocess data by filtering
 adata = pp.receipe_my(adata,l_n_genes=min_n_genes,r_n_genes=max_n_genes,filter_mincells=args.min_c,
                       filter_mingenes=args.min_g,normalize=True,log=True)
 
 
-# In[15]:
-
-
+# Select highly variable genes
 sc.pp.highly_variable_genes(adata,min_disp=g_disperson,max_disp=np.inf,max_mean=6)
-
 sc.pl.highly_variable_genes(adata,save=export_name)
-
-
-# In[16]:
-
-
 adata.raw = adata
-
 adata = adata[:, adata.var.highly_variable]
 
+#Prepare to normailize and split target data
 data=adata.X
-
-
-# In[17]:
-
-
 mmscaler = preprocessing.MinMaxScaler()
-
-
-# In[18]:
-
-
 data = mmscaler.fit_transform(data)
 
-
-# In[19]:
-
-
+# Split data to train and valid set
 Xtarget_train, Xtarget_valid = train_test_split(data, test_size=valid_size, random_state=42)
-
-
-# In[20]:
-
-
 print(Xtarget_train.shape, Xtarget_valid.shape)
 
 
-# In[21]:
-
-
+# Select the device of gpu
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # Assuming that we are on a CUDA machine, this should print a CUDA device:
 print(device)
@@ -231,17 +154,8 @@ Xtarget_validDataLoader = DataLoader(dataset=valid_dataset, batch_size=batch_siz
 dataloaders_pretrain = {'train':Xtarget_trainDataLoader,'val':Xtarget_validDataLoader}
 
 
-# In[22]:
-
-
-len(Xtarget_trainDataLoader)
-
-
-# In[23]:
-
-
+# Construct target encoder
 encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
-#model = VAE(dim_au_in=data_r.shape[1],dim_au_out=128)
 if torch.cuda.is_available():
     encoder.cuda()
 
@@ -252,29 +166,16 @@ loss_function_e = nn.MSELoss()
 exp_lr_scheduler_e = lr_scheduler.ReduceLROnPlateau(optimizer_e)
 
 
-# In[24]:
-
-
 # Read source data
 data_r=pd.read_csv(source_data_path,index_col=0)
 
-
-# In[25]:
-
-
+# Process source data
 source_scaler = preprocessing.MinMaxScaler()
 source_data = mmscaler.fit_transform(data_r)
 
-
-# In[26]:
-
-
+# Split source data
 Xsource_train_all, Xsource_test = train_test_split(source_data, test_size=test_size, random_state=42)
 Xsource_train, Xsource_valid = train_test_split(Xsource_train_all, test_size=valid_size, random_state=42)
-
-
-# In[27]:
-
 
 # Transform source data
 # Construct datasets and data loaders
@@ -293,32 +194,13 @@ Xsource_trainDataLoader = DataLoader(dataset=sourcetrain_dataset, batch_size=bat
 Xsource_validDataLoader = DataLoader(dataset=sourcevalid_dataset, batch_size=batch_size, shuffle=True)
 X_allDataLoader = DataLoader(dataset=sourceall_dataset, batch_size=batch_size, shuffle=True)
 
-# construct TensorDataset
-# trainreducedDataset = TensorDataset(Xsource_trainTensor, Y_trainTensor)
-# validreducedDataset = TensorDataset(Xsource_validTensor, Y_validTensor)
-
-# trainDataLoader_p = DataLoader(dataset=trainreducedDataset, batch_size=batch_size, shuffle=True)
-# validDataLoader_p = DataLoader(dataset=validreducedDataset, batch_size=batch_size, shuffle=True)
-
 dataloaders_source = {'train':Xsource_trainDataLoader,'val':Xsource_validDataLoader}
-
-
-# In[28]:
-
-
-data_r
-
-
-# In[29]:
 
 
 # Load source model
 source_encoder = AEBase(input_dim=data_r.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
 source_encoder.load_state_dict(torch.load(source_model_path))          
 source_encoder.to(device)
-
-
-# In[30]:
 
 
 # Set discriminator model
@@ -328,16 +210,7 @@ loss_d = nn.CrossEntropyLoss()
 optimizer_d = optim.Adam(encoder.parameters(), lr=1e-2)
 exp_lr_scheduler_d = lr_scheduler.ReduceLROnPlateau(optimizer_d)
 
-
-# In[31]:
-
-
-device
-
-
-# In[32]:
-
-
+# Adversairal trainning
 result = ut.train_transfer_model(source_encoder,encoder,discriminator,
                     dataloaders_source,dataloaders_pretrain,
                     loss_d,loss_function_e,
