@@ -345,14 +345,16 @@ result = ut.train_transfer_model(source_encoder,encoder,discriminator,
                     exp_lr_scheduler_e,exp_lr_scheduler_d,
                     500,device)
 
+print("Transfer finished")
+
 
 # In[ ]:
 
 
 # Train target encoder
-encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
-                            optimizer=optimizer_e,loss_function=loss_function_e,
-                            n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain_path)
+# encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
+#                             optimizer=optimizer_e,loss_function=loss_function_e,
+#                             n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain_path)
 
 print("Pretrained finished")
 
