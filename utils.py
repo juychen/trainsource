@@ -64,6 +64,9 @@ def train_extractor_model(net,data_loaders={},optimizer=None,loss_function=None,
 
             running_loss = 0.0
 
+            n_iters = len(data_loaders[phase])
+
+
             # Iterate over data.
             # for data in data_loaders[phase]:
             for batchidx, (x, _) in enumerate(data_loaders[phase]):
@@ -90,7 +93,9 @@ def train_extractor_model(net,data_loaders={},optimizer=None,loss_function=None,
 #             if phase == 'train':
 #                 scheduler.step()
                 
-            epoch_loss = running_loss / dataset_sizes[phase]
+            #epoch_loss = running_loss / dataset_sizes[phase]
+            epoch_loss = running_loss / n_iters
+
             
             if phase == 'train':
                 scheduler.step(epoch_loss)
@@ -117,9 +122,12 @@ def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,sche
     best_model_wts = copy.deepcopy(net.state_dict())
     best_loss = np.inf
 
+
+
     for epoch in range(n_epochs):
         print('Epoch {}/{}'.format(epoch, n_epochs - 1))
         print('-' * 10)
+
 
         # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
@@ -130,6 +138,9 @@ def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,sche
                 net.eval()  # Set model to evaluate mode
 
             running_loss = 0.0
+
+            # N iter s calculated
+            n_iters = len(data_loaders[phase])
 
             # Iterate over data.
             # for data in data_loaders[phase]:
@@ -157,8 +168,9 @@ def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,sche
 #             if phase == 'train':
 #                 scheduler.step()
                 
-            epoch_loss = running_loss / dataset_sizes[phase]
-            
+            # epoch_loss = running_loss / dataset_sizes[phase]
+            epoch_loss = running_loss / n_iters
+
             if phase == 'train':
                 scheduler.step(epoch_loss)
                 
@@ -280,8 +292,11 @@ def train_transfer_model(
 #             if phase == 'train':
 #                 scheduler.step()
                 
-            epoch_loss = running_loss / dataset_sizes[phase]
-            d_epoch_loss = d_running_loss / dataset_sizes[phase]
+            #epoch_loss = running_loss / dataset_sizes[phase]
+            #d_epoch_loss = d_running_loss / dataset_sizes[phase]
+            epoch_loss = running_loss/n_iters
+            d_epoch_loss = d_running_loss/n_iters
+
 
             if phase == 'train':
                 scheduler.step(epoch_loss)
