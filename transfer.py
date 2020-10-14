@@ -248,7 +248,7 @@ def run_main(args):
     sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,save=export_name)
 
     # Save adata
-    adata.write("saved/results"+export_name+".h5ad")
+    adata.write("saved/results"+export_name+now+".h5ad")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
