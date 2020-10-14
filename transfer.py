@@ -75,6 +75,7 @@ def run_main(args):
     encoder_hdims = args.source_h_dims.split(",")
     encoder_hdims = list(map(int, encoder_hdims))
     source_data_path = args.source_data 
+    pretrain = bool(args.pretrain)
 
 
     # Misc
@@ -203,6 +204,15 @@ def run_main(args):
     optimizer_d = optim.Adam(encoder.parameters(), lr=1e-2)
     exp_lr_scheduler_d = lr_scheduler.ReduceLROnPlateau(optimizer_d)
 
+
+    # Pretrain target encoder
+    if(pretrain!=False):
+        if(os.path.exists(pretrain)==False):
+            encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
+                                        optimizer=optimizer_e,loss_function=loss_function_e,
+                                        n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
+        print("Pretrained finished")
+
     # Adversairal trainning
     discriminator,encoder, report_, report2_ = ut.train_transfer_model(source_encoder,encoder,discriminator,
                         dataloaders_source,dataloaders_pretrain,
@@ -214,12 +224,7 @@ def run_main(args):
 
     print("Transfer finished")
 
-    # Train target encoder
-    # We test no training teh target encoder here
-    # encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
-    #                             optimizer=optimizer_e,loss_function=loss_function_e,
-    #                             n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain_path)
-    # print("Pretrained finished")
+
 
     # Extract feature
     embeddings = encoder.encode(X_allTensor).detach().cpu().numpy()
@@ -267,7 +272,7 @@ if __name__ == '__main__':
     # train
     parser.add_argument('--source_model_path', type=str, default='saved/models/pretrained_novar.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/')
-    parser.add_argument('--pretrain', type=int, default=1)
+    parser.add_argument('--pretrain', type=int, default=0)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
@@ -286,27 +291,3 @@ if __name__ == '__main__':
     #
     args, unknown = parser.parse_known_args()
     run_main(args)
-
-
-class Arguments:
-    def __init__(self):   
-        self.epochs = 500
-        self.bottleneck = 512
-        self.missing_value = np.nan
-        self.target_data = "data/GSE108394/GSM2897334/"
-        self.source_data = "data/GDSC2_expression.csv"
-        self.test_size = 0.2
-        self.valid_size = 0.2
-        self.source_model_path = "saved/models/pretrained_novar.pkl"
-        self.target_model_path = "saved/models/"
-        self.logging_file = "saved/logs/"
-        self.batch_size = 200
-        self.source_h_dims = "2048,1024"
-        self.target_h_dims = "512,256"
-
-        self.var_genes_disp = 0
-        self.pretrain_path = "saved/models/pretrained_novar.pkl"
-        self.min_n_genes = 0
-        self.max_n_genes = 20000
-        self.min_g = 200
-        self.min_c = 3
