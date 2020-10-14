@@ -80,15 +80,18 @@ def run_main(args):
     # Misc
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
     log_path = log_path+now+".txt"
-    export_name = data_path.replace("/","")+"transfer"
-    target_model_path = target_model_path+"/transfer_"+export_name+now+".pkl"
+    export_name = data_path.replace("/","")
+
+    # If target file not exist, 
+    if (os.path.exists(target_model_path)==False):
+        target_model_path = target_model_path+"/transfer_"+export_name+"_"+now+".pkl"
 
 
     log=open(log_path,"w")
     sys.stdout=log
 
     # Load data and preprocessing
-    adata = pp.read_sc_file('data/GSE117872/GSE117872_good_Data_TPM.txt')
+    adata = pp.read_sc_file(data_path)
 
     sc.pp.filter_cells(adata, min_genes=200)
     sc.pp.filter_genes(adata, min_cells=3)
@@ -251,7 +254,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
-    parser.add_argument('--target_data', type=str, default="data/GSE108394/GSM2897334/")
+    parser.add_argument('--target_data', type=str, default="data/GSE117872/GSE117872_good_Data_TPM.txt")
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
