@@ -75,7 +75,7 @@ def run_main(args):
     encoder_hdims = args.source_h_dims.split(",")
     encoder_hdims = list(map(int, encoder_hdims))
     source_data_path = args.source_data 
-    pretrain = bool(args.pretrain)
+    pretrain = args.pretrain
 
 
     # Misc
@@ -206,19 +206,29 @@ def run_main(args):
 
 
     # Pretrain target encoder
-    if(pretrain!=False):
+    if(bool(pretrain)!=False):
         if(os.path.exists(pretrain)==False):
+            pretrain = str(pretrain)
             encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
                                         optimizer=optimizer_e,loss_function=loss_function_e,
                                         n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
-        print("Pretrained finished")
+            print("Pretrained finished")
+        else:
+            
+
+        # Extract pretrain feature
+        embeddings_p = encoder.encode(X_allTensor).detach().cpu().numpy()
+        # Add embeddings to the adata package
+        adata.obsm["X_pre"] = embeddings_p
+
 
     # Adversairal trainning
     discriminator,encoder, report_, report2_ = ut.train_transfer_model(source_encoder,encoder,discriminator,
                         dataloaders_source,dataloaders_pretrain,
                         loss_d,loss_function_e,
-                        optimizer_e,optimizer_d,
-                        exp_lr_scheduler_e,exp_lr_scheduler_d,
+                        # Should here be all optimizer d?
+                        optimizer_d,optimizer_d,
+                        exp_lr_scheduler_d,exp_lr_scheduler_d,
                         epochs,device,
                         target_model_path)
 
@@ -272,7 +282,7 @@ if __name__ == '__main__':
     # train
     parser.add_argument('--source_model_path', type=str, default='saved/models/pretrained_novar.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/')
-    parser.add_argument('--pretrain', type=int, default=0)
+    parser.add_argument('--pretrain', type=str, default='saved/models/pretrain_encoder.pkl')
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
