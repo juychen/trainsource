@@ -174,15 +174,20 @@ def run_main(args):
                                     optimizer=optimizer_e,loss_function=loss_function_e,
                                     n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
         print("Pretrained finished")
+            # Extract feature
+        embeddings = encoder.encode(X_allTensor).detach().cpu().numpy()
+
     elif(model=="VAE"):
         pretrain = str(pretrain)
         encoder,loss_report_en = ut.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
                                     optimizer=optimizer_e,
                                     n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
         print("Pretrained finished")
+        # Extract feature
+        results = encoder.encode(X_allTensor)
+        embeddings = results[0].detach().cpu().numpy()
 
-    # Extract feature
-    embeddings = encoder.encode(X_allTensor).detach().cpu().numpy()
+
 
     # PCA
     sc.tl.pca(adata, svd_solver='arpack')
