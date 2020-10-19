@@ -9,6 +9,7 @@ import copy
 import os
 import sys
 import time
+from anndata._core.aligned_mapping import V
 
 import numpy as np
 import pandas as pd
@@ -29,7 +30,7 @@ import models
 import scanpypip.preprocessing as pp
 import scanpypip.utils as scut
 import utils as ut
-from models import AEBase, Predictor, PretrainedPredictor
+from models import AEBase, Predictor, PretrainedPredictor,VAEBase,vae_loss
 
 # class Arguments:
 #     def __init__(self):   
@@ -76,6 +77,7 @@ def run_main(args):
     encoder_hdims = list(map(int, encoder_hdims))
     source_data_path = args.source_data 
     pretrain = args.pretrain
+    model = args.model
 
 
     # Misc
@@ -85,7 +87,7 @@ def run_main(args):
 
     # If target file not exist, 
     if (os.path.exists(target_model_path)==False):
-        target_model_path = target_model_path+"/transfer_"+export_name+"_"+now+".pkl"
+        target_model_path = target_model_path+"/pretrain_"+export_name+"_"+now+".pkl"
 
 
     log=open(log_path,"w")
@@ -149,93 +151,35 @@ def run_main(args):
 
 
     # Construct target encoder
-    encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+    if model == "AE":
+        encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+        
+        loss_function_e = nn.MSELoss()
+    elif model == "VAE":
+        encoder = VAEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+        #loss_function_e = encoder.loss_function()
+
     if torch.cuda.is_available():
         encoder.cuda()
 
-    print(encoder)
     encoder.to(device)
     optimizer_e = optim.Adam(encoder.parameters(), lr=1e-2)
-    loss_function_e = nn.MSELoss()
     exp_lr_scheduler_e = lr_scheduler.ReduceLROnPlateau(optimizer_e)
 
 
-    # Read source data
-    data_r=pd.read_csv(source_data_path,index_col=0)
-
-    # Process source data
-    source_scaler = preprocessing.MinMaxScaler()
-    source_data = mmscaler.fit_transform(data_r)
-
-    # Split source data
-    Xsource_train_all, Xsource_test = train_test_split(source_data, test_size=test_size, random_state=42)
-    Xsource_train, Xsource_valid = train_test_split(Xsource_train_all, test_size=valid_size, random_state=42)
-
-    # Transform source data
-    # Construct datasets and data loaders
-    Xsource_trainTensor = torch.FloatTensor(Xsource_train).to(device)
-    Xsource_validTensor = torch.FloatTensor(Xsource_valid).to(device)
-    Xsource_testTensor = torch.FloatTensor(Xsource_test).to(device)
-    Xsource_allTensor = torch.FloatTensor(source_data).to(device)
-
-
-    sourcetrain_dataset = TensorDataset(Xsource_trainTensor, Xsource_trainTensor)
-    sourcevalid_dataset = TensorDataset(Xsource_validTensor, Xsource_validTensor)
-    sourcetest_dataset = TensorDataset(Xsource_testTensor, Xsource_testTensor)
-    sourceall_dataset = TensorDataset(Xsource_allTensor, Xsource_allTensor)
-
-    Xsource_trainDataLoader = DataLoader(dataset=sourcetrain_dataset, batch_size=batch_size, shuffle=True)
-    Xsource_validDataLoader = DataLoader(dataset=sourcevalid_dataset, batch_size=batch_size, shuffle=True)
-    X_allDataLoader = DataLoader(dataset=sourceall_dataset, batch_size=batch_size, shuffle=True)
-
-    dataloaders_source = {'train':Xsource_trainDataLoader,'val':Xsource_validDataLoader}
-
-
-    # Load source model
-    source_encoder = AEBase(input_dim=data_r.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
-    source_encoder.load_state_dict(torch.load(source_model_path))          
-    source_encoder.to(device)
-
-
-    # Set discriminator model
-    discriminator = Predictor(input_dim=dim_au_out,output_dim=2)
-    discriminator.to(device)
-    loss_d = nn.CrossEntropyLoss()
-    optimizer_d = optim.Adam(encoder.parameters(), lr=1e-2)
-    exp_lr_scheduler_d = lr_scheduler.ReduceLROnPlateau(optimizer_d)
-
-
     # Pretrain target encoder
-    if(bool(pretrain)!=False):
-        if(os.path.exists(pretrain)==False):
-            pretrain = str(pretrain)
-            encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
-                                        optimizer=optimizer_e,loss_function=loss_function_e,
-                                        n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
-            print("Pretrained finished")
-        else:
-            print("Load finished")
-
-
-        # Extract pretrain feature
-        embeddings_p = encoder.encode(X_allTensor).detach().cpu().numpy()
-        # Add embeddings to the adata package
-        adata.obsm["X_pre"] = embeddings_p
-
-
-    # Adversairal trainning
-    discriminator,encoder, report_, report2_ = ut.train_transfer_model(source_encoder,encoder,discriminator,
-                        dataloaders_source,dataloaders_pretrain,
-                        loss_d,loss_function_e,
-                        # Should here be all optimizer d?
-                        optimizer_d,optimizer_d,
-                        exp_lr_scheduler_d,exp_lr_scheduler_d,
-                        epochs,device,
-                        target_model_path)
-
-    print("Transfer finished")
-
-
+    if(model=="AE"):
+        pretrain = str(pretrain)
+        encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
+                                    optimizer=optimizer_e,loss_function=loss_function_e,
+                                    n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
+        print("Pretrained finished")
+    elif(model=="VAE"):
+        pretrain = str(pretrain)
+        encoder,loss_report_en = ut.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
+                                    optimizer=optimizer_e,
+                                    n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
+        print("Pretrained finished")
 
     # Extract feature
     embeddings = encoder.encode(X_allTensor).detach().cpu().numpy()
@@ -283,9 +227,11 @@ if __name__ == '__main__':
     # train
     parser.add_argument('--source_model_path', type=str, default='saved/models/pretrained_novar.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/')
-    parser.add_argument('--pretrain', type=str, default='saved/models/pretrain_encoder.pkl')
+    parser.add_argument('--pretrain', type=str, default='saved/models/pretrain_encoders.pkl')
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
+    parser.add_argument('--model', type=str, default="VAE")
+
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="AE")

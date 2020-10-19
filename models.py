@@ -345,7 +345,7 @@ class VAE(nn.Module):
         z = self.reparametrize(mu, logvar)
         return self.decode(z), mu, logvar
 
-def vae_loss(recon_x, x, mu, logvar,reconstruction_function):
+def vae_loss(recon_x, x, mu, logvar,reconstruction_function,weight=1):
     """
     recon_x: generating images
     x: origin images
@@ -357,22 +357,24 @@ def vae_loss(recon_x, x, mu, logvar,reconstruction_function):
     KLD_element = mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
     KLD = torch.sum(KLD_element).mul_(-0.5)
     # KL divergence
-    return BCE + KLD
+    return BCE + KLD * weight
 
 class VAEBase(nn.Module):
     def __init__(self,
-                 input_dim: int,
-                 latent_dim: int,
-                 hidden_dims: list = None,
-                 **kwargs):
+                 input_dim,
+                 latent_dim=128,
+                 h_dims=[512],
+                 drop_out=0.3):
                  
         super(VAEBase, self).__init__()
 
         self.latent_dim = latent_dim
 
         modules = []
-        if hidden_dims is None:
-            hidden_dims = [512]
+    
+        hidden_dims = deepcopy(h_dims)
+        
+        hidden_dims.insert(0,input_dim)
         
         hidden_dims.insert(0,input_dim)
 
@@ -384,8 +386,10 @@ class VAEBase(nn.Module):
             modules.append(
                 nn.Sequential(
                     nn.Linear(i_dim, o_dim),
-                    nn.BatchNorm2d(o_dim),
-                    nn.LeakyReLU())
+                    nn.BatchNorm1d(o_dim),
+                    nn.Dropout(drop_out),
+                    nn.LeakyReLU()
+                    )
             )
             #in_channels = h_dim
 
@@ -405,10 +409,12 @@ class VAEBase(nn.Module):
             modules.append(
                 nn.Sequential(
                     nn.Linear(hidden_dims[i],
-                                       hidden_dims[i + 1],
-                    nn.BatchNorm2d(hidden_dims[i + 1]),
-                    nn.LeakyReLU())
-            ))
+                                       hidden_dims[i + 1]),
+                    nn.BatchNorm1d(hidden_dims[i + 1]),
+                    nn.Dropout(drop_out),
+                    nn.LeakyReLU()
+                    )
+            )
 
 
         self.decoder = nn.Sequential(*modules)
@@ -416,7 +422,7 @@ class VAEBase(nn.Module):
         self.final_layer = nn.Sequential(
                             nn.Linear(hidden_dims[-2],
                                        hidden_dims[-1],
-                            nn.Tanh())
+                            nn.Sigmoid())
                             )  
     
     def encode(self, input: Tensor):
