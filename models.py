@@ -209,6 +209,11 @@ class PretrainedPredictor(AEBase):
                  h_dims=hidden_dims_predictor,
                  drop_out=drop_out_predictor)
         
+        self.encoder = nn.Sequential(
+            self.encoder,
+            self.bottleneck
+        )
+        
 
     def forward(self, input, **kwargs):
         embedding = self.encode(input)
