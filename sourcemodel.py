@@ -22,7 +22,7 @@ from sklearn.metrics import mean_squared_error
 from scipy.stats import pearsonr
 import models
 import utils as ut
-from models import AEBase, Predictor, PretrainedPredictor,VAEBase
+from models import AEBase, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor
 
 #import scipy.io as sio
 
