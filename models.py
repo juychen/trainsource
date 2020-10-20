@@ -383,8 +383,6 @@ class VAEBase(nn.Module):
         
         hidden_dims.insert(0,input_dim)
         
-        hidden_dims.insert(0,input_dim)
-
         # Build Encoder
         for i in range(1,len(hidden_dims)):
             i_dim = hidden_dims[i-1]
@@ -549,7 +547,7 @@ class PretrainedVAEPredictor(VAEBase):
                  freezed = False):
         
         # Construct an autoencoder model
-        AEBase.__init__(self,input_dim,latent_dim,h_dims,drop_out)
+        VAEBase.__init__(self,input_dim,latent_dim,h_dims,drop_out)
         
         # Load pretrained weights
         if pretrained_weights !=None:

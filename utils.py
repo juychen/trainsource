@@ -115,7 +115,7 @@ def train_extractor_model(net,data_loaders={},optimizer=None,loss_function=None,
     
     return net, loss_train
 
-def train_VAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=None,load=None,save_path="model.pkl"):
+def train_VAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=None,load=None,save_path="model.pkl",best_model_cache = "drive"):
     
     if(load!=None):
         net.load_state_dict(torch.load(load))           
@@ -125,7 +125,11 @@ def train_VAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=No
     dataset_sizes = {x: data_loaders[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
     loss_train = {}
     
-    best_model_wts = copy.deepcopy(net.state_dict())
+    if best_model_cache == "memory":
+        best_model_wts = copy.deepcopy(net.state_dict())
+    else:
+        torch.save(net.state_dict(), save_path+"_bestcahce.pkl")
+    
     best_loss = np.inf
 
     for epoch in range(n_epochs):
@@ -190,12 +194,20 @@ def train_VAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=No
             
             if phase == 'val' and epoch_loss < best_loss:
                 best_loss = epoch_loss
-                best_model_wts = copy.deepcopy(net.state_dict())
+
+                if best_model_cache == "memory":
+                    best_model_wts = copy.deepcopy(net.state_dict())
+                else:
+                    torch.save(net.state_dict(), save_path+"_bestcahce.pkl")
     
-    # Select best model wts
-    torch.save(best_model_wts, save_path)
-    net.load_state_dict(best_model_wts)           
-    
+    # Select best model wts if use memory to cahce models
+    if best_model_cache == "memory":
+        torch.save(best_model_wts, save_path)
+        net.load_state_dict(best_model_wts)  
+    else:
+        net.load_state_dict((torch.load(save_path+"_bestcahce.pkl")))
+        torch.save(net.state_dict(), save_path)
+
     return net, loss_train
 
 def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,scheduler,save_path="model.pkl"):

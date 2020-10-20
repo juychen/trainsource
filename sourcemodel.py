@@ -225,16 +225,16 @@ if __name__ == '__main__':
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
-    parser.add_argument('--var_genes_disp', type=float, default=None)
+    parser.add_argument('--var_genes_disp', type=float, default=0)
 
     # train
-    parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained.pkl')
+    parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained_vae.pkl')
     parser.add_argument('--pretrain', type=int, default=1)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
-    parser.add_argument('--dimreduce', type=str, default="AE")
+    parser.add_argument('--dimreduce', type=str, default="VAE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--ft_h_dims', type=str, default="2048,1024")
@@ -244,7 +244,7 @@ if __name__ == '__main__':
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')
     parser.add_argument('--output_name', '-n',  type=str, default='')
-    parser.add_argument('--model_store_path', '-p',  type=str, default='saved/models/model.pkl')
+    parser.add_argument('--model_store_path', '-p',  type=str, default='saved/models/model_vae.pkl')
     parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/log')
 
     #
