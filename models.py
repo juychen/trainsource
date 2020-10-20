@@ -577,7 +577,6 @@ class PretrainedVAEPredictor(VAEBase):
         )
 
     def forward(self, input, **kwargs):
-        results = self.encode(input)
-        embedding = results[0]
+        embedding = self.encoder(input)
         output = self.predictor(embedding)
         return  output

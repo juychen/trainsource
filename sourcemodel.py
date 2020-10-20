@@ -225,11 +225,11 @@ if __name__ == '__main__':
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
-    parser.add_argument('--var_genes_disp', type=float, default=0)
+    parser.add_argument('--var_genes_disp', type=float, default=None)
 
     # train
     parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained_vae.pkl')
-    parser.add_argument('--pretrain', type=int, default=1)
+    parser.add_argument('--pretrain', type=int, default=0)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
