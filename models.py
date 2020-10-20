@@ -220,6 +220,8 @@ class PretrainedPredictor(AEBase):
         output = self.predictor(embedding)
         return  output
 
+
+
 class DNN(nn.Module):
     def __init__(self,dim_dnn_in,dim_dnn_out):
         super(DNN, self).__init__()
@@ -530,3 +532,54 @@ class VAEBase(nn.Module):
         """
 
         return self.forward(x)[0]
+
+
+class PretrainedVAEPredictor(VAEBase):
+    def __init__(self,
+                 # Params from AE model
+                 input_dim,
+                 latent_dim=128,
+                 h_dims=[512],
+                 drop_out=0.3,
+                 ### Parameters from predictor models
+                 pretrained_weights=None,                 
+                 hidden_dims_predictor=[256],
+                 drop_out_predictor=0.3,
+                 output_dim = 1,
+                 freezed = False):
+        
+        # Construct an autoencoder model
+        AEBase.__init__(self,input_dim,latent_dim,h_dims,drop_out)
+        
+        # Load pretrained weights
+        if pretrained_weights !=None:
+            self.load_state_dict((torch.load(pretrained_weights)))
+        
+        ## Free parameters until the bottleneck layer
+        if freezed == True:
+            for p in self.parameters():
+                print("Layer weight is freezed:",format(p.shape))
+                p.requires_grad = False
+                # Stop until the bottleneck layer
+                if p.shape.numel() == self.latent_dim:
+                    break
+        # Only extract encoder
+        del self.decoder
+        del self.decoder_input
+        del self.final_layer
+
+        self.predictor = Predictor(input_dim=self.latent_dim,
+                 output_dim=output_dim,
+                 h_dims=hidden_dims_predictor,
+                 drop_out=drop_out_predictor)
+
+        self.encoder = nn.Sequential(
+            self.encoder,
+            self.fc_mu
+        )
+
+    def forward(self, input, **kwargs):
+        results = self.encode(input)
+        embedding = results[0]
+        output = self.predictor(embedding)
+        return  output

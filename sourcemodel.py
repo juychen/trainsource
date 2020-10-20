@@ -22,7 +22,7 @@ from sklearn.metrics import mean_squared_error
 from scipy.stats import pearsonr
 import models
 import utils as ut
-from models import AEBase, Predictor, PretrainedPredictor
+from models import AEBase, Predictor, PretrainedPredictor,VAEBase
 
 #import scipy.io as sio
 
@@ -56,6 +56,7 @@ def run_main(args):
     batch_size = args.batch_size
     encoder_hdims = args.ft_h_dims.split(",")
     preditor_hdims = args.p_h_dims.split(",")
+    reduce_model = args.dimreduce
 
     encoder_hdims = list(map(int, encoder_hdims) )
     preditor_hdims = list(map(int, preditor_hdims) )
@@ -154,27 +155,44 @@ def run_main(args):
 
     if(bool(args.pretrain)==True):
         dataloaders_pretrain = {'train':X_trainDataLoader,'val':X_validDataLoader}
-        encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+        if reduce_model == "AE":
+            encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+        elif reduce_model == "VAE":
+            encoder = VAEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+
         #model = VAE(dim_au_in=data_r.shape[1],dim_au_out=128)
         if torch.cuda.is_available():
             encoder.cuda()
 
         print(encoder)
         encoder.to(device)
+
         optimizer_e = optim.Adam(encoder.parameters(), lr=1e-2)
         loss_function_e = nn.MSELoss()
         exp_lr_scheduler_e = lr_scheduler.ReduceLROnPlateau(optimizer_e)
-        encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
-                                    optimizer=optimizer_e,loss_function=loss_function_e,
-                                    n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain_path)
+
+        if reduce_model == "AE":
+            encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
+                                        optimizer=optimizer_e,loss_function=loss_function_e,
+                                        n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain_path)
+        elif reduce_model == "VAE":
+            encoder,loss_report_en = ut.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
+                            optimizer=optimizer_e,
+                            n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain_path)
+
         
         print("Pretrained finished")
 
     # Train model of predictor 
-    model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
-                            hidden_dims_predictor=preditor_hdims,
-                            pretrained_weights=pretrain_path,freezed=bool(args.freeze_pretrain))
-    
+    if reduce_model == "AE":
+        model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
+                                hidden_dims_predictor=preditor_hdims,
+                                pretrained_weights=pretrain_path,freezed=bool(args.freeze_pretrain))
+    elif reduce_model == "VAE":
+        model = PretrainedVAEPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
+                        hidden_dims_predictor=preditor_hdims,
+                        pretrained_weights=pretrain_path,freezed=bool(args.freeze_pretrain))
+
     print(model)
     if torch.cuda.is_available():
         model.cuda()
