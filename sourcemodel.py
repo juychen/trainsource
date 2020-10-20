@@ -210,7 +210,7 @@ def run_main(args):
 
     dl_result = model(X_testTensor).detach().cpu().numpy()
 
-    torch.save(model.state_dict(), preditor_path+"encoder.pkl")
+    torch.save(model.encoder.state_dict(), preditor_path+"encoder.pkl")
 
 
     print('Performances: R/Pearson/Mse/')
