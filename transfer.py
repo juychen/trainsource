@@ -29,7 +29,7 @@ import models
 import scanpypip.preprocessing as pp
 import scanpypip.utils as scut
 import utils as ut
-from models import AEBase, Predictor, PretrainedPredictor
+from models import AEBase, Predictor, PretrainedPredictor,VAEBase
 
 # class Arguments:
 #     def __init__(self):   
@@ -76,6 +76,7 @@ def run_main(args):
     encoder_hdims = list(map(int, encoder_hdims))
     source_data_path = args.source_data 
     pretrain = args.pretrain
+    reduce_model = args.dimreduce
 
 
     # Misc
@@ -149,7 +150,12 @@ def run_main(args):
 
 
     # Construct target encoder
-    encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+    if reduce_model == "AE":
+        encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+        loss_function_e = nn.MSELoss()
+    else:
+        encoder = VAEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+
     if torch.cuda.is_available():
         encoder.cuda()
 
@@ -192,8 +198,16 @@ def run_main(args):
 
 
     # Load source model
-    source_encoder = AEBase(input_dim=data_r.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
-    source_encoder.load_state_dict(torch.load(source_model_path))          
+
+    if reduce_model == "AE":
+        source_encoder = AEBase(input_dim=data_r.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+        source_encoder.load_state_dict(torch.load(source_model_path))
+    else:
+        source_encoder = VAEBase(input_dim=data_r.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+        source_encoder.load_state_dict(torch.load(source_model_path))
+        source_encoder = source_encoder.encoder
+
+           
     source_encoder.to(device)
 
 
@@ -214,6 +228,9 @@ def run_main(args):
                                         n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
             print("Pretrained finished")
         else:
+            pretrain = str(pretrain)
+            encoder.load_state_dict(torch.load(pretrain))
+            encoder = encoder.encoder
             print("Load finished")
 
 
@@ -226,7 +243,7 @@ def run_main(args):
     # Adversairal trainning
     discriminator,encoder, report_, report2_ = ut.train_transfer_model(source_encoder,encoder,discriminator,
                         dataloaders_source,dataloaders_pretrain,
-                        loss_d,loss_function_e,
+                        loss_d,loss_d,
                         # Should here be all optimizer d?
                         optimizer_d,optimizer_d,
                         exp_lr_scheduler_d,exp_lr_scheduler_d,
@@ -281,14 +298,14 @@ if __name__ == '__main__':
     parser.add_argument('--min_c', type=int, default=3)
 
     # train
-    parser.add_argument('--source_model_path', type=str, default='saved/models/pretrained_novar.pkl')
+    parser.add_argument('--source_model_path', type=str, default='saved/models/pretrained_novar_vae.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/')
-    parser.add_argument('--pretrain', type=str, default='saved/models/pretrain_encoder.pkl')
+    parser.add_argument('--pretrain', type=str, default='saved/models/pretrain_encoders.pkl')
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
-    parser.add_argument('--dimreduce', type=str, default="AE")
+    parser.add_argument('--dimreduce', type=str, default="VAE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--source_h_dims', type=str, default="2048,1024")

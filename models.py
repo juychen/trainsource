@@ -99,7 +99,11 @@ class AEBase(nn.Module):
                             nn.Linear(hidden_dims[-2],
                                        hidden_dims[-1])
                                        ,nn.Sigmoid()
-                            )            
+                            )
+        self.encoder =nn.Sequential(
+            self.encoder,
+            self.bottleneck
+        )            
                     
     def encode(self, input: Tensor):
         """
@@ -428,7 +432,11 @@ class VAEBase(nn.Module):
                             nn.Linear(hidden_dims[-2],
                                        hidden_dims[-1],
                             nn.Sigmoid())
-                            )  
+                            ) 
+        self.encoder = nn.Sequential(
+            self.encoder,
+            self.fc_mu
+        )
     
     def encode(self, input: Tensor):
         """

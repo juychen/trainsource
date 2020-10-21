@@ -230,7 +230,7 @@ if __name__ == '__main__':
     parser.add_argument('--min_c', type=int, default=3)
 
     # train
-    parser.add_argument('--source_model_path', type=str, default='saved/models/pretrained_novar.pkl')
+    parser.add_argument('--source_model_path', type=str, default='saved/models/pretrained_novar_vae.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/')
     parser.add_argument('--pretrain', type=str, default='saved/models/pretrain_encoders.pkl')
     parser.add_argument('--lr', type=float, default=1e-2)
