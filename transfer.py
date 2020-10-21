@@ -260,8 +260,14 @@ def run_main(args):
 
 
     # Extract feature
-    embeddings = encoder.encode(X_allTensor).detach().cpu().numpy()
+    # embeddings = encoder.encode(X_allTensor).detach().cpu().numpy()
+    embeddings = encoder.encode(X_allTensor)
+    predictions = source_model.predictor(embeddings)
+    embeddings = embeddings.detach().cpu().numpy()
+    predictions = predictions.detach().cpu().numpy()
 
+    adata.obs["sens_preds"] = predictions
+ 
     # PCA
     sc.tl.pca(adata, svd_solver='arpack')
 
