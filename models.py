@@ -100,7 +100,7 @@ class AEBase(nn.Module):
                                        hidden_dims[-1])
                                        ,nn.Sigmoid()
                             )
-        self.encoder =nn.Sequential(
+        self.feature_extractor =nn.Sequential(
             self.encoder,
             self.bottleneck
         )            
@@ -213,7 +213,7 @@ class PretrainedPredictor(AEBase):
                  h_dims=hidden_dims_predictor,
                  drop_out=drop_out_predictor)
         
-        self.encoder = nn.Sequential(
+        self.feature_extractor = nn.Sequential(
             self.encoder,
             self.bottleneck
         )
@@ -433,7 +433,7 @@ class VAEBase(nn.Module):
                                        hidden_dims[-1],
                             nn.Sigmoid())
                             ) 
-        self.encoder = nn.Sequential(
+        self.feature_extractor = nn.Sequential(
             self.encoder,
             self.fc_mu
         )
@@ -579,7 +579,7 @@ class PretrainedVAEPredictor(VAEBase):
                  h_dims=hidden_dims_predictor,
                  drop_out=drop_out_predictor)
 
-        self.encoder = nn.Sequential(
+        self.feature_extractor = nn.Sequential(
             self.encoder,
             self.fc_mu
         )
