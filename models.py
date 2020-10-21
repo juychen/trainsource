@@ -100,10 +100,10 @@ class AEBase(nn.Module):
                                        hidden_dims[-1])
                                        ,nn.Sigmoid()
                             )
-        self.feature_extractor =nn.Sequential(
-            self.encoder,
-            self.bottleneck
-        )            
+        # self.feature_extractor =nn.Sequential(
+        #     self.encoder,
+        #     self.bottleneck
+        # )            
                     
     def encode(self, input: Tensor):
         """
@@ -213,10 +213,10 @@ class PretrainedPredictor(AEBase):
                  h_dims=hidden_dims_predictor,
                  drop_out=drop_out_predictor)
         
-        self.feature_extractor = nn.Sequential(
-            self.encoder,
-            self.bottleneck
-        )
+        # self.feature_extractor = nn.Sequential(
+        #     self.encoder,
+        #     self.bottleneck
+        # )
         
 
     def forward(self, input, **kwargs):
@@ -433,12 +433,12 @@ class VAEBase(nn.Module):
                                        hidden_dims[-1],
                             nn.Sigmoid())
                             ) 
-        self.feature_extractor = nn.Sequential(
-            self.encoder,
-            self.fc_mu
-        )
+        # self.feature_extractor = nn.Sequential(
+        #     self.encoder,
+        #     self.fc_mu
+        # )
     
-    def encode(self, input: Tensor):
+    def encode_(self, input: Tensor):
         """
         Encodes the input by passing through the encoder network
         and returns the latent codes.
@@ -454,6 +454,22 @@ class VAEBase(nn.Module):
         log_var = self.fc_var(result)
 
         return [mu, log_var]
+    
+    def encode(self, input: Tensor):
+        """
+        Encodes the input by passing through the encoder network
+        and returns the latent codes.
+        :param input: (Tensor) Input tensor to encoder [N x C x H x W]
+        :return: (Tensor) List of latent codes
+        """
+        result = self.encoder(input)
+        #result = torch.flatten(result, start_dim=1)
+
+        # Split the result into mu and var components
+        # of the latent Gaussian distribution
+        mu = self.fc_mu(result)
+
+        return mu
 
     def decode(self, z: Tensor):
         """
@@ -481,7 +497,7 @@ class VAEBase(nn.Module):
         return eps * std + mu
 
     def forward(self, input: Tensor, **kwargs):
-        mu, log_var = self.encode(input)
+        mu, log_var = self.encode_(input)
         z = self.reparameterize(mu, log_var)
         return  [self.decode(z), input, mu, log_var]
 
@@ -585,6 +601,6 @@ class PretrainedVAEPredictor(VAEBase):
         )
 
     def forward(self, input, **kwargs):
-        embedding = self.encoder(input)
+        embedding = self.feature_extractor(input)
         output = self.predictor(embedding)
         return  output

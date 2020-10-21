@@ -210,7 +210,7 @@ def run_main(args):
 
     dl_result = model(X_testTensor).detach().cpu().numpy()
 
-    torch.save(model.encoder.state_dict(), preditor_path+"encoder.pkl")
+    torch.save(model.feature_extractor.state_dict(), preditor_path+"encoder.pkl")
 
 
     print('Performances: R/Pearson/Mse/')
@@ -231,7 +231,7 @@ if __name__ == '__main__':
     parser.add_argument('--var_genes_disp', type=float, default=None)
 
     # train
-    parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained_vae.pkl')
+    parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained_novar_vae.pkl')
     parser.add_argument('--pretrain', type=int, default=0)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)

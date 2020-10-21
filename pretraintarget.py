@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import argparse
 import copy
 import os
@@ -184,7 +178,7 @@ def run_main(args):
                                     n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
         print("Pretrained finished")
         # Extract feature
-        results = encoder.encode(X_allTensor)
+        results = encoder.encode_(X_allTensor)
         embeddings = results[0].detach().cpu().numpy()
 
 

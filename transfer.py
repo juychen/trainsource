@@ -29,7 +29,7 @@ import models
 import scanpypip.preprocessing as pp
 import scanpypip.utils as scut
 import utils as ut
-from models import AEBase, Predictor, PretrainedPredictor,VAEBase
+from models import AEBase, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor
 
 # class Arguments:
 #     def __init__(self):   
@@ -77,8 +77,8 @@ def run_main(args):
     source_data_path = args.source_data 
     pretrain = args.pretrain
     reduce_model = args.dimreduce
-
-
+    predict_hdims = args.p_h_dims.split(",")
+    predict_hdims = list(map(int, predict_hdims))
     # Misc
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
     log_path = log_path+now+".txt"
@@ -203,9 +203,15 @@ def run_main(args):
         source_encoder = AEBase(input_dim=data_r.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
         source_encoder.load_state_dict(torch.load(source_model_path))
     else:
-        source_encoder = VAEBase(input_dim=data_r.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
-        source_encoder.load_state_dict(torch.load(source_model_path))
-        source_encoder = source_encoder.encoder
+        # source_encoder = VAEBase(input_dim=data_r.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+        # source_encoder.load_state_dict(torch.load(source_model_path))
+
+        source_model = PretrainedVAEPredictor(input_dim=Xsource_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
+                hidden_dims_predictor=predict_hdims,
+                pretrained_weights=None,freezed=False)
+        source_model.load_state_dict(torch.load(source_model_path))
+
+        source_encoder = source_model
 
            
     source_encoder.to(device)
@@ -230,7 +236,6 @@ def run_main(args):
         else:
             pretrain = str(pretrain)
             encoder.load_state_dict(torch.load(pretrain))
-            encoder = encoder.encoder
             print("Load finished")
 
 
@@ -298,7 +303,7 @@ if __name__ == '__main__':
     parser.add_argument('--min_c', type=int, default=3)
 
     # train
-    parser.add_argument('--source_model_path', type=str, default='saved/models/pretrained_novar_vae.pkl')
+    parser.add_argument('--source_model_path', type=str, default='saved/models/model_vae.pklCisplatin.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/')
     parser.add_argument('--pretrain', type=str, default='saved/models/pretrain_encoders.pkl')
     parser.add_argument('--lr', type=float, default=1e-2)
@@ -310,6 +315,7 @@ if __name__ == '__main__':
     parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--source_h_dims', type=str, default="2048,1024")
     parser.add_argument('--target_h_dims', type=str, default="512,256")
+    parser.add_argument('--p_h_dims', type=str, default="256,128")
 
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')
