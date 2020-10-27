@@ -12,7 +12,7 @@ import torch
 from scipy import stats
 from sklearn import preprocessing
 from sklearn.metrics import r2_score
-from torch import nn, optim
+from torch import layer_norm, nn, optim
 from torch.autograd import Variable
 from torch.nn import functional as F
 from torch.optim import lr_scheduler
@@ -20,6 +20,8 @@ from torch.utils.data import DataLoader, TensorDataset
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from scipy.stats import pearsonr
+from sklearn.preprocessing import LabelEncoder
+
 import models
 import utils as ut
 from models import AEBase, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor
@@ -57,6 +59,7 @@ def run_main(args):
     encoder_hdims = args.ft_h_dims.split(",")
     preditor_hdims = args.p_h_dims.split(",")
     reduce_model = args.dimreduce
+    prediction = args.predition
 
     encoder_hdims = list(map(int, encoder_hdims) )
     preditor_hdims = list(map(int, preditor_hdims) )
@@ -103,7 +106,15 @@ def run_main(args):
 
     data = mmscaler.fit_transform(data)
     label = label.values.reshape(-1,1)
-    label = lbscaler.fit_transform(label)
+
+    if prediction == "regression":
+        label = lbscaler.fit_transform(label)
+        dim_model_out = 1
+    else:
+        le = LabelEncoder()
+        label = le.fit_transform(label)
+        dim_model_out = 2
+
     #label = label.values.reshape(-1,1)
 
     print(np.std(data))
@@ -132,8 +143,12 @@ def run_main(args):
     X_testTensor = torch.FloatTensor(X_test).to(device)
     X_allTensor = torch.FloatTensor(data).to(device)
 
-    Y_trainTensor = torch.FloatTensor(Y_train).to(device)
-    Y_validTensor = torch.FloatTensor(Y_valid).to(device)
+    if prediction  == "regression":
+        Y_trainTensor = torch.FloatTensor(Y_train).to(device)
+        Y_validTensor = torch.FloatTensor(Y_valid).to(device)
+    else:
+        Y_trainTensor = torch.LongTensor(Y_train).to(device)
+        Y_validTensor = torch.LongTensor(Y_valid).to(device)
 
     train_dataset = TensorDataset(X_trainTensor, X_trainTensor)
     valid_dataset = TensorDataset(X_validTensor, X_validTensor)
@@ -186,11 +201,11 @@ def run_main(args):
     # Train model of predictor 
     if reduce_model == "AE":
         model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
-                                hidden_dims_predictor=preditor_hdims,
+                                hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
                                 pretrained_weights=pretrain_path,freezed=bool(args.freeze_pretrain))
     elif reduce_model == "VAE":
         model = PretrainedVAEPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
-                        hidden_dims_predictor=preditor_hdims,
+                        hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
                         pretrained_weights=pretrain_path,freezed=bool(args.freeze_pretrain))
 
     print(model)
@@ -200,7 +215,12 @@ def run_main(args):
 
     # Define optimizer
     optimizer = optim.Adam(model.parameters(), lr=1e-2)
-    loss_function = nn.MSELoss()
+
+    if prediction == "regression":
+        loss_function = nn.MSELoss()
+    else:
+        loss_function = nn.CrossEntropyLoss()
+
     exp_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
     preditor_path = model_path + select_drug + '.pkl'
@@ -215,16 +235,19 @@ def run_main(args):
 
     print('Performances: R/Pearson/Mse/')
 
-    print(r2_score(dl_result,Y_test))
-    print(pearsonr(dl_result.flatten(),Y_test.flatten()))
-    print(mean_squared_error(dl_result,Y_test))
+    if prediction == "regression":
+        print(r2_score(dl_result,Y_test))
+        print(pearsonr(dl_result.flatten(),Y_test.flatten()))
+        print(mean_squared_error(dl_result,Y_test))
+    else:
+        print()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # data 
     parser.add_argument('--data_path', type=str, default='data/GDSC2_expression.csv')
-    parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs.csv')
-    parser.add_argument('--drug', type=str, default='Tamoxifen')
+    parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
+    parser.add_argument('--drug', type=str, default='Cisplatin')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
@@ -239,6 +262,7 @@ if __name__ == '__main__':
     parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="VAE")
     parser.add_argument('--predictor', type=str, default="DNN")
+    parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--ft_h_dims', type=str, default="2048,1024")
     parser.add_argument('--p_h_dims', type=str, default="256,128")

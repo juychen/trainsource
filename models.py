@@ -462,14 +462,10 @@ class VAEBase(nn.Module):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        result = self.encoder(input)
-        #result = torch.flatten(result, start_dim=1)
+        mu, log_var = self.encode_(input)
+        z = self.reparameterize(mu, log_var)
 
-        # Split the result into mu and var components
-        # of the latent Gaussian distribution
-        mu = self.fc_mu(result)
-
-        return mu
+        return z
 
     def decode(self, z: Tensor):
         """
