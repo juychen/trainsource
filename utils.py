@@ -38,10 +38,10 @@ def highly_variable_genes(data,
 
     return adata.var.highly_variable,adata
 
-def train_extractor_model(net,data_loaders={},optimizer=None,loss_function=None,n_epochs=100,scheduler=None,load=None,save_path="model.pkl"):
+def train_extractor_model(net,data_loaders={},optimizer=None,loss_function=None,n_epochs=100,scheduler=None,load=False,save_path="model.pkl"):
     
-    if(load!=None):
-        net.load_state_dict(torch.load(load))           
+    if(load!=False):
+        net.load_state_dict(torch.load(save_path))           
     
         return net, 0
     
@@ -115,10 +115,10 @@ def train_extractor_model(net,data_loaders={},optimizer=None,loss_function=None,
     
     return net, loss_train
 
-def train_VAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=None,load=None,save_path="model.pkl",best_model_cache = "drive"):
+def train_VAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=None,load=False,save_path="model.pkl",best_model_cache = "drive"):
     
-    if(load!=None):
-        net.load_state_dict(torch.load(load))           
+    if(load!=False):
+        net.load_state_dict(torch.load(save_path))           
     
         return net, 0
     
@@ -177,9 +177,6 @@ def train_VAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=No
                 # print loss statistics
                 running_loss += loss.item()
             
-            # Schedular
-#             if phase == 'train':
-#                 scheduler.step()
                 
             epoch_loss = running_loss / dataset_sizes[phase]
             #epoch_loss = running_loss / n_iters
@@ -210,7 +207,11 @@ def train_VAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=No
 
     return net, loss_train
 
-def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,scheduler,save_path="model.pkl"):
+def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,scheduler,load=False,save_path="model.pkl"):
+
+    if(load!=False):
+        net.load_state_dict(torch.load(save_path))           
+        return net, 0
     
     dataset_sizes = {x: data_loaders[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
     loss_train = {}

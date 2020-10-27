@@ -21,6 +21,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from scipy.stats import pearsonr
 from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import classification_report,roc_auc_score,average_precision_score
+
 
 import models
 import utils as ut
@@ -223,14 +225,16 @@ def run_main(args):
 
     exp_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
-    preditor_path = model_path + select_drug + '.pkl'
+    preditor_path = model_path + reduce_model + select_drug + '.pkl'
+
+    load_model = os.path.exists(preditor_path)
 
     model,report = ut.train_predictor_model(model,dataloaders_train,
-                                        optimizer,loss_function,epochs,exp_lr_scheduler,save_path=preditor_path)
+                                        optimizer,loss_function,epochs,exp_lr_scheduler,load=load_model,save_path=preditor_path)
 
     dl_result = model(X_testTensor).detach().cpu().numpy()
 
-    torch.save(model.feature_extractor.state_dict(), preditor_path+"encoder.pkl")
+    #torch.save(model.feature_extractor.state_dict(), preditor_path+"encoder.pkl")
 
 
     print('Performances: R/Pearson/Mse/')
@@ -240,7 +244,11 @@ def run_main(args):
         print(pearsonr(dl_result.flatten(),Y_test.flatten()))
         print(mean_squared_error(dl_result,Y_test))
     else:
-        print()
+        lb_results = np.argmax(dl_result,axis=1)
+        pb_results = np.max(dl_result,axis=1)
+        print(classification_report(Y_test, lb_results))
+        print(average_precision_score(Y_test, pb_results))
+        print(roc_auc_score(Y_test, pb_results))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -254,24 +262,25 @@ if __name__ == '__main__':
     parser.add_argument('--var_genes_disp', type=float, default=None)
 
     # train
-    parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained_novar_vae.pkl')
+    parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained_novar_ae.pkl')
     parser.add_argument('--pretrain', type=int, default=0)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
-    parser.add_argument('--dimreduce', type=str, default="VAE")
+    parser.add_argument('--dimreduce', type=str, default="AE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--ft_h_dims', type=str, default="2048,1024")
     parser.add_argument('--p_h_dims', type=str, default="256,128")
+    
 
 
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')
     parser.add_argument('--output_name', '-n',  type=str, default='')
-    parser.add_argument('--model_store_path', '-p',  type=str, default='saved/models/model_vae.pkl')
+    parser.add_argument('--model_store_path', '-p',  type=str, default='saved/models/source_model_')
     parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/log')
 
     #
