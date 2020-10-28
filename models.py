@@ -538,6 +538,6 @@ class PretrainedVAEPredictor(VAEBase):
         )
 
     def forward(self, input, **kwargs):
-        embedding = self.feature_extractor(input)
+        embedding = self.encode(input)
         output = self.predictor(embedding)
         return  output
