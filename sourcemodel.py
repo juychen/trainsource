@@ -227,7 +227,7 @@ def run_main(args):
 
     preditor_path = model_path + reduce_model + select_drug + '.pkl'
 
-    load_model = os.path.exists(preditor_path)
+    load_model = bool(args.load_pretrain)
 
     model,report = ut.train_predictor_model(model,dataloaders_train,
                                         optimizer,loss_function,epochs,exp_lr_scheduler,load=load_model,save_path=preditor_path)
@@ -282,6 +282,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_name', '-n',  type=str, default='')
     parser.add_argument('--model_store_path', '-p',  type=str, default='saved/models/source_model_')
     parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/log')
+    parser.add_argument('--load_pretrain',  type=int, default=0)
 
     #
     args, unknown = parser.parse_known_args()

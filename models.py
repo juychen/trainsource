@@ -532,10 +532,10 @@ class PretrainedVAEPredictor(VAEBase):
                  h_dims=hidden_dims_predictor,
                  drop_out=drop_out_predictor)
 
-        self.feature_extractor = nn.Sequential(
-            self.encoder,
-            self.fc_mu
-        )
+        # self.feature_extractor = nn.Sequential(
+        #     self.encoder,
+        #     self.fc_mu
+        # )
 
     def forward(self, input, **kwargs):
         embedding = self.encode(input)
