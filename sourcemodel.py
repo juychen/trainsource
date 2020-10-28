@@ -227,7 +227,7 @@ def run_main(args):
 
     preditor_path = model_path + reduce_model + select_drug + '.pkl'
 
-    load_model = bool(args.load_pretrain)
+    load_model = bool(args.load_source)
 
     model,report = ut.train_predictor_model(model,dataloaders_train,
                                         optimizer,loss_function,epochs,exp_lr_scheduler,load=load_model,save_path=preditor_path)
@@ -261,14 +261,14 @@ if __name__ == '__main__':
     parser.add_argument('--valid_size', type=float, default=0.2)
     parser.add_argument('--var_genes_disp', type=float, default=None)
 
-    # train
-    parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained_novar_ae.pkl')
+    # trainv
+    parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained_novar_vae.pkl')
     parser.add_argument('--pretrain', type=int, default=0)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
-    parser.add_argument('--dimreduce', type=str, default="AE")
+    parser.add_argument('--dimreduce', type=str, default="VAE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
@@ -282,7 +282,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_name', '-n',  type=str, default='')
     parser.add_argument('--model_store_path', '-p',  type=str, default='saved/models/source_model_')
     parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/log')
-    parser.add_argument('--load_pretrain',  type=int, default=0)
+    parser.add_argument('--load_source',  type=int, default=0)
 
     #
     args, unknown = parser.parse_known_args()
