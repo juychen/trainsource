@@ -1,4 +1,5 @@
 import copy
+import logging
 from models import vae_loss
 
 import numpy as np
@@ -52,8 +53,8 @@ def train_extractor_model(net,data_loaders={},optimizer=None,loss_function=None,
     best_loss = np.inf
 
     for epoch in range(n_epochs):
-        print('Epoch {}/{}'.format(epoch, n_epochs - 1))
-        print('-' * 10)
+        logging.info('Epoch {}/{}'.format(epoch, n_epochs - 1))
+        logging.info('-' * 10)
 
         # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
@@ -103,7 +104,7 @@ def train_extractor_model(net,data_loaders={},optimizer=None,loss_function=None,
                 
             last_lr = scheduler.optimizer.param_groups[0]['lr']
             loss_train[epoch,phase] = epoch_loss
-            print('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
+            logging.info('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
             
             if phase == 'val' and epoch_loss < best_loss:
                 best_loss = epoch_loss
@@ -133,8 +134,8 @@ def train_VAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=No
     best_loss = np.inf
 
     for epoch in range(n_epochs):
-        print('Epoch {}/{}'.format(epoch, n_epochs - 1))
-        print('-' * 10)
+        logging.info('Epoch {}/{}'.format(epoch, n_epochs - 1))
+        logging.info('-' * 10)
 
         # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
@@ -187,7 +188,7 @@ def train_VAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=No
                 
             last_lr = scheduler.optimizer.param_groups[0]['lr']
             loss_train[epoch,phase] = epoch_loss
-            print('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
+            logging.info('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
             
             if phase == 'val' and epoch_loss < best_loss:
                 best_loss = epoch_loss
@@ -222,8 +223,8 @@ def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,sche
 
 
     for epoch in range(n_epochs):
-        print('Epoch {}/{}'.format(epoch, n_epochs - 1))
-        print('-' * 10)
+        logging.info('Epoch {}/{}'.format(epoch, n_epochs - 1))
+        logging.info('-' * 10)
 
 
         # Each epoch has a training and validation phase
@@ -273,7 +274,7 @@ def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,sche
                 
             last_lr = scheduler.optimizer.param_groups[0]['lr']
             loss_train[epoch,phase] = epoch_loss
-            print('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
+            logging.info('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
             
             if phase == 'val' and epoch_loss < best_loss:
                 best_loss = epoch_loss
@@ -310,8 +311,8 @@ def train_transfer_model(
     # best_loss = np.inf
 
     for epoch in range(n_epochs):
-        print('Epoch {}/{}'.format(epoch, n_epochs - 1))
-        print('-' * 10)
+        logging.info('Epoch {}/{}'.format(epoch, n_epochs - 1))
+        logging.info('-' * 10)
 
         # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
@@ -405,8 +406,8 @@ def train_transfer_model(
             loss_train[epoch,phase] = epoch_loss
             loss_d_train[epoch,phase] = d_epoch_loss
 
-            print('Discriminator {} Loss: {:.8f}. Learning rate = {}'.format(phase, d_epoch_loss,d_last_lr))
-            print('Encoder {} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
+            logging.info('Discriminator {} Loss: {:.8f}. Learning rate = {}'.format(phase, d_epoch_loss,d_last_lr))
+            logging.info('Encoder {} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
 
             # if phase == 'val' and epoch_loss < best_loss:
             #     best_loss = epoch_loss

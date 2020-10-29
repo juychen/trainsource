@@ -4,6 +4,8 @@ import copy
 import os
 import sys
 import time
+import logging
+
 
 import numpy as np
 import pandas as pd
@@ -54,12 +56,12 @@ def run_main(args):
     test_size = args.test_size
     valid_size = args.valid_size
     g_disperson = args.var_genes_disp
-    model_path = args.model_store_path
-    pretrain_path = args.pretrain_path
+    model_path = args.source_model_path
+    encoder_path = args.encoder_path
     log_path = args.logging_file
     batch_size = args.batch_size
-    encoder_hdims = args.ft_h_dims.split(",")
-    preditor_hdims = args.p_h_dims.split(",")
+    encoder_hdims = args.encoder_h_dims.split(",")
+    preditor_hdims = args.predictor_h_dims.split(",")
     reduce_model = args.dimreduce
     prediction = args.predition
 
@@ -76,13 +78,21 @@ def run_main(args):
 
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
 
-    log_path = log_path+now+".txt"
+    log_path = log_path+now+".log"
 
-    log=open(log_path,"w")
-    sys.stdout=log
+    #log=open(log_path,"w")
+    #sys.stdout=log
 
+    logging.basicConfig(level=logging.DEBUG,#控制台打印的日志级别
+                    filename=log_path,
+                    filemode='a',##模式，有w和a，w就是写模式，每次都会重新写日志，覆盖之前的日志
+                    #a是追加模式，默认如果不写的话，就是追加模式
+                    format=
+                    '%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'
+                    #日志格式
+                    )
 
-    print(args)
+    logging.info(args)
 
 
     # data = data_r
@@ -119,24 +129,24 @@ def run_main(args):
 
     #label = label.values.reshape(-1,1)
 
-    print(np.std(data))
-    print(np.mean(data))
+    logging.info(np.std(data))
+    logging.info(np.mean(data))
 
     # Split traning valid test set
     X_train_all, X_test, Y_train_all, Y_test = train_test_split(data, label, test_size=test_size, random_state=42)
     X_train, X_valid, Y_train, Y_valid = train_test_split(X_train_all, Y_train_all, test_size=valid_size, random_state=42)
     
-    print(data.shape)
-    print(label.shape)
-    print(X_train.shape, Y_train.shape)
-    print(X_test.shape, Y_test.shape)
-    print(X_train.max())
-    print(X_train.min())
+    logging.info(data.shape)
+    logging.info(label.shape)
+    logging.info(X_train.shape, Y_train.shape)
+    logging.info(X_test.shape, Y_test.shape)
+    logging.info(X_train.max())
+    logging.info(X_train.min())
 
     # Select the Training device
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # Assuming that we are on a CUDA machine, this should print a CUDA device:
-    print(device)
+    logging.info(device)
     torch.cuda.set_device(device)
 
     # Construct datasets and data loaders
@@ -181,7 +191,7 @@ def run_main(args):
         if torch.cuda.is_available():
             encoder.cuda()
 
-        print(encoder)
+        logging.info(encoder)
         encoder.to(device)
 
         optimizer_e = optim.Adam(encoder.parameters(), lr=1e-2)
@@ -191,26 +201,26 @@ def run_main(args):
         if reduce_model == "AE":
             encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
                                         optimizer=optimizer_e,loss_function=loss_function_e,
-                                        n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain_path)
+                                        n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=encoder_path)
         elif reduce_model == "VAE":
             encoder,loss_report_en = ut.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
                             optimizer=optimizer_e,
-                            n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain_path)
+                            n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=encoder_path)
 
         
-        print("Pretrained finished")
+        logging.info("Pretrained finished")
 
     # Train model of predictor 
     if reduce_model == "AE":
         model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
                                 hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
-                                pretrained_weights=pretrain_path,freezed=bool(args.freeze_pretrain))
+                                pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
     elif reduce_model == "VAE":
         model = PretrainedVAEPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
                         hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
-                        pretrained_weights=pretrain_path,freezed=bool(args.freeze_pretrain))
+                        pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
 
-    print(model)
+    logging.info(model)
     if torch.cuda.is_available():
         model.cuda()
     model.to(device)
@@ -225,9 +235,9 @@ def run_main(args):
 
     exp_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
-    preditor_path = model_path + reduce_model + select_drug + '.pkl'
+    preditor_path = model_path + reduce_model + prediction + select_drug + '.pkl'
 
-    load_model = bool(args.load_source)
+    load_model = bool(args.load_source_model)
 
     model,report = ut.train_predictor_model(model,dataloaders_train,
                                         optimizer,loss_function,epochs,exp_lr_scheduler,load=load_model,save_path=preditor_path)
@@ -237,20 +247,21 @@ def run_main(args):
     #torch.save(model.feature_extractor.state_dict(), preditor_path+"encoder.pkl")
 
 
-    print('Performances: R/Pearson/Mse/')
+    logging.info('Performances: R/Pearson/Mse/')
 
     if prediction == "regression":
-        print(r2_score(dl_result,Y_test))
-        print(pearsonr(dl_result.flatten(),Y_test.flatten()))
-        print(mean_squared_error(dl_result,Y_test))
+        logging.info(r2_score(dl_result,Y_test))
+        logging.info(pearsonr(dl_result.flatten(),Y_test.flatten()))
+        logging.info(mean_squared_error(dl_result,Y_test))
     else:
         lb_results = np.argmax(dl_result,axis=1)
         pb_results = np.max(dl_result,axis=1)
-        print(classification_report(Y_test, lb_results))
-        print(average_precision_score(Y_test, pb_results))
-        print(roc_auc_score(Y_test, pb_results))
+        logging.info(classification_report(Y_test, lb_results))
+        logging.info(average_precision_score(Y_test, pb_results))
+        logging.info(roc_auc_score(Y_test, pb_results))
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser()
     # data 
     parser.add_argument('--data_path', type=str, default='data/GDSC2_expression.csv')
@@ -262,7 +273,7 @@ if __name__ == '__main__':
     parser.add_argument('--var_genes_disp', type=float, default=None)
 
     # trainv
-    parser.add_argument('--pretrain_path', type=str, default='saved/models/pretrained_novar_vae.pkl')
+    parser.add_argument('--encoder_path','-e', type=str, default='saved/models/encoder.pkl')
     parser.add_argument('--pretrain', type=int, default=0)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
@@ -272,19 +283,18 @@ if __name__ == '__main__':
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
-    parser.add_argument('--ft_h_dims', type=str, default="2048,1024")
-    parser.add_argument('--p_h_dims', type=str, default="256,128")
-    
-
+    parser.add_argument('--encoder_h_dims', type=str, default="2048,1024")
+    parser.add_argument('--predictor_h_dims', type=str, default="256,128")
 
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')
     parser.add_argument('--output_name', '-n',  type=str, default='')
-    parser.add_argument('--model_store_path', '-p',  type=str, default='saved/models/source_model_')
+    parser.add_argument('--source_model_path', '-p',  type=str, default='saved/models/source_model_')
     parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/log')
-    parser.add_argument('--load_source',  type=int, default=0)
+    parser.add_argument('--load_source_model',  type=int, default=0)
 
     #
     args, unknown = parser.parse_known_args()
+    
     run_main(args)
 
