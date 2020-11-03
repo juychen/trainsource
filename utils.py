@@ -18,7 +18,7 @@ from torch.utils.data import dataset
 def highly_variable_genes(data, 
     layer=None, n_top_genes=None, 
     min_disp=0.5, max_disp=np.inf, min_mean=0.0125, max_mean=3, 
-    span=0.3, n_bins=20, flavor='seurat', subset=False, inplace=True, batch_key=None):
+    span=0.3, n_bins=20, flavor='seurat', subset=False, inplace=True, batch_key=None, PCA_graph=False, PCA_dim = 50, k = 10, n_pcs=40):
 
     adata = sc.AnnData(data)
 
@@ -36,6 +36,12 @@ def highly_variable_genes(data,
         layer=layer,n_top_genes=n_top_genes,
         min_disp=min_disp, max_disp=max_disp, min_mean=min_mean, max_mean=max_mean, 
         span=span, n_bins=n_bins, flavor=flavor, subset=subset, inplace=inplace, batch_key=batch_key)
+
+    if PCA_graph == True:
+        X_pca, adata = sc.tl.pca(adata,n_comps=PCA_dim,return_info=True)
+        sc.pp.neighbors(adata, n_neighbors=k, n_pcs=n_pcs)
+
+        return adata.var.highly_variable,adata,X_pca
 
     return adata.var.highly_variable,adata
 

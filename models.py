@@ -1,11 +1,14 @@
 import torch
-from torch import nn, optim
+from torch import nn, optim, zeros_like
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from torch.utils.data import TensorDataset
 from torch.autograd import Variable
 from torch import Tensor
 from torch.nn import Dropout
+
+from gae.layers import GraphConvolution,InnerProductDecoder
+
 #import scipy.io as sio
 import numpy as np
 import pandas as pd
@@ -540,4 +543,63 @@ class PretrainedVAEPredictor(VAEBase):
     def forward(self, input, **kwargs):
         embedding = self.encode(input)
         output = self.predictor(embedding)
+        return  output
+
+class GAEBase(nn.Module):
+    def __init__(self,
+                 input_dim,
+                 latent_dim=128,
+                 h_dims=[512],
+                 drop_out=0.3):
+                 
+        super(AEBase, self).__init__()
+
+        self.latent_dim = latent_dim
+
+        modules = []
+        hidden_dims = deepcopy(h_dims)
+        
+        hidden_dims.insert(0,input_dim)
+
+        # Build Encoder
+        for i in range(1,len(hidden_dims)):
+            i_dim = hidden_dims[i-1]
+            o_dim = hidden_dims[i]
+
+            modules.append(
+                nn.Sequential(
+                    GraphConvolution(i_dim, o_dim,drop_out, act=lambda x: x),
+                    #nn.BatchNorm1d(o_dim),
+                    #nn.ReLU(),
+                    #nn.Dropout(drop_out)
+                    )
+            )
+            #in_channels = h_dim
+
+        self.encoder = nn.Sequential(*modules)
+        self.bottleneck = nn.GraphConvolution(hidden_dims[-1], latent_dim,drop_out, act=lambda x: x)
+
+        # Build Decoder
+        self.decoder = InnerProductDecoder(drop_out, act=lambda x: x)
+
+    def encode(self, input, adj):
+        """
+        Encodes the input by passing through the encoder network
+        and returns the latent codes.
+        """
+        result = self.encoder(input,adj)
+        embedding = self.bottleneck(result,adj)
+
+        return embedding
+
+    def decode(self, z):
+        """
+        Maps the given latent codes
+        """
+        result = self.decoder(z)
+        return result
+
+    def forward(self, input, adj):
+        embedding = self.encode(input,adj)
+        output = self.decode(embedding)
         return  output

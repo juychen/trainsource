@@ -23,7 +23,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from scipy.stats import pearsonr
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import classification_report,roc_auc_score,average_precision_score
+from sklearn.metrics import classification_report,roc_auc_score,average_precision_score,auc,precision_recall_curve
+
 
 
 import models
@@ -260,6 +261,7 @@ def run_main(args):
         logging.info(average_precision_score(Y_test, pb_results))
         logging.info(roc_auc_score(Y_test, pb_results))
 
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -273,7 +275,7 @@ if __name__ == '__main__':
     parser.add_argument('--var_genes_disp', type=float, default=None)
 
     # trainv
-    parser.add_argument('--encoder_path','-e', type=str, default='saved/models/encoder.pkl')
+    parser.add_argument('--encoder_path','-e', type=str, default='saved/models/encoder_vae.pkl')
     parser.add_argument('--pretrain', type=int, default=0)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
@@ -281,7 +283,7 @@ if __name__ == '__main__':
     parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="VAE")
     parser.add_argument('--predictor', type=str, default="DNN")
-    parser.add_argument('--predition', type=str, default="regression")
+    parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--encoder_h_dims', type=str, default="2048,1024")
     parser.add_argument('--predictor_h_dims', type=str, default="256,128")
@@ -291,7 +293,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_name', '-n',  type=str, default='')
     parser.add_argument('--source_model_path', '-p',  type=str, default='saved/models/source_model_')
     parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/log')
-    parser.add_argument('--load_source_model',  type=int, default=0)
+    parser.add_argument('--load_source_model',  type=int, default=1)
 
     #
     args, unknown = parser.parse_known_args()
