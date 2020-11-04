@@ -28,8 +28,9 @@ from sklearn.metrics import classification_report,roc_auc_score,average_precisio
 
 
 import models
+import graph_function as g
 import utils as ut
-from models import AEBase, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor
+from models import AEBase, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor,GAEBase
 
 #import scipy.io as sio
 
@@ -187,6 +188,33 @@ def run_main(args):
             encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
         elif reduce_model == "VAE":
             encoder = VAEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+        elif reduce_model == "GAE":
+
+            pre_encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+            pre_encoder.load_state_dict(torch.load(args.GCNreduce_path))    
+            X_train_all_Tensor = torch.FloatTensor(X_train_all).to(device)
+            pre_encoder.to(device)
+
+            original_tr = X_train_all_Tensor
+            original_te = X_testTensor
+            original_tr = original_tr.cpu().detach().numpy()
+            original_te = original_te.cpu().detach().numpy()
+
+            train_embeddings = pre_encoder.encode(X_train_all_Tensor)
+            zOut_tr = train_embeddings.cpu().detach().numpy()
+            test_embeddings=pre_encoder.encode(X_testTensor)
+            zOut_te = test_embeddings.cpu().detach().numpy()
+
+            
+
+            adj_tr, edgeList_tr = g.generateAdj(zOut_tr, graphType='KNNgraphStatsSingleThread', para = 'euclidean'+':'+str('10'), adjTag =True)
+            adj_te, edgeList_te = g.generateAdj(zOut_te, graphType='KNNgraphStatsSingleThread', para = 'euclidean'+':'+str('10'), adjTag =True)
+
+            zDiscret_tr = zOut_tr>np.mean(zOut_tr,axis=0)
+            zDiscret_tr = 1.0*zDiscret_tr
+            zDiscret_te = zOut_te>np.mean(zOut_te,axis=0)
+            zDiscret_te = 1.0*zDiscret_te
+
 
         #model = VAE(dim_au_in=data_r.shape[1],dim_au_out=128)
         if torch.cuda.is_available():
@@ -207,6 +235,10 @@ def run_main(args):
             encoder,loss_report_en = ut.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
                             optimizer=optimizer_e,
                             n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=encoder_path)
+        elif reduce_model == "GAE":
+            encoder,loss_report_en = ut.train_GAE_model(net=encoder,adj=adj,data_loaders=dataloaders_pretrain,
+                            optimizer=optimizer_e,
+                            n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=encoder_path)
 
         
         logging.info("Pretrained finished")
@@ -220,6 +252,10 @@ def run_main(args):
         model = PretrainedVAEPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
                         hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
                         pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
+    elif reduce_model == "GAE":
+        model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
+                                hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
+                                pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
 
     logging.info(model)
     if torch.cuda.is_available():
@@ -276,17 +312,19 @@ if __name__ == '__main__':
 
     # trainv
     parser.add_argument('--encoder_path','-e', type=str, default='saved/models/encoder_vae.pkl')
-    parser.add_argument('--pretrain', type=int, default=0)
+    parser.add_argument('--pretrain', type=int, default=1)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
-    parser.add_argument('--dimreduce', type=str, default="VAE")
+    parser.add_argument('--dimreduce', type=str, default="GAE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--encoder_h_dims', type=str, default="2048,1024")
     parser.add_argument('--predictor_h_dims', type=str, default="256,128")
+    parser.add_argument('--GCNreduce_path', type=str, default='saved/models/encoder_ae.pkl')
+
 
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')

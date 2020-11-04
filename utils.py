@@ -38,10 +38,12 @@ def highly_variable_genes(data,
         span=span, n_bins=n_bins, flavor=flavor, subset=subset, inplace=inplace, batch_key=batch_key)
 
     if PCA_graph == True:
-        X_pca, adata = sc.tl.pca(adata,n_comps=PCA_dim,return_info=True)
+        sc.tl.pca(adata,n_comps=PCA_dim)
+        X_pca = adata.obsm["X_pca"]
         sc.pp.neighbors(adata, n_neighbors=k, n_pcs=n_pcs)
 
         return adata.var.highly_variable,adata,X_pca
+
 
     return adata.var.highly_variable,adata
 
@@ -82,6 +84,83 @@ def train_extractor_model(net,data_loaders={},optimizer=None,loss_function=None,
                 x.requires_grad_(True)
                 # encode and decode 
                 output = net(x)
+                # compute loss
+                loss = loss_function(output, x)      
+
+                # zero the parameter (weight) gradients
+                optimizer.zero_grad()
+
+                # backward + optimize only if in training phase
+                if phase == 'train':
+                    loss.backward()
+                    # update the weights
+                    optimizer.step()
+
+                # print loss statistics
+                running_loss += loss.item()
+            
+            # Schedular
+#             if phase == 'train':
+#                 scheduler.step()
+                
+            #epoch_loss = running_loss / dataset_sizes[phase]
+            epoch_loss = running_loss / n_iters
+
+            
+            if phase == 'train':
+                scheduler.step(epoch_loss)
+                
+            last_lr = scheduler.optimizer.param_groups[0]['lr']
+            loss_train[epoch,phase] = epoch_loss
+            logging.info('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
+            
+            if phase == 'val' and epoch_loss < best_loss:
+                best_loss = epoch_loss
+                best_model_wts = copy.deepcopy(net.state_dict())
+    
+    # Select best model wts
+    torch.save(best_model_wts, save_path)
+    net.load_state_dict(best_model_wts)           
+    
+    return net, loss_train
+
+def train_GAE_model(net,adj,data_loaders={},optimizer=None,loss_function=None,n_epochs=100,scheduler=None,load=False,save_path="model.pkl"):
+    
+    if(load!=False):
+        net.load_state_dict(torch.load(save_path))           
+    
+        return net, 0
+    
+    dataset_sizes = {x: data_loaders[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
+    loss_train = {}
+    
+    best_model_wts = copy.deepcopy(net.state_dict())
+    best_loss = np.inf
+
+    for epoch in range(n_epochs):
+        logging.info('Epoch {}/{}'.format(epoch, n_epochs - 1))
+        logging.info('-' * 10)
+
+        # Each epoch has a training and validation phase
+        for phase in ['train', 'val']:
+            if phase == 'train':
+                #optimizer = scheduler(optimizer, epoch)
+                net.train()  # Set model to training mode
+            else:
+                net.eval()  # Set model to evaluate mode
+
+            running_loss = 0.0
+
+            n_iters = len(data_loaders[phase])
+
+
+            # Iterate over data.
+            # for data in data_loaders[phase]:
+            for batchidx, (x, _) in enumerate(data_loaders[phase]):
+
+                x.requires_grad_(True)
+                # encode and decode 
+                output = net(x,adj)
                 # compute loss
                 loss = loss_function(output, x)      
 

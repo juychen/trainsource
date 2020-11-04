@@ -14,36 +14,6 @@ import numpy as np
 import pandas as pd
 from copy import deepcopy
 
-
-# Model of AE
-class AE(nn.Module):
-    def __init__(self,dim_au_in,dim_au_out):
-        super(AE, self).__init__()
-        self.dim = dim_au_in
-        self.fc1 = nn.Linear(dim_au_in, 1024)
-
-        self.fc2 = nn.Linear(1024, dim_au_out)
-        self.fc3 = nn.Linear(dim_au_out, 1024)
-
-        self.fc4 = nn.Linear(1024, dim_au_in)            
-                    
-    def encode(self, x):
-        h1 = F.relu(self.fc1(x))
-        return self.fc2(h1)
-       
-    def decode(self, z):
-        h3 = F.relu(self.fc3(z))
-        return torch.relu(self.fc4(h3))
-
-    def forward(self, x):
-        z = self.encode(x.view(-1, self.dim))
-        #return self.decode(z), x
-        return self.decode(z), z
-    
-    def fit(self, x):
-        return 
-
-
 # Model of AE
 class AEBase(nn.Module):
     def __init__(self,
@@ -227,78 +197,6 @@ class PretrainedPredictor(AEBase):
         output = self.predictor(embedding)
         return  output
     
-
-class VAEMY(nn.Module):
-    def __init__(self,dim_au_in,dim_au_out=512,hidden_layers=[1024]):
-        super(VAE, self).__init__()
-
-        self.input_shape = dim_au_in
-        self.bottleneck_shape = dim_au_out
-
-
-        self.encode_h_layers = list()
-        self.decode_h_layers = list()
-
-        # The first hidden layer for encoder 
-        self.encode_h_layers.append(
-            nn.Linear(dim_au_in,hidden_layers[0])
-        )
-
-        # The last hidden layer for decoder
-        self.decode_h_layers.append(
-            nn.Linear(hidden_layers[0],dim_au_in)
-        )
-
-        # Intermediate hidden layers
-        for i in range(0,len(hidden_layers)-1):
-            self.encode_h_layers.append(
-                nn.Linear(hidden_layers[i],hidden_layers[1+i])
-            )
-            
-            self.decode_h_layers.insert(0,
-                nn.Linear(hidden_layers[1+i],hidden_layers[i])
-            )
-
-        # The first hidden layer for decoder
-        self.decode_h_layers.insert(0,
-                nn.Linear(dim_au_out,hidden_layers[-1])
-        )
-
-        # bottle neck layers
-        self.fc_mu = nn.Linear(hidden_layers[-1], dim_au_out)
-        self.fc_logvar = nn.Linear(hidden_layers[-1], dim_au_out)
-
-
-
-    def encode(self, x):
-        l_input = x 
-        for l in self.encode_h_layers:
-            temp = l(l_input)
-            l_input = F.relu(temp) 
-        return self.fc_mu(l_input), self.fc_logvar(l_input)
-
-    def reparametrize(self, mu, logvar):
-        std = logvar.mul(0.5).exp_()
-        if torch.cuda.is_available():
-            eps = torch.cuda.FloatTensor(std.size()).normal_()
-        else:
-            eps = torch.FloatTensor(std.size()).normal_()
-        eps = Variable(eps)
-        return eps.mul(std).add_(mu)
-
-    def decode(self, z):
-        l_input = z 
-        for l in self.decode_h_layers:
-            temp = l(l_input)
-            l_input = F.relu(temp) 
-
-        #h3 = F.relu(self.fc3(z))
-        return F.sigmoid(l_input)
-
-    def forward(self, x):
-        mu, logvar = self.encode(x)
-        z = self.reparametrize(mu, logvar)
-        return self.decode(z), mu, logvar
 
 def vae_loss(recon_x, x, mu, logvar,reconstruction_function,weight=1):
     """
@@ -546,13 +444,14 @@ class PretrainedVAEPredictor(VAEBase):
         return  output
 
 class GAEBase(nn.Module):
+    
     def __init__(self,
                  input_dim,
                  latent_dim=128,
                  h_dims=[512],
                  drop_out=0.3):
                  
-        super(AEBase, self).__init__()
+        super(GAEBase, self).__init__()
 
         self.latent_dim = latent_dim
 
@@ -570,14 +469,14 @@ class GAEBase(nn.Module):
                 nn.Sequential(
                     GraphConvolution(i_dim, o_dim,drop_out, act=lambda x: x),
                     #nn.BatchNorm1d(o_dim),
-                    #nn.ReLU(),
+                    #nn.ReLU()
                     #nn.Dropout(drop_out)
                     )
             )
             #in_channels = h_dim
 
         self.encoder = nn.Sequential(*modules)
-        self.bottleneck = nn.GraphConvolution(hidden_dims[-1], latent_dim,drop_out, act=lambda x: x)
+        self.bottleneck = GraphConvolution(hidden_dims[-1], latent_dim,drop_out, act=lambda x: x)
 
         # Build Decoder
         self.decoder = InnerProductDecoder(drop_out, act=lambda x: x)
@@ -603,3 +502,59 @@ class GAEBase(nn.Module):
         embedding = self.encode(input,adj)
         output = self.decode(embedding)
         return  output
+
+
+class GCNModelVAE(nn.Module):
+    def __init__(self, input_feat_dim, hidden_dim1, hidden_dim2, dropout):
+        super(GCNModelVAE, self).__init__()
+        self.gc1 = GraphConvolution(input_feat_dim, hidden_dim1, dropout, act=F.relu)
+        self.gc2 = GraphConvolution(hidden_dim1, hidden_dim2, dropout, act=lambda x: x)
+        self.gc3 = GraphConvolution(hidden_dim1, hidden_dim2, dropout, act=lambda x: x)
+        self.dc = InnerProductDecoder(dropout, act=lambda x: x)
+
+    def encode(self, x, adj):
+        hidden1 = self.gc1(x, adj)
+        return self.gc2(hidden1, adj), self.gc3(hidden1, adj)
+
+    def reparameterize(self, mu, logvar):
+        if self.training:
+            std = torch.exp(logvar)
+            eps = torch.randn_like(std)
+            return eps.mul(std).add_(mu)
+        else:
+            return mu
+
+    def forward(self, x, adj):
+        mu, logvar = self.encode(x, adj)
+        z = self.reparameterize(mu, logvar)
+        return z, mu, logvar
+
+
+class InnerProductDecoder(nn.Module):
+    """Decoder for using inner product for prediction."""
+
+    def __init__(self, dropout, act=torch.sigmoid):
+        super(InnerProductDecoder, self).__init__()
+        self.dropout = dropout
+        self.act = act
+
+    def forward(self, z):
+        z = F.dropout(z, self.dropout, training=self.training)
+        adj = self.act(torch.mm(z, z.t()))
+        return adj
+
+
+class GCNModelAE(nn.Module):
+    def __init__(self, input_feat_dim, hidden_dim1, hidden_dim2, dropout):
+        super(GCNModelAE, self).__init__()
+        self.gc1 = GraphConvolution(input_feat_dim, hidden_dim1, dropout, act=F.relu)
+        self.gc2 = GraphConvolution(hidden_dim1, hidden_dim2, dropout, act=lambda x: x)
+        self.dc = InnerProductDecoder(dropout, act=lambda x: x)
+
+    def encode(self, x, adj):
+        hidden1 = self.gc1(x, adj)
+        return self.gc2(hidden1, adj)
+
+    def forward(self, x, adj, encode=False):
+        z = self.encode(x, adj)
+        return z, z, None
