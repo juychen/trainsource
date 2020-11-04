@@ -14,7 +14,7 @@ import torch
 from scipy import stats
 from sklearn import preprocessing
 from sklearn.metrics import r2_score
-from torch import layer_norm, nn, optim
+from torch import dropout, layer_norm, nn, optim
 from torch.autograd import Variable
 from torch.nn import functional as F
 from torch.optim import lr_scheduler
@@ -30,7 +30,7 @@ from sklearn.metrics import classification_report,roc_auc_score,average_precisio
 import models
 import graph_function as g
 import utils as ut
-from models import AEBase, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor,GAEBase
+from models import AEBase, GCNPredictor, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor,GAEBase
 
 #import scipy.io as sio
 
@@ -235,10 +235,10 @@ def run_main(args):
             encoder,loss_report_en = ut.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
                             optimizer=optimizer_e,
                             n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=encoder_path)
-        elif reduce_model == "GAE":
-            encoder,loss_report_en = ut.train_GAE_model(net=encoder,adj=adj,data_loaders=dataloaders_pretrain,
-                            optimizer=optimizer_e,
-                            n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=encoder_path)
+        # elif reduce_model == "GAE":
+        #     encoder,loss_report_en = ut.train_GAE_model(net=encoder,adj=adj,data_loaders=dataloaders_pretrain,
+        #                     optimizer=optimizer_e,
+        #                     n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=encoder_path)
 
         
         logging.info("Pretrained finished")
@@ -253,7 +253,7 @@ def run_main(args):
                         hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
                         pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
     elif reduce_model == "GAE":
-        model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
+        model = GCNPredictor(input_feat_dim=X_train.shape[1],hidden_dim1=dim_au_out[0],hidden_dim2=dim_au_out[1], dropout=0.5,
                                 hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
                                 pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
 
@@ -276,8 +276,13 @@ def run_main(args):
 
     load_model = bool(args.load_source_model)
 
-    model,report = ut.train_predictor_model(model,dataloaders_train,
-                                        optimizer,loss_function,epochs,exp_lr_scheduler,load=load_model,save_path=preditor_path)
+    if reduce_model =="GAE":
+        model,report = ut.train_predictor_model(model,dataloaders_train,
+                                    optimizer,loss_function,epochs,exp_lr_scheduler,load=load_model,save_path=preditor_path)
+
+    else:
+        model,report = ut.train_predictor_model(model,dataloaders_train,
+                                            optimizer,loss_function,epochs,exp_lr_scheduler,load=load_model,save_path=preditor_path)
 
     dl_result = model(X_testTensor).detach().cpu().numpy()
 

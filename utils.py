@@ -1,6 +1,6 @@
 import copy
 import logging
-from models import vae_loss
+from models import GCNModelAE, vae_loss
 
 import numpy as np
 import pandas as pd
@@ -12,6 +12,14 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader, TensorDataset
 import matplotlib.pyplot as plt
 from torch.utils.data import dataset
+from models import GCNModelAE,GCNModelVAE,g_loss_function
+import graph_function as g
+from gae.utils import mask_test_edges,get_roc_score
+from tqdm import tqdm
+import scipy.sparse as sp
+
+
+
 
 
 
@@ -389,12 +397,6 @@ def train_transfer_model(
     loss_train = {}
     loss_d_train = {}
 
-    
-    # best_target_wts = copy.deepcopy(target_encoder.state_dict())
-    # best_discm_wts = copy.deepcopy(discriminator.state_dict())
-
-    # best_loss = np.inf
-
     for epoch in range(n_epochs):
         logging.info('Epoch {}/{}'.format(epoch, n_epochs - 1))
         logging.info('-' * 10)
@@ -471,12 +473,7 @@ def train_transfer_model(
                 
                 running_loss += loss.item()
             
-            # Schedular
-#             if phase == 'train':
-#                 scheduler.step()
-                
-            #epoch_loss = running_loss / dataset_sizes[phase]
-            #d_epoch_loss = d_running_loss / dataset_sizes[phase]
+
             epoch_loss = running_loss/n_iters
             d_epoch_loss = d_running_loss/n_iters
 
@@ -512,8 +509,7 @@ def train_adversarial_model(
     source_loader, target_loader,
     dis_loss, target_loss,
     optimizer, d_optimizer,
-    args=None
-):
+    args=None):
     source_encoder.eval()
     target_encoder.encoder.train()
     discriminator.train()
@@ -557,7 +553,7 @@ def train_adversarial_model(
     return {'d/loss': d_losses.avg, 'target/loss': losses.avg}
 
 def plot_label_hist(Y,save=None):
-# the histogram of the data
+    # the histogram of the data
     n, bins, patches = plt.hist(Y, 50, density=True, facecolor='g', alpha=0.75)
 
     plt.xlabel('Y values')
@@ -571,3 +567,78 @@ def plot_label_hist(Y,save=None):
         plt.show()
     else:
         plt.savefig(save)
+
+def GAEpreditor(model, z,y_val, adj,optimizer,GAEepochs=200, GAElr=0.01, GAElr_dw=0.001, precisionModel='Float'):
+    '''
+    GAE embedding for clustering
+    Param:
+        z,adj
+    Return:
+        Embedding from graph
+    '''
+    
+    # featrues from z
+    # Louvain
+    features = z
+
+    features = torch.FloatTensor(features)
+    
+    n_nodes, feat_dim = features.shape
+
+    # Store original adjacency matrix (without diagonal entries) for later
+    adj_orig = adj
+    adj_orig = adj_orig - sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [0]), shape=adj_orig.shape)
+    adj_orig.eliminate_zeros()
+
+    #adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj)
+    #adj = adj_train
+
+    # Some preprocessing
+    adj_norm = g.preprocess_graph(adj)
+    #adj_label = adj_train + sp.eye(adj_train.shape[0])
+
+    #adj_label = torch.FloatTensor(adj_label.toarray())
+
+    pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
+    norm = adj.shape[0] * adj.shape[0] / float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
+
+    if precisionModel == 'Double':
+        model=model.double()
+    optimizer = optim.Adam(model.parameters(), lr=GAElr)
+
+    hidden_emb = None
+    for epoch in tqdm(range(GAEepochs)):
+        # mem=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        # print('Mem consumption before training: '+str(mem))
+        model.train()
+        optimizer.zero_grad()
+        result = model(features, adj_norm)
+
+        loss = nn.CrossEntropyLoss(result,y_val)
+
+
+
+        # loss = g_loss_function(preds=model.dc(z), labels=adj_label,
+        #                      mu=mu, logvar=logvar, n_nodes=n_nodes,
+        #                      norm=norm, pos_weight=pos_weight)
+        loss.backward()
+        cur_loss = loss.item()
+        optimizer.step()
+
+        hidden_emb = mu.data.numpy()
+
+        ap_curr = 0
+
+
+        logging.info("Epoch: {}, train_loss_gae={:.5f}, val_ap={:.5f}, time={:.5f}".format(
+            epoch + 1, cur_loss,
+            ap_curr, 0))
+
+
+    logging.info("Optimization Finished!")
+
+    #roc_score, ap_score = get_roc_score(hidden_emb, adj_orig, test_edges, test_edges_false)
+    #logging.info('Test ROC score: ' + str(roc_score))
+    #logging.info('Test AP score: ' + str(ap_score))
+ 
+    return hidden_emb, model
