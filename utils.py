@@ -1,6 +1,6 @@
 import copy
 import logging
-from models import GCNModelAE, vae_loss
+from models import vae_loss
 
 import numpy as np
 import pandas as pd
@@ -12,7 +12,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader, TensorDataset
 import matplotlib.pyplot as plt
 from torch.utils.data import dataset
-from models import GCNModelAE,GCNModelVAE,g_loss_function
+from gae.model import GCNModelAE,GCNModelVAE,g_loss_function
 import graph_function as g
 from gae.utils import mask_test_edges,get_roc_score
 from tqdm import tqdm
@@ -107,11 +107,7 @@ def train_extractor_model(net,data_loaders={},optimizer=None,loss_function=None,
                 # print loss statistics
                 running_loss += loss.item()
             
-            # Schedular
-#             if phase == 'train':
-#                 scheduler.step()
-                
-            #epoch_loss = running_loss / dataset_sizes[phase]
+  
             epoch_loss = running_loss / n_iters
 
             
@@ -183,12 +179,7 @@ def train_GAE_model(net,adj,data_loaders={},optimizer=None,loss_function=None,n_
 
                 # print loss statistics
                 running_loss += loss.item()
-            
-            # Schedular
-#             if phase == 'train':
-#                 scheduler.step()
-                
-            #epoch_loss = running_loss / dataset_sizes[phase]
+
             epoch_loss = running_loss / n_iters
 
             
@@ -355,11 +346,7 @@ def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,sche
                 # print loss statistics
                 running_loss += loss.item()
             
-            # Schedular
-#             if phase == 'train':
-#                 scheduler.step()
-                
-            # epoch_loss = running_loss / dataset_sizes[phase]
+
             epoch_loss = running_loss / n_iters
 
             if phase == 'train':
@@ -590,14 +577,14 @@ def GAEpreditor(model, z,y_val, adj,optimizer,GAEepochs=200, GAElr=0.01, GAElr_d
     adj_orig = adj_orig - sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [0]), shape=adj_orig.shape)
     adj_orig.eliminate_zeros()
 
-    #adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj)
+    adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false,val_edge_idx,test_edge_idx = mask_test_edges(adj)
     #adj = adj_train
 
     # Some preprocessing
     adj_norm = g.preprocess_graph(adj)
-    #adj_label = adj_train + sp.eye(adj_train.shape[0])
+    adj_label = adj_train + sp.eye(adj_train.shape[0])
 
-    #adj_label = torch.FloatTensor(adj_label.toarray())
+    adj_label = torch.FloatTensor(adj_label.toarray())
 
     pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
     norm = adj.shape[0] * adj.shape[0] / float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)

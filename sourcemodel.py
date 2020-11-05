@@ -190,19 +190,19 @@ def run_main(args):
             encoder = VAEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
         elif reduce_model == "GAE":
 
-            pre_encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
-            pre_encoder.load_state_dict(torch.load(args.GCNreduce_path))    
+            encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+            encoder.load_state_dict(torch.load(args.GCNreduce_path))    
             X_train_all_Tensor = torch.FloatTensor(X_train_all).to(device)
-            pre_encoder.to(device)
+            encoder.to(device)
 
             original_tr = X_train_all_Tensor
             original_te = X_testTensor
             original_tr = original_tr.cpu().detach().numpy()
             original_te = original_te.cpu().detach().numpy()
 
-            train_embeddings = pre_encoder.encode(X_train_all_Tensor)
+            train_embeddings = encoder.encode(X_train_all_Tensor)
             zOut_tr = train_embeddings.cpu().detach().numpy()
-            test_embeddings=pre_encoder.encode(X_testTensor)
+            test_embeddings=encoder.encode(X_testTensor)
             zOut_te = test_embeddings.cpu().detach().numpy()
 
             
