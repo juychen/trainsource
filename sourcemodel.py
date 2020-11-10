@@ -25,6 +25,7 @@ from torch.nn import functional as F
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, TensorDataset
 
+import sampling as sam
 import gae.utils as gut
 import graph_function as g
 import models
@@ -67,6 +68,7 @@ def run_main(args):
     preditor_hdims = args.predictor_h_dims.split(",")
     reduce_model = args.dimreduce
     prediction = args.predition
+    sampling = args.sampling
 
     encoder_hdims = list(map(int, encoder_hdims) )
     preditor_hdims = list(map(int, preditor_hdims) )
@@ -140,6 +142,21 @@ def run_main(args):
     # Split traning valid test set
     X_train_all, X_test, Y_train_all, Y_test = train_test_split(data, label, test_size=test_size, random_state=42)
     X_train, X_valid, Y_train, Y_valid = train_test_split(X_train_all, Y_train_all, test_size=valid_size, random_state=42)
+        # sampling method
+    if sampling == "nosampling":
+        X_train,Y_train=sam.nosampling(X_train,Y_train)
+        logging.info("nosampling")
+    elif sampling =="upsampling":
+        X_train,Y_train=sam.upsampling(X_train,Y_train)
+        logging.info("upsampling")
+    elif sampling =="downsampling":
+        X_train,Y_train=sam.downsampling(X_train,Y_train)
+        logging.info("downsampling")
+    elif  sampling=="SMOTE":
+        X_train,Y_train=sam.SMOTEsampling(X_train,Y_train)
+        logging.info("SMOTE")
+    else:
+        logging.info("not a legal sampling method")
     
     logging.info(data.shape)
     logging.info(label.shape)
@@ -326,6 +343,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
     parser.add_argument('--var_genes_disp', type=float, default=None)
+    parser.add_argument('--sampling', type=str, default="downsampling")
 
     # trainv
     parser.add_argument('--encoder_path','-e', type=str, default='saved/models/encoder_vae.pkl')
