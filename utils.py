@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from torch.utils.data import dataset
 from gae.model import GCNModelAE,GCNModelVAE,g_loss_function
 import graph_function as g
-from gae.utils import mask_test_edges,get_roc_score
+from gae.utils import mask_test_edges,get_roc_score,preprocess_graph
 from tqdm import tqdm
 import scipy.sparse as sp
 
@@ -555,7 +555,7 @@ def plot_label_hist(Y,save=None):
     else:
         plt.savefig(save)
 
-def GAEpreditor(model, z,y_val, adj,optimizer,GAEepochs=200, GAElr=0.01, GAElr_dw=0.001, precisionModel='Float'):
+def GAEpreditor(model, z,y, adj,optimizer,loss_function,n_epochs,scheduler,load=False,precisionModel='Float',save_path="model.pkl"):
     '''
     GAE embedding for clustering
     Param:
@@ -563,63 +563,68 @@ def GAEpreditor(model, z,y_val, adj,optimizer,GAEepochs=200, GAElr=0.01, GAElr_d
     Return:
         Embedding from graph
     '''
+    if(load!=False):
+        model.load_state_dict(torch.load(save_path))           
+        return model, 0
     
     # featrues from z
     # Louvain
-    features = z
 
-    features = torch.FloatTensor(features)
-    
-    n_nodes, feat_dim = features.shape
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    # features = z
+
+    # features = torch.FloatTensor(features).to(device)
 
     # Store original adjacency matrix (without diagonal entries) for later
-    adj_orig = adj
-    adj_orig = adj_orig - sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [0]), shape=adj_orig.shape)
-    adj_orig.eliminate_zeros()
 
-    adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false,val_edge_idx,test_edge_idx = mask_test_edges(adj)
+    #adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj)
     #adj = adj_train
 
     # Some preprocessing
-    adj_norm = g.preprocess_graph(adj)
-    adj_label = adj_train + sp.eye(adj_train.shape[0])
-
-    adj_label = torch.FloatTensor(adj_label.toarray())
-
-    pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
-    norm = adj.shape[0] * adj.shape[0] / float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
+    #adj_norm = preprocess_graph(adj)
 
     if precisionModel == 'Double':
         model=model.double()
-    optimizer = optim.Adam(model.parameters(), lr=GAElr)
 
-    hidden_emb = None
-    for epoch in tqdm(range(GAEepochs)):
+    #adj_norm = torch.FloatTensor(adj_norm)
+    #adj_norm.to(device)
+    
+    best_loss = np.inf
+
+    for epoch in tqdm(range(n_epochs)):
         # mem=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         # print('Mem consumption before training: '+str(mem))
-        model.train()
-        optimizer.zero_grad()
-        result = model(features, adj_norm)
 
-        loss = nn.CrossEntropyLoss(result,y_val)
+        for phase in ['train', 'val']:
+            if phase == 'train':
+                #optimizer = scheduler(optimizer, epoch)
+                model.train()  # Set model to training mode
+            else:
+                model.eval()  # Set model to evaluate mode
 
+            optimizer.zero_grad()
+            result = model(z[phase], adj[phase])
 
-
-        # loss = g_loss_function(preds=model.dc(z), labels=adj_label,
-        #                      mu=mu, logvar=logvar, n_nodes=n_nodes,
-        #                      norm=norm, pos_weight=pos_weight)
-        loss.backward()
-        cur_loss = loss.item()
-        optimizer.step()
-
-        hidden_emb = mu.data.numpy()
-
-        ap_curr = 0
+            loss = loss_function(result,y[phase])
+            cur_loss = loss.item()
 
 
-        logging.info("Epoch: {}, train_loss_gae={:.5f}, val_ap={:.5f}, time={:.5f}".format(
-            epoch + 1, cur_loss,
-            ap_curr, 0))
+            if phase == 'train':
+                loss.backward()
+                optimizer.step()
+                scheduler.step(cur_loss)
+            
+            last_lr = scheduler.optimizer.param_groups[0]['lr']
+            ap_curr = 0
+
+
+            logging.info("Epoch: {}, Phase: {}, loss_gae={:.5f}, lr={:.5f}".format(
+                epoch + 1,phase, cur_loss, last_lr))
+
+            if phase == 'val' and cur_loss < best_loss:
+                best_loss = cur_loss
+                best_model_wts = copy.deepcopy(model.state_dict())
 
 
     logging.info("Optimization Finished!")
@@ -627,5 +632,8 @@ def GAEpreditor(model, z,y_val, adj,optimizer,GAEepochs=200, GAElr=0.01, GAElr_d
     #roc_score, ap_score = get_roc_score(hidden_emb, adj_orig, test_edges, test_edges_false)
     #logging.info('Test ROC score: ' + str(roc_score))
     #logging.info('Test AP score: ' + str(ap_score))
+    model.load_state_dict(best_model_wts)           
+    torch.save(model.state_dict(), save_path)
+
  
-    return hidden_emb, model
+    return model,0

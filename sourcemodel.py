@@ -1,36 +1,37 @@
 
 import argparse
 import copy
+import logging
 import os
 import sys
 import time
-import logging
-
 
 import numpy as np
 import pandas as pd
-from pandas.core.arrays import boolean
+import scipy.sparse as sp
 import torch
+from pandas.core.arrays import boolean
 from scipy import stats
+from scipy.stats import pearsonr
 from sklearn import preprocessing
-from sklearn.metrics import r2_score
+from sklearn.metrics import (auc, average_precision_score,
+                             classification_report, mean_squared_error,
+                             precision_recall_curve, r2_score, roc_auc_score)
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 from torch import dropout, layer_norm, nn, optim
 from torch.autograd import Variable
 from torch.nn import functional as F
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, TensorDataset
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
-from scipy.stats import pearsonr
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import classification_report,roc_auc_score,average_precision_score,auc,precision_recall_curve
 
-
-
-import models
+import gae.utils as gut
 import graph_function as g
+import models
 import utils as ut
-from models import AEBase, GCNPredictor, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor,GAEBase
+from gae.utils import get_roc_score, mask_test_edges, preprocess_graph
+from models import (AEBase, GAEBase, GCNPredictor, Predictor,
+                    PretrainedPredictor, PretrainedVAEPredictor, VAEBase)
 
 #import scipy.io as sio
 
@@ -69,7 +70,9 @@ def run_main(args):
 
     encoder_hdims = list(map(int, encoder_hdims) )
     preditor_hdims = list(map(int, preditor_hdims) )
+    load_model = bool(args.load_source_model)
 
+    preditor_path = model_path + reduce_model + args.predictor+ prediction + select_drug + '.pkl'
 
 
     # Read data
@@ -159,10 +162,13 @@ def run_main(args):
 
     if prediction  == "regression":
         Y_trainTensor = torch.FloatTensor(Y_train).to(device)
+        Y_trainallTensor = torch.FloatTensor(Y_train_all).to(device)
         Y_validTensor = torch.FloatTensor(Y_valid).to(device)
     else:
         Y_trainTensor = torch.LongTensor(Y_train).to(device)
+        Y_trainallTensor = torch.LongTensor(Y_train_all).to(device)
         Y_validTensor = torch.LongTensor(Y_valid).to(device)
+
 
     train_dataset = TensorDataset(X_trainTensor, X_trainTensor)
     valid_dataset = TensorDataset(X_validTensor, X_validTensor)
@@ -184,39 +190,11 @@ def run_main(args):
 
     if(bool(args.pretrain)==True):
         dataloaders_pretrain = {'train':X_trainDataLoader,'val':X_validDataLoader}
-        if reduce_model == "AE":
-            encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
-        elif reduce_model == "VAE":
+        if reduce_model == "VAE":
             encoder = VAEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
-        elif reduce_model == "GAE":
-
+        else:
             encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
-            encoder.load_state_dict(torch.load(args.GCNreduce_path))    
-            X_train_all_Tensor = torch.FloatTensor(X_train_all).to(device)
-            encoder.to(device)
-
-            original_tr = X_train_all_Tensor
-            original_te = X_testTensor
-            original_tr = original_tr.cpu().detach().numpy()
-            original_te = original_te.cpu().detach().numpy()
-
-            train_embeddings = encoder.encode(X_train_all_Tensor)
-            zOut_tr = train_embeddings.cpu().detach().numpy()
-            test_embeddings=encoder.encode(X_testTensor)
-            zOut_te = test_embeddings.cpu().detach().numpy()
-
-            
-
-            adj_tr, edgeList_tr = g.generateAdj(zOut_tr, graphType='KNNgraphStatsSingleThread', para = 'euclidean'+':'+str('10'), adjTag =True)
-            adj_te, edgeList_te = g.generateAdj(zOut_te, graphType='KNNgraphStatsSingleThread', para = 'euclidean'+':'+str('10'), adjTag =True)
-
-            zDiscret_tr = zOut_tr>np.mean(zOut_tr,axis=0)
-            zDiscret_tr = 1.0*zDiscret_tr
-            zDiscret_te = zOut_te>np.mean(zOut_te,axis=0)
-            zDiscret_te = 1.0*zDiscret_te
-
-
-        #model = VAE(dim_au_in=data_r.shape[1],dim_au_out=128)
+        
         if torch.cuda.is_available():
             encoder.cuda()
 
@@ -235,25 +213,62 @@ def run_main(args):
             encoder,loss_report_en = ut.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
                             optimizer=optimizer_e,
                             n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=encoder_path)
-        # elif reduce_model == "GAE":
-        #     encoder,loss_report_en = ut.train_GAE_model(net=encoder,adj=adj,data_loaders=dataloaders_pretrain,
-        #                     optimizer=optimizer_e,
-        #                     n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=encoder_path)
-
         
         logging.info("Pretrained finished")
 
     # Train model of predictor 
-    if reduce_model == "AE":
-        model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
-                                hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
-                                pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
-    elif reduce_model == "VAE":
-        model = PretrainedVAEPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
-                        hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
-                        pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
-    elif reduce_model == "GAE":
-        model = GCNPredictor(input_feat_dim=X_train.shape[1],hidden_dim1=dim_au_out[0],hidden_dim2=dim_au_out[1], dropout=0.5,
+
+    if args.predictor == "DNN":
+        if reduce_model == "AE":
+            model = PretrainedPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
+                                    hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
+                                    pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
+        elif reduce_model == "VAE":
+            model = PretrainedVAEPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
+                            hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
+                            pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
+           
+    elif args.predictor == "GCN":
+
+        if reduce_model == "vAE":
+            gcn_encoder = VAEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+        else:
+            gcn_encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+
+        gcn_encoder.load_state_dict(torch.load(args.GCNreduce_path))    
+        gcn_encoder.to(device)
+
+        train_embeddings = gcn_encoder.encode(X_trainTensor)
+        zOut_tr = train_embeddings.cpu().detach().numpy()
+        valid_embeddings = gcn_encoder.encode(X_validTensor)
+        zOut_va = valid_embeddings.cpu().detach().numpy()
+        test_embeddings=gcn_encoder.encode(X_testTensor)
+        zOut_te = test_embeddings.cpu().detach().numpy()
+
+        adj_tr, edgeList_tr = g.generateAdj(zOut_tr, graphType='KNNgraphStatsSingleThread', para = 'euclidean'+':'+str('10'), adjTag =True)
+        adj_va, edgeList_va = g.generateAdj(zOut_va, graphType='KNNgraphStatsSingleThread', para = 'euclidean'+':'+str('10'), adjTag =True)
+        adj_te, edgeList_te = g.generateAdj(zOut_te, graphType='KNNgraphStatsSingleThread', para = 'euclidean'+':'+str('10'), adjTag =True)
+
+        Adj_trainTensor = preprocess_graph(adj_tr)
+        Adj_validTensor = preprocess_graph(adj_va)
+        Adj_testTensor = preprocess_graph(adj_te)
+
+        Z_trainTensor = torch.FloatTensor(zOut_tr).to(device)
+        Z_validTensor = torch.FloatTensor(zOut_va).to(device)
+        Z_testTensor = torch.FloatTensor(zOut_te).to(device)
+
+        # zDiscret_tr = zOut_tr>np.mean(zOut_tr,axis=0)
+        # zDiscret_tr = 1.0*zDiscret_tr
+        # zDiscret_va = zOut_tr>np.mean(zOut_va,axis=0)
+        # zDiscret_va = 1.0*zDiscret_va
+        # zDiscret_te = zOut_te>np.mean(zOut_te,axis=0)
+        # zDiscret_te = 1.0*zDiscret_te
+
+        ZTensors_train = {'train':Z_trainTensor,'val':Z_validTensor}
+        YTensors_train = {'train':Y_trainTensor,'val':Y_validTensor}
+        AdjTensors_train = {'train':Adj_trainTensor,'val':Adj_validTensor}
+
+        model = GCNPredictor(input_feat_dim=train_embeddings.shape[1],hidden_dim1=encoder_hdims[0],hidden_dim2=dim_au_out, dropout=0.5,
                                 hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
                                 pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
 
@@ -272,19 +287,17 @@ def run_main(args):
 
     exp_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
-    preditor_path = model_path + reduce_model + prediction + select_drug + '.pkl'
-
-    load_model = bool(args.load_source_model)
-
-    if reduce_model =="GAE":
-        model,report = ut.train_predictor_model(model,dataloaders_train,
-                                    optimizer,loss_function,epochs,exp_lr_scheduler,load=load_model,save_path=preditor_path)
+    if args.predictor =="GCN":
+        model,report = ut.GAEpreditor(model=model,z=ZTensors_train,y=YTensors_train,adj=AdjTensors_train,
+                                    optimizer=optimizer,loss_function=loss_function,n_epochs=epochs,scheduler=exp_lr_scheduler,save_path=preditor_path)
 
     else:
         model,report = ut.train_predictor_model(model,dataloaders_train,
                                             optimizer,loss_function,epochs,exp_lr_scheduler,load=load_model,save_path=preditor_path)
-
-    dl_result = model(X_testTensor).detach().cpu().numpy()
+    if args.predictor != 'GCN':
+        dl_result = model(X_testTensor).detach().cpu().numpy()
+    else:
+        dl_result = model(Z_testTensor,Adj_testTensor).detach().cpu().numpy()
 
     #torch.save(model.feature_extractor.state_dict(), preditor_path+"encoder.pkl")
 
@@ -302,7 +315,6 @@ def run_main(args):
         logging.info(average_precision_score(Y_test, pb_results))
         logging.info(roc_auc_score(Y_test, pb_results))
 
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -317,13 +329,13 @@ if __name__ == '__main__':
 
     # trainv
     parser.add_argument('--encoder_path','-e', type=str, default='saved/models/encoder_vae.pkl')
-    parser.add_argument('--pretrain', type=int, default=1)
+    parser.add_argument('--pretrain', type=int, default=0)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
-    parser.add_argument('--dimreduce', type=str, default="GAE")
-    parser.add_argument('--predictor', type=str, default="DNN")
+    parser.add_argument('--dimreduce', type=str, default="AE")
+    parser.add_argument('--predictor', type=str, default="GCN")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--encoder_h_dims', type=str, default="2048,1024")

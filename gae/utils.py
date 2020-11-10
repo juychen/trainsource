@@ -259,7 +259,7 @@ def mask_test_edges(adj):
     adj_train = adj_train + adj_train.T
 
     # NOTE: these edge lists only contain single direction of edge!
-    return adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false,val_edge_idx,test_edge_idx
+    return adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false #val_edge_idx,test_edge_idx
 
 
 def preprocess_graph(adj):
@@ -275,13 +275,16 @@ def preprocess_graph(adj):
 def sparse_mx_to_torch_sparse_tensor(sparse_mx):
     """Convert a scipy sparse matrix to a torch sparse tensor."""
     # sparse_mx = sparse_mx.tocoo().astype(np.float64)
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
     sparse_mx = sparse_mx.tocoo().astype(np.float32)
     indices = torch.from_numpy(
-        np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
-    values = torch.from_numpy(sparse_mx.data)
+        np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64)).to(device)
+    values = torch.from_numpy(sparse_mx.data).to(device)
     shape = torch.Size(sparse_mx.shape)
     # return torch.sparse.DoubleTensor(indices, values, shape)
-    return torch.sparse.FloatTensor(indices, values, shape)
+    return torch.sparse.FloatTensor(indices, values, shape).to(device)
 
 
 def get_roc_score(emb, adj_orig, edges_pos, edges_neg):
