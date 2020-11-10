@@ -143,7 +143,7 @@ def run_main(args):
     X_train_all, X_test, Y_train_all, Y_test = train_test_split(data, label, test_size=test_size, random_state=42)
     X_train, X_valid, Y_train, Y_valid = train_test_split(X_train_all, Y_train_all, test_size=valid_size, random_state=42)
         # sampling method
-    if sampling == "nosampling":
+    if sampling == None:
         X_train,Y_train=sam.nosampling(X_train,Y_train)
         logging.info("nosampling")
     elif sampling =="upsampling":
@@ -343,7 +343,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
     parser.add_argument('--var_genes_disp', type=float, default=None)
-    parser.add_argument('--sampling', type=str, default="downsampling")
+    parser.add_argument('--sampling', type=str, default=None)
 
     # trainv
     parser.add_argument('--encoder_path','-e', type=str, default='saved/models/encoder_vae.pkl')
