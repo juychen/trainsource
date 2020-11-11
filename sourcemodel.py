@@ -282,10 +282,12 @@ def run_main(args):
         # zDiscret_te = 1.0*zDiscret_te
 
         ZTensors_train = {'train':Z_trainTensor,'val':Z_validTensor}
+        XTensors_train = {'train':X_trainTensor,'val':X_validTensor}
+
         YTensors_train = {'train':Y_trainTensor,'val':Y_validTensor}
         AdjTensors_train = {'train':Adj_trainTensor,'val':Adj_validTensor}
 
-        model = GCNPredictor(input_feat_dim=train_embeddings.shape[1],hidden_dim1=encoder_hdims[0],hidden_dim2=dim_au_out, dropout=0.5,
+        model = GCNPredictor(input_feat_dim=X_train_all.shape[1],hidden_dim1=encoder_hdims[0],hidden_dim2=dim_au_out, dropout=0.5,
                                 hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
                                 pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
 
@@ -305,7 +307,7 @@ def run_main(args):
     exp_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
     if args.predictor =="GCN":
-        model,report = ut.GAEpreditor(model=model,z=ZTensors_train,y=YTensors_train,adj=AdjTensors_train,
+        model,report = ut.GAEpreditor(model=model,z=XTensors_train,y=YTensors_train,adj=AdjTensors_train,
                                     optimizer=optimizer,loss_function=loss_function,n_epochs=epochs,scheduler=exp_lr_scheduler,save_path=preditor_path)
 
     else:
@@ -314,7 +316,7 @@ def run_main(args):
     if args.predictor != 'GCN':
         dl_result = model(X_testTensor).detach().cpu().numpy()
     else:
-        dl_result = model(Z_testTensor,Adj_testTensor).detach().cpu().numpy()
+        dl_result = model(X_testTensor,Adj_testTensor).detach().cpu().numpy()
 
     #torch.save(model.feature_extractor.state_dict(), preditor_path+"encoder.pkl")
 
