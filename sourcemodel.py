@@ -247,7 +247,7 @@ def run_main(args):
            
     elif args.predictor == "GCN":
 
-        if reduce_model == "vAE":
+        if reduce_model == "VAE":
             gcn_encoder = VAEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
         else:
             gcn_encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
