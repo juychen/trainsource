@@ -374,7 +374,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="AE")
-    parser.add_argument('--predictor', type=str, default="GCN")
+    parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--encoder_h_dims', type=str, default="2048,1024")

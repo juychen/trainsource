@@ -508,8 +508,8 @@ class GCNModelVAE(nn.Module):
     def __init__(self, input_feat_dim, hidden_dim1, hidden_dim2, dropout):
         super(GCNModelVAE, self).__init__()
         self.gc1 = GraphConvolution(input_feat_dim, hidden_dim1, dropout, act=F.relu)
-        self.gc2 = GraphConvolution(hidden_dim1, hidden_dim2, dropout, act=lambda x: x)
-        self.gc3 = GraphConvolution(hidden_dim1, hidden_dim2, dropout, act=lambda x: x)
+        self.gc2 = GraphConvolution(hidden_dim1, hidden_dim2, dropout, act=F.relu)
+        self.gc3 = GraphConvolution(hidden_dim1, hidden_dim2, dropout, act=F.relu)
         self.dc = InnerProductDecoder(dropout, act=lambda x: x)
 
     def encode(self, x, adj):
@@ -553,7 +553,7 @@ class GCNPredictor(nn.Module):
                 freezed = False):
         super(GCNPredictor, self).__init__()
         self.gc1 = GraphConvolution(input_feat_dim, hidden_dim1, dropout, act=F.relu)
-        self.gc2 = GraphConvolution(hidden_dim1, hidden_dim2, dropout, act=lambda x: x)
+        self.gc2 = GraphConvolution(hidden_dim1, hidden_dim2, dropout, act=F.relu)
         self.dc = InnerProductDecoder(dropout, act=lambda x: x)
 
         self.predictor = Predictor(input_dim=hidden_dim2,
