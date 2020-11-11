@@ -278,7 +278,7 @@ def run_main(args):
         # zDiscret_tr = 1.0*zDiscret_tr
         # zDiscret_va = zOut_tr>np.mean(zOut_va,axis=0)
         # zDiscret_va = 1.0*zDiscret_va
-        # zDiscret_te = zOut_te>np.mean(zOut_te,axis=0)
+        # zDiscret_te = zOut_te>np.mean(zOut_te,axis=
         # zDiscret_te = 1.0*zDiscret_te
 
         ZTensors_train = {'train':Z_trainTensor,'val':Z_validTensor}
@@ -290,6 +290,11 @@ def run_main(args):
         model = GCNPredictor(input_feat_dim=X_train_all.shape[1],hidden_dim1=encoder_hdims[0],hidden_dim2=dim_au_out, dropout=0.5,
                                 hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
                                 pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
+
+        # model2 = GAEBase(input_dim=X_train_all.shape[1], latent_dim=128,h_dims=[512])
+        # model2.to(device)
+        # test = model2((X_trainTensor,Adj_trainTensor))
+
 
     logging.info(model)
     if torch.cuda.is_available():

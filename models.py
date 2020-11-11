@@ -481,13 +481,13 @@ class GAEBase(nn.Module):
         # Build Decoder
         self.decoder = InnerProductDecoder(drop_out, act=lambda x: x)
 
-    def encode(self, input, adj):
+    def encode(self, input):
         """
         Encodes the input by passing through the encoder network
         and returns the latent codes.
         """
-        result = self.encoder(input,adj)
-        embedding = self.bottleneck(result,adj)
+        result = self.encoder(input)
+        embedding,adj = self.bottleneck(result)
 
         return embedding
 
@@ -498,8 +498,8 @@ class GAEBase(nn.Module):
         result = self.decoder(z)
         return result
 
-    def forward(self, input, adj):
-        embedding = self.encode(input,adj)
+    def forward(self, input):
+        embedding = self.encode(input)
         output = self.decode(embedding)
         return  output
 
@@ -563,8 +563,9 @@ class GCNPredictor(nn.Module):
 
 
     def encode(self, x, adj):
-        hidden1 = self.gc1(x, adj)
-        return self.gc2(hidden1, adj)
+        hidden1,_adj = self.gc1((x, adj))
+        result,_ = self.gc2((hidden1, adj))
+        return result
 
     def forward(self, x, adj, encode=False):
         z = self.encode(x, adj)

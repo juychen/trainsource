@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from torch.nn.modules.module import Module
 from torch.nn.parameter import Parameter
 from torch.nn import functional as F
-from torch import nn
+from torch import nn, tensor
 
 
 class GraphConvolution(Module):
@@ -27,17 +27,27 @@ class GraphConvolution(Module):
     def reset_parameters(self):
         torch.nn.init.xavier_uniform_(self.weight)
 
-    def forward(self, input, adj):
+    # def forward(self, input:tensor, adj:tensor):
+    #     input = F.dropout(input, self.dropout, self.training)
+    #     support = torch.mm(input, self.weight)
+    #     output = torch.spmm(adj, support)
+    #     output = self.act(output)
+    #     return output
+
+    def forward(self, inputs:tuple):
+        input,adj = inputs
         input = F.dropout(input, self.dropout, self.training)
         support = torch.mm(input, self.weight)
         output = torch.spmm(adj, support)
         output = self.act(output)
-        return output
+        return (output,adj)
 
     def __repr__(self):
         return self.__class__.__name__ + ' (' \
                + str(self.in_features) + ' -> ' \
                + str(self.out_features) + ')'
+
+
 
 
 class InnerProductDecoder(nn.Module):
