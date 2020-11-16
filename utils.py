@@ -644,41 +644,41 @@ def plot_label_hist(Y,save=None):
 
 
 # plot no skill and model roc curves
-def plot_roc_curve(test_y, naive_probs, model_probs,save_path="figures/roc_curve.pdf"):
+def plot_roc_curve(test_y,naive_probs,model_probs,path="figures/roc_curve.pdf"):
 
-	# plot naive skill roc curve
-	fpr, tpr, _ = roc_curve(test_y, naive_probs)
-	plt.plot(fpr, tpr, linestyle='--', label='Random')
-	# plot model roc curve
-	fpr, tpr, _ = roc_curve(test_y, model_probs)
-	plt.plot(fpr, tpr, marker='.', label='Predition')
-	# axis labels
-	plt.xlabel('False Positive Rate')
-	plt.ylabel('True Positive Rate')
-	# show the legend
-	plt.legend()
-	# show the plot
-    if save_path == None:
+    # plot naive skill roc curve
+    fpr, tpr, _ = roc_curve(test_y, naive_probs)
+    plt.plot(fpr, tpr, linestyle='--', label='Random')
+    # plot model roc curve
+    fpr, tpr, _ = roc_curve(test_y, model_probs)
+    plt.plot(fpr, tpr, marker='.', label='Predition')
+    # axis labels
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    # show the legend
+    plt.legend()
+    # show the plot
+    if path == None:
         plt.show()
     else:
-        plt.savefig(save_path)
+        plt.savefig(path)
 
 
 # plot no skill and model precision-recall curves
 def plot_pr_curve(test_y,model_probs,selected_label = 1,save_path="figures/prc_curve.pdf"):
-	# calculate the no skill line as the proportion of the positive class
-	no_skill = len(test_y[test_y==selected_label]) / len(test_y)
-	# plot the no skill precision-recall curve
-	plt.plot([0, 1], [no_skill, no_skill], linestyle='--', label='Random')
-	# plot model precision-recall curve
-	precision, recall, _ = precision_recall_curve(test_y, model_probs)
-	plt.plot(recall, precision, marker='.', label='Predition')
-	# axis labels
-	plt.xlabel('Recall')
-	plt.ylabel('Precision')
-	# show the legend
-	plt.legend()
-	# show the plot
+    # calculate the no skill line as the proportion of the positive class
+    no_skill = len(test_y[test_y==selected_label]) / len(test_y)
+    # plot the no skill precision-recall curve
+    plt.plot([0, 1], [no_skill, no_skill], linestyle='--', label='Random')
+    # plot model precision-recall curve
+    precision, recall, _ = precision_recall_curve(test_y, model_probs)
+    plt.plot(recall, precision, marker='.', label='Predition')
+    # axis labels
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    # show the legend
+    plt.legend()
+    # show the plot
     if save_path == None:
         plt.show()
     else:

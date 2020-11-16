@@ -377,7 +377,7 @@ if __name__ == '__main__':
     parser.add_argument('--sampling', type=str, default=None)
 
     # trainv
-    parser.add_argument('--encoder_path','-e', type=str, default='saved/models/encoder_vae.pkl')
+    parser.add_argument('--encoder_path','-e', type=str, default='saved/models/encoder_ae.pkl')
     parser.add_argument('--pretrain', type=int, default=0)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
