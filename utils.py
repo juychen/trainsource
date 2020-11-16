@@ -669,10 +669,10 @@ def plot_roc_curve(test_y,naive_probs,model_probs,path="figures/roc_curve.pdf"):
         plt.show()
     else:
         plt.savefig(path)
-
+    plt.close() 
 
 # plot no skill and model precision-recall curves
-def plot_pr_curve(test_y,model_probs,selected_label = 1,save_path="figures/prc_curve.pdf"):
+def plot_pr_curve(test_y,model_probs,selected_label = 1,path="figures/prc_curve.pdf"):
     # calculate the no skill line as the proportion of the positive class
     no_skill = len(test_y[test_y==selected_label]) / len(test_y)
     # plot the no skill precision-recall curve
@@ -686,7 +686,9 @@ def plot_pr_curve(test_y,model_probs,selected_label = 1,save_path="figures/prc_c
     # show the legend
     plt.legend()
     # show the plot
-    if save_path == None:
+    if path == None:
         plt.show()
     else:
-        plt.savefig(save_path)
+        plt.savefig(path)
+    plt.close() 
+

@@ -361,7 +361,7 @@ def run_main(args):
         naive_probs = yhat[:, 1]
 
         ut.plot_roc_curve(Y_test, naive_probs, pb_results, "saved/figures/" + reduce_model + args.predictor+ prediction + select_drug + '_roc.pdf')
-        ut.plot_pr_curve(Y_test,pb_results, "saved/figures/" + reduce_model + args.predictor+ prediction + select_drug + '_prc.pdf')
+        ut.plot_pr_curve(Y_test,pb_results, path="saved/figures/" + reduce_model + args.predictor+ prediction + select_drug + '_prc.pdf')
 
 
 if __name__ == '__main__':
