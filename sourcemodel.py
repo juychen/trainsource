@@ -349,7 +349,8 @@ def run_main(args):
         logging.info(mean_squared_error(dl_result,Y_test))
     else:
         lb_results = np.argmax(dl_result,axis=1)
-        pb_results = np.max(dl_result,axis=1)
+        #pb_results = np.max(dl_result,axis=1)
+        pb_results = dl_result[:,1]
         logging.info(classification_report(Y_test, lb_results))
         logging.info(average_precision_score(Y_test, pb_results))
         logging.info(roc_auc_score(Y_test, pb_results))
@@ -359,8 +360,8 @@ def run_main(args):
         yhat = model.predict_proba(X_test)
         naive_probs = yhat[:, 1]
 
-        ut.plot_roc_curve(Y_test, naive_probs, pb_results)
-        ut.plot_pr_curve(Y_test,pb_results)
+        ut.plot_roc_curve(Y_test, naive_probs, pb_results, "saved/figures/" + reduce_model + args.predictor+ prediction + select_drug + '_roc.pdf')
+        ut.plot_pr_curve(Y_test,pb_results, "saved/figures/" + reduce_model + args.predictor+ prediction + select_drug + '_prc.pdf')
 
 
 if __name__ == '__main__':
@@ -400,7 +401,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_name', '-n',  type=str, default='')
     parser.add_argument('--source_model_path', '-p',  type=str, default='saved/models/source_model_')
     parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/log')
-    parser.add_argument('--load_source_model',  type=int, default=0)
+    parser.add_argument('--load_source_model',  type=int, default=1)
 
     #
     args, unknown = parser.parse_known_args()

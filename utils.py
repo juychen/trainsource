@@ -1,27 +1,24 @@
 import copy
 import logging
-from models import vae_loss
+import os
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scanpy as sc
+import scipy.sparse as sp
 import torch
+from sklearn.metrics import auc, precision_recall_curve, roc_curve
 from torch import device, nn, optim, t
 from torch.autograd import Variable
 from torch.nn import functional as F
-from torch.utils.data import DataLoader, TensorDataset
-import matplotlib.pyplot as plt
-from torch.utils.data import dataset
-from gae.model import GCNModelAE,GCNModelVAE,g_loss_function
-import graph_function as g
-from gae.utils import mask_test_edges,get_roc_score,preprocess_graph
+from torch.utils.data import DataLoader, TensorDataset, dataset
 from tqdm import tqdm
-import scipy.sparse as sp
 
-from sklearn.metrics import precision_recall_curve,roc_curve
-from sklearn.metrics import auc
-
-
+import graph_function as g
+from gae.model import GCNModelAE, GCNModelVAE, g_loss_function
+from gae.utils import get_roc_score, mask_test_edges, preprocess_graph
+from models import vae_loss
 
 
 def highly_variable_genes(data, 
@@ -59,9 +56,11 @@ def highly_variable_genes(data,
 def train_extractor_model(net,data_loaders={},optimizer=None,loss_function=None,n_epochs=100,scheduler=None,load=False,save_path="model.pkl"):
     
     if(load!=False):
-        net.load_state_dict(torch.load(save_path))           
-    
-        return net, 0
+        if(os.path.exists(save_path)):
+            net.load_state_dict(torch.load(save_path))           
+            return net, 0
+        else:
+            logging.warning("Failed to load existing file, proceed to the trainning process.")
     
     dataset_sizes = {x: data_loaders[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
     loss_train = {}
@@ -132,9 +131,11 @@ def train_extractor_model(net,data_loaders={},optimizer=None,loss_function=None,
 def train_GAE_model(net,adj,data_loaders={},optimizer=None,loss_function=None,n_epochs=100,scheduler=None,load=False,save_path="model.pkl"):
     
     if(load!=False):
-        net.load_state_dict(torch.load(save_path))           
-    
-        return net, 0
+        if(os.path.exists(save_path)):
+            net.load_state_dict(torch.load(save_path))           
+            return net, 0
+        else:
+            logging.warning("Failed to load existing file, proceed to the trainning process.")
     
     dataset_sizes = {x: data_loaders[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
     loss_train = {}
@@ -204,9 +205,11 @@ def train_GAE_model(net,adj,data_loaders={},optimizer=None,loss_function=None,n_
 def train_VAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=None,load=False,save_path="model.pkl",best_model_cache = "drive"):
     
     if(load!=False):
-        net.load_state_dict(torch.load(save_path))           
-    
-        return net, 0
+        if(os.path.exists(save_path)):
+            net.load_state_dict(torch.load(save_path))           
+            return net, 0
+        else:
+            logging.warning("Failed to load existing file, proceed to the trainning process.")
     
     dataset_sizes = {x: data_loaders[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
     loss_train = {}
@@ -296,8 +299,11 @@ def train_VAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=No
 def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,scheduler,load=False,save_path="model.pkl"):
 
     if(load!=False):
-        net.load_state_dict(torch.load(save_path))           
-        return net, 0
+        if(os.path.exists(save_path)):
+            net.load_state_dict(torch.load(save_path))           
+            return net, 0
+        else:
+            logging.warning("Failed to load existing file, proceed to the trainning process.")
     
     dataset_sizes = {x: data_loaders[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
     loss_train = {}
@@ -376,6 +382,7 @@ def train_transfer_model(
     scheduler,d_scheduler,
     n_epochs,device,save_path="saved/models/model.pkl",
     args=None):
+    
     
     target_dataset_sizes = {x: target_loader[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
     source_dataset_sizes = {x: source_loader[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
