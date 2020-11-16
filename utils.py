@@ -18,7 +18,8 @@ from gae.utils import mask_test_edges,get_roc_score,preprocess_graph
 from tqdm import tqdm
 import scipy.sparse as sp
 
-
+from sklearn.metrics import precision_recall_curve,roc_curve
+from sklearn.metrics import auc
 
 
 
@@ -539,21 +540,6 @@ def train_adversarial_model(
         #losses.update(loss.item(), bs)
     return {'d/loss': d_losses.avg, 'target/loss': losses.avg}
 
-def plot_label_hist(Y,save=None):
-    # the histogram of the data
-    n, bins, patches = plt.hist(Y, 50, density=True, facecolor='g', alpha=0.75)
-
-    plt.xlabel('Y values')
-    plt.ylabel('Probability')
-    plt.title('Histogram of target')
-    # plt.text(60, .025, r'$\mu=100,\ \sigma=15$')
-    # plt.xlim(40, 160)
-    # plt.ylim(0, 0.03)
-    # plt.grid(True)
-    if save == None:
-        plt.show()
-    else:
-        plt.savefig(save)
 
 def GAEpreditor(model, z,y, adj,optimizer,loss_function,n_epochs,scheduler,load=False,precisionModel='Float',save_path="model.pkl"):
     '''
@@ -637,3 +623,63 @@ def GAEpreditor(model, z,y, adj,optimizer,loss_function,n_epochs,scheduler,load=
 
  
     return model,0
+
+
+def plot_label_hist(Y,save=None):
+
+    # the histogram of the data
+    n, bins, patches = plt.hist(Y, 50, density=True, facecolor='g', alpha=0.75)
+
+    plt.xlabel('Y values')
+    plt.ylabel('Probability')
+    plt.title('Histogram of target')
+    # plt.text(60, .025, r'$\mu=100,\ \sigma=15$')
+    # plt.xlim(40, 160)
+    # plt.ylim(0, 0.03)
+    # plt.grid(True)
+    if save == None:
+        plt.show()
+    else:
+        plt.savefig(save)
+
+
+# plot no skill and model roc curves
+def plot_roc_curve(test_y, naive_probs, model_probs,save_path="figures/roc_curve.pdf"):
+
+	# plot naive skill roc curve
+	fpr, tpr, _ = roc_curve(test_y, naive_probs)
+	plt.plot(fpr, tpr, linestyle='--', label='Random')
+	# plot model roc curve
+	fpr, tpr, _ = roc_curve(test_y, model_probs)
+	plt.plot(fpr, tpr, marker='.', label='Predition')
+	# axis labels
+	plt.xlabel('False Positive Rate')
+	plt.ylabel('True Positive Rate')
+	# show the legend
+	plt.legend()
+	# show the plot
+    if save_path == None:
+        plt.show()
+    else:
+        plt.savefig(save_path)
+
+
+# plot no skill and model precision-recall curves
+def plot_pr_curve(test_y,model_probs,selected_label = 1,save_path="figures/prc_curve.pdf"):
+	# calculate the no skill line as the proportion of the positive class
+	no_skill = len(test_y[test_y==selected_label]) / len(test_y)
+	# plot the no skill precision-recall curve
+	plt.plot([0, 1], [no_skill, no_skill], linestyle='--', label='Random')
+	# plot model precision-recall curve
+	precision, recall, _ = precision_recall_curve(test_y, model_probs)
+	plt.plot(recall, precision, marker='.', label='Predition')
+	# axis labels
+	plt.xlabel('Recall')
+	plt.ylabel('Precision')
+	# show the legend
+	plt.legend()
+	# show the plot
+    if save_path == None:
+        plt.show()
+    else:
+        plt.savefig(save_path)

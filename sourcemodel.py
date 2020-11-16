@@ -14,6 +14,7 @@ from pandas.core.arrays import boolean
 from scipy import stats
 from scipy.stats import pearsonr
 from sklearn import preprocessing
+from sklearn.dummy import DummyClassifier
 from sklearn.metrics import (auc, average_precision_score,
                              classification_report, mean_squared_error,
                              precision_recall_curve, r2_score, roc_auc_score)
@@ -25,10 +26,10 @@ from torch.nn import functional as F
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, TensorDataset
 
-import sampling as sam
 import gae.utils as gut
 import graph_function as g
 import models
+import sampling as sam
 import utils as ut
 from gae.utils import get_roc_score, mask_test_edges, preprocess_graph
 from models import (AEBase, GAEBase, GCNPredictor, Predictor,
@@ -352,6 +353,15 @@ def run_main(args):
         logging.info(classification_report(Y_test, lb_results))
         logging.info(average_precision_score(Y_test, pb_results))
         logging.info(roc_auc_score(Y_test, pb_results))
+
+        model = DummyClassifier(strategy='stratified')
+        model.fit(X_train, Y_train)
+        yhat = model.predict_proba(X_test)
+        naive_probs = yhat[:, 1]
+
+        ut.plot_roc_curve(Y_test, naive_probs, pb_results)
+        ut.plot_pr_curve(Y_test,pb_results)
+
 
 if __name__ == '__main__':
 
