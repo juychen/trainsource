@@ -9,6 +9,8 @@ import copy
 import os
 import sys
 import time
+import logging
+
 
 import numpy as np
 import pandas as pd
@@ -76,6 +78,8 @@ def run_main(args):
     encoder_hdims = list(map(int, encoder_hdims))
     source_data_path = args.source_data 
     pretrain = args.pretrain
+    prediction = args.predition
+
     reduce_model = args.dimreduce
     predict_hdims = args.p_h_dims.split(",")
     predict_hdims = list(map(int, predict_hdims))
@@ -85,12 +89,24 @@ def run_main(args):
     export_name = data_path.replace("/","")
 
     # If target file not exist, 
-    if (os.path.exists(target_model_path)==False):
-        target_model_path = target_model_path+"/transfer_"+export_name+"_"+now+".pkl"
+    now=time.strftime("%Y-%m-%d-%H-%M-%S")
 
+    log_path = log_path+now+".log"
 
-    log=open(log_path,"w")
-    sys.stdout=log
+    #log=open(log_path,"w")
+    #sys.stdout=log
+
+    logging.basicConfig(level=logging.DEBUG,#控制台打印的日志级别
+                    filename=log_path,
+                    filemode='a',##模式，有w和a，w就是写模式，每次都会重新写日志，覆盖之前的日志
+                    #a是追加模式，默认如果不写的话，就是追加模式
+                    format=
+                    '%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'
+                    #日志格式
+                    )
+
+    logging.info(args)
+
 
     # Load data and preprocessing
     adata = pp.read_sc_file(data_path)
@@ -124,13 +140,12 @@ def run_main(args):
 
     # Split data to train and valid set
     Xtarget_train, Xtarget_valid = train_test_split(data, test_size=valid_size, random_state=42)
-    print(Xtarget_train.shape, Xtarget_valid.shape)
 
 
     # Select the device of gpu
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # Assuming that we are on a CUDA machine, this should print a CUDA device:
-    print(device)
+    logging.info(device)
     torch.cuda.set_device(device)
 
     # Construct datasets and data loaders
@@ -159,7 +174,7 @@ def run_main(args):
     if torch.cuda.is_available():
         encoder.cuda()
 
-    print(encoder)
+    logging.info(encoder)
     encoder.to(device)
     optimizer_e = optim.Adam(encoder.parameters(), lr=1e-2)
     loss_function_e = nn.MSELoss()
@@ -200,8 +215,17 @@ def run_main(args):
     # Load source model
 
     if reduce_model == "AE":
-        source_encoder = AEBase(input_dim=data_r.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
-        source_encoder.load_state_dict(torch.load(source_model_path))
+        if prediction == "regression":
+            dim_model_out = 1
+        else:
+            dim_model_out = 2
+
+        source_model = PretrainedPredictor(input_dim=Xsource_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
+                hidden_dims_predictor=predict_hdims,output_dim=dim_model_out,
+                pretrained_weights=None,freezed=False)
+        source_model.load_state_dict(torch.load(source_model_path))
+
+        source_encoder = source_model
     else:
         # source_encoder = VAEBase(input_dim=data_r.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
         # source_encoder.load_state_dict(torch.load(source_model_path))
@@ -232,11 +256,11 @@ def run_main(args):
             encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
                                         optimizer=optimizer_e,loss_function=loss_function_e,
                                         n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
-            print("Pretrained finished")
+            logging.info("Pretrained finished")
         else:
             pretrain = str(pretrain)
             encoder.load_state_dict(torch.load(pretrain))
-            print("Load finished")
+            logging.info("Load finished")
 
 
         # Extract pretrain feature
@@ -255,7 +279,7 @@ def run_main(args):
                         epochs,device,
                         target_model_path)
 
-    print("Transfer finished")
+    logging.info("Transfer finished")
 
 
 
@@ -266,7 +290,10 @@ def run_main(args):
     embeddings = embeddings.detach().cpu().numpy()
     predictions = predictions.detach().cpu().numpy()
 
-    adata.obs["sens_preds"] = predictions
+    if(prediction=="regression"):
+        adata.obs["sens_preds"] = predictions
+    else:
+        adata.obs["sens_preds"] = predictions[:,1]
  
     # PCA
     sc.tl.pca(adata, svd_solver='arpack')
@@ -309,24 +336,26 @@ if __name__ == '__main__':
     parser.add_argument('--min_c', type=int, default=3)
 
     # train
-    parser.add_argument('--source_model_path', type=str, default='saved/models/model_vae.pklCisplatin.pkl')
+    parser.add_argument('--source_model_path', type=str, default='saved/models/source_model_AEDNNclassificationCisplatin.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/')
-    parser.add_argument('--pretrain', type=str, default='saved/models/pretrain_encoders.pkl')
+    parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_ae.pkl')
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
-    parser.add_argument('--dimreduce', type=str, default="VAE")
+    parser.add_argument('--dimreduce', type=str, default="AE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--source_h_dims', type=str, default="2048,1024")
     parser.add_argument('--target_h_dims', type=str, default="512,256")
     parser.add_argument('--p_h_dims', type=str, default="256,128")
+    parser.add_argument('--predition', type=str, default="classification")
+
 
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')
     parser.add_argument('--output_name', '-n',  type=str, default='')
-    parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/log')
+    parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/transfer_')
 
     #
     args, unknown = parser.parse_known_args()
