@@ -214,11 +214,13 @@ def run_main(args):
 
     # Load source model
 
-    if reduce_model == "AE":
-        if prediction == "regression":
+    if prediction == "regression":
             dim_model_out = 1
-        else:
+    else:
             dim_model_out = 2
+
+    if reduce_model == "AE":
+
 
         source_model = PretrainedPredictor(input_dim=Xsource_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
                 hidden_dims_predictor=predict_hdims,output_dim=dim_model_out,
@@ -231,7 +233,7 @@ def run_main(args):
         # source_encoder.load_state_dict(torch.load(source_model_path))
 
         source_model = PretrainedVAEPredictor(input_dim=Xsource_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
-                hidden_dims_predictor=predict_hdims,
+                hidden_dims_predictor=predict_hdims,output_dim=dim_model_out,
                 pretrained_weights=None,freezed=False)
         source_model.load_state_dict(torch.load(source_model_path))
 
@@ -253,10 +255,17 @@ def run_main(args):
     if(bool(pretrain)!=False):
         if(os.path.exists(pretrain)==False):
             pretrain = str(pretrain)
-            encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
-                                        optimizer=optimizer_e,loss_function=loss_function_e,
-                                        n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
-            logging.info("Pretrained finished")
+
+            if reduce_model == "AE":
+                encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
+                                            optimizer=optimizer_e,loss_function=loss_function_e,
+                                            n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
+                logging.info("Pretrained finished")
+            else:
+                encoder,loss_report_en = ut.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
+                                optimizer=optimizer_e,
+                                n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
+
         else:
             pretrain = str(pretrain)
             encoder.load_state_dict(torch.load(pretrain))
@@ -336,14 +345,14 @@ if __name__ == '__main__':
     parser.add_argument('--min_c', type=int, default=3)
 
     # train
-    parser.add_argument('--source_model_path', type=str, default='saved/models/source_model_AEDNNclassificationCisplatin.pkl')
+    parser.add_argument('--source_model_path', type=str, default='saved/models/source_model_VAEDNNclassificationCisplatin.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/')
-    parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_ae.pkl')
+    parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_vae.pkl')
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=512)
-    parser.add_argument('--dimreduce', type=str, default="AE")
+    parser.add_argument('--dimreduce', type=str, default="VAE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--source_h_dims', type=str, default="2048,1024")
