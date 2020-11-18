@@ -244,7 +244,7 @@ def run_main(args):
         elif reduce_model == "VAE":
             model = PretrainedVAEPredictor(input_dim=X_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
                             hidden_dims_predictor=preditor_hdims,output_dim=dim_model_out,
-                            pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain))
+                            pretrained_weights=encoder_path,freezed=bool(args.freeze_pretrain),z_reparam=bool(args.VAErepram))
            
     elif args.predictor == "GCN":
 
@@ -395,6 +395,7 @@ if __name__ == '__main__':
     parser.add_argument('--GCNreduce_path', type=str, default='saved/models/encoder_ae.pkl')
     parser.add_argument('--binarizied', type=int, default=0)
     parser.add_argument('--GCNfeature', type=str, default="z")
+    parser.add_argument('--VAErepram', type=int, default=1)
 
 
 

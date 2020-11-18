@@ -409,8 +409,10 @@ class PretrainedVAEPredictor(VAEBase):
                  hidden_dims_predictor=[256],
                  drop_out_predictor=0.3,
                  output_dim = 1,
-                 freezed = False):
+                 freezed = False,
+                 z_reparam=True):
         
+        self.z_reparam=z_reparam
         # Construct an autoencoder model
         VAEBase.__init__(self,input_dim,latent_dim,h_dims,drop_out)
         
@@ -442,7 +444,7 @@ class PretrainedVAEPredictor(VAEBase):
         # )
 
     def forward(self, input, **kwargs):
-        embedding = self.encode(input)
+        embedding = self.encode(input,repram=self.z_reparam)
         output = self.predictor(embedding)
         return  output
 

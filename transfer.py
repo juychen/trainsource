@@ -234,7 +234,7 @@ def run_main(args):
 
         source_model = PretrainedVAEPredictor(input_dim=Xsource_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
                 hidden_dims_predictor=predict_hdims,output_dim=dim_model_out,
-                pretrained_weights=None,freezed=False)
+                pretrained_weights=None,freezed=False,z_reparam=bool(args.VAErepram))
         source_model.load_state_dict(torch.load(source_model_path))
 
         source_encoder = source_model
@@ -359,6 +359,7 @@ if __name__ == '__main__':
     parser.add_argument('--target_h_dims', type=str, default="512,256")
     parser.add_argument('--p_h_dims', type=str, default="256,128")
     parser.add_argument('--predition', type=str, default="classification")
+    parser.add_argument('--VAErepram', type=int, default=1)
 
 
     # misc
