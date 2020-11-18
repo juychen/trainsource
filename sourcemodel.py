@@ -360,8 +360,10 @@ def run_main(args):
         yhat = model.predict_proba(X_test)
         naive_probs = yhat[:, 1]
 
-        ut.plot_roc_curve(Y_test, naive_probs, pb_results, "saved/figures/" + reduce_model + args.predictor+ prediction + select_drug+now + '_roc.pdf')
-        ut.plot_pr_curve(Y_test,pb_results, path="saved/figures/" + reduce_model + args.predictor+ prediction + select_drug+now + '_prc.pdf')
+        ut.plot_roc_curve(Y_test, naive_probs, pb_results, title=str(roc_auc_score(Y_test, pb_results)),
+                            path="saved/figures/" + reduce_model + args.predictor+ prediction + select_drug+now + '_roc.pdf')
+        ut.plot_pr_curve(Y_test,pb_results,  title=average_precision_score(Y_test, pb_results),
+                        path="saved/figures/" + reduce_model + args.predictor+ prediction + select_drug+now + '_prc.pdf')
 
 
 if __name__ == '__main__':

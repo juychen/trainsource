@@ -651,7 +651,7 @@ def plot_label_hist(Y,save=None):
 
 
 # plot no skill and model roc curves
-def plot_roc_curve(test_y,naive_probs,model_probs,path="figures/roc_curve.pdf"):
+def plot_roc_curve(test_y,naive_probs,model_probs,title="",path="figures/roc_curve.pdf"):
 
     # plot naive skill roc curve
     fpr, tpr, _ = roc_curve(test_y, naive_probs)
@@ -664,6 +664,8 @@ def plot_roc_curve(test_y,naive_probs,model_probs,path="figures/roc_curve.pdf"):
     plt.ylabel('True Positive Rate')
     # show the legend
     plt.legend()
+    plt.title(title)
+
     # show the plot
     if path == None:
         plt.show()
@@ -685,6 +687,8 @@ def plot_pr_curve(test_y,model_probs,selected_label = 1,path="figures/prc_curve.
     plt.ylabel('Precision')
     # show the legend
     plt.legend()
+    plt.title(title)
+
     # show the plot
     if path == None:
         plt.show()
