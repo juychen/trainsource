@@ -297,7 +297,7 @@ class VAEBase(nn.Module):
 
         return [mu, log_var]
     
-    def encode(self, input: Tensor,repram=True):
+    def encode(self, input: Tensor,repram=False):
         """
         Encodes the input by passing through the encoder network
         and returns the latent codes.

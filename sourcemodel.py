@@ -396,7 +396,7 @@ if __name__ == '__main__':
     parser.add_argument('--GCNreduce_path', type=str, default='saved/models/encoder_ae.pkl')
     parser.add_argument('--binarizied', type=int, default=0)
     parser.add_argument('--GCNfeature', type=str, default="z")
-    parser.add_argument('--VAErepram', type=int, default=1)
+    parser.add_argument('--VAErepram', type=int, default=0)
 
 
 
