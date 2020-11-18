@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import time
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -404,9 +405,9 @@ if __name__ == '__main__':
     parser.add_argument('--output_name', '-n',  type=str, default='')
     parser.add_argument('--source_model_path', '-p',  type=str, default='saved/models/source_model_')
     parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/log')
-    parser.add_argument('--load_source_model',  type=int, default=1)
+    parser.add_argument('--load_source_model',  type=int, default=0)
+    warnings.filterwarnings("ignore")
 
-    #
     args, unknown = parser.parse_known_args()
     
     run_main(args)
