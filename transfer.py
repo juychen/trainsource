@@ -16,18 +16,13 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 import torch
-from pandas.core.arrays import boolean
-from scipy import stats
 from sklearn import preprocessing
-from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 from torch import nn, optim
-from torch.autograd import Variable
-from torch.nn import functional as F
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, TensorDataset
 
-import models
+import matplotlib
 import scanpypip.preprocessing as pp
 import scanpypip.utils as scut
 import utils as ut

@@ -409,6 +409,7 @@ if __name__ == '__main__':
     warnings.filterwarnings("ignore")
 
     args, unknown = parser.parse_known_args()
-    
+    matplotlib.use('Agg')
+
     run_main(args)
 
