@@ -256,7 +256,7 @@ def run_main(args):
             pretrain = str(pretrain)
 
             if reduce_model == "AE":
-                encoder,loss_report_en = t.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
+                encoder,loss_report_en = t.train_AE_model(net=encoder,data_loaders=dataloaders_pretrain,
                                             optimizer=optimizer_e,loss_function=loss_function_e,
                                             n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
                 logging.info("Pretrained finished")
