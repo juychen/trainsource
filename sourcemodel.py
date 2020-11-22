@@ -32,9 +32,11 @@ import graph_function as g
 import models
 import sampling as sam
 import utils as ut
+import trainers as t
 from gae.utils import get_roc_score, mask_test_edges, preprocess_graph
 from models import (AEBase, GAEBase, GCNPredictor, Predictor,
                     PretrainedPredictor, PretrainedVAEPredictor, VAEBase)
+import matplotlib
 
 #import scipy.io as sio
 
@@ -225,11 +227,11 @@ def run_main(args):
         exp_lr_scheduler_e = lr_scheduler.ReduceLROnPlateau(optimizer_e)
 
         if reduce_model == "AE":
-            encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
+            encoder,loss_report_en = t.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
                                         optimizer=optimizer_e,loss_function=loss_function_e,
                                         n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=encoder_path)
         elif reduce_model == "VAE":
-            encoder,loss_report_en = ut.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
+            encoder,loss_report_en = t.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
                             optimizer=optimizer_e,
                             n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=encoder_path)
         
@@ -328,11 +330,11 @@ def run_main(args):
     exp_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
     if args.predictor =="GCN":
-        model,report = ut.GAEpreditor(model=model,z=GCN_trainTensors,y=YTensors_train,adj=AdjTensors_train,
+        model,report = t.train_GCNpreditor_model(model=model,z=GCN_trainTensors,y=YTensors_train,adj=AdjTensors_train,
                                     optimizer=optimizer,loss_function=loss_function,n_epochs=epochs,scheduler=exp_lr_scheduler,save_path=preditor_path)
 
     else:
-        model,report = ut.train_predictor_model(model,dataloaders_train,
+        model,report = t.train_predictor_model(model,dataloaders_train,
                                             optimizer,loss_function,epochs,exp_lr_scheduler,load=load_model,save_path=preditor_path)
     if args.predictor != 'GCN':
         dl_result = model(X_testTensor).detach().cpu().numpy()

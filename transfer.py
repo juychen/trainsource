@@ -26,6 +26,7 @@ import matplotlib
 import scanpypip.preprocessing as pp
 import scanpypip.utils as scut
 import utils as ut
+import trainers as t
 from models import AEBase, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor
 
 # class Arguments:
@@ -127,6 +128,9 @@ def run_main(args):
     sc.pl.highly_variable_genes(adata,save=export_name)
     adata.raw = adata
     adata = adata[:, adata.var.highly_variable]
+
+    if args.specific_preprocess != None:
+
 
     #Prepare to normailize and split target data
     data=adata.X
@@ -252,12 +256,12 @@ def run_main(args):
             pretrain = str(pretrain)
 
             if reduce_model == "AE":
-                encoder,loss_report_en = ut.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
+                encoder,loss_report_en = t.train_extractor_model(net=encoder,data_loaders=dataloaders_pretrain,
                                             optimizer=optimizer_e,loss_function=loss_function_e,
                                             n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
                 logging.info("Pretrained finished")
             else:
-                encoder,loss_report_en = ut.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
+                encoder,loss_report_en = t.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
                                 optimizer=optimizer_e,
                                 n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
 
@@ -274,7 +278,7 @@ def run_main(args):
 
 
     # Adversairal trainning
-    discriminator,encoder, report_, report2_ = ut.train_transfer_model(source_encoder,encoder,discriminator,
+    discriminator,encoder, report_, report2_ = t.train_transfer_model(source_encoder,encoder,discriminator,
                         dataloaders_source,dataloaders_pretrain,
                         loss_d,loss_d,
                         # Should here be all optimizer d?
@@ -355,6 +359,7 @@ if __name__ == '__main__':
     parser.add_argument('--p_h_dims', type=str, default="256,128")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
+    parser.add_argument('--specific_preprocess', type=int, default="GSE117872")
 
 
     # misc
