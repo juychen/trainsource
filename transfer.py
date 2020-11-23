@@ -1,13 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import argparse
-import copy
 import os
-import sys
 import time
 import logging
 
@@ -22,38 +17,10 @@ from torch import nn, optim
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, TensorDataset
 
-import matplotlib
 import scanpypip.preprocessing as pp
-import scanpypip.utils as scut
 import utils as ut
 import trainers as t
 from models import AEBase, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor
-
-# class Arguments:
-#     def __init__(self):   
-#         self.epochs = 500
-#         self.bottleneck = 512
-#         self.missing_value = np.nan
-#         self.target_data = "data/GSE108394/GSM2897334/"
-#         self.source_data = "data/GDSC2_expression.csv"
-#         self.test_size = 0.2
-#         self.valid_size = 0.2
-#         self.source_model_path = "saved/models/pretrained_novar.pkl"
-#         self.target_model_path = "saved/models/"
-#         self.logging_file = "saved/logs/"
-#         self.batch_size = 200
-#         self.source_h_dims = "2048,1024"
-#         self.target_h_dims = "512,256"
-
-#         self.var_genes_disp = 0
-#         self.pretrain_path = "saved/models/pretrained_novar.pkl"
-#         self.min_n_genes = 0
-#         self.max_n_genes = 20000
-#         self.min_g = 200
-#         self.min_c = 3
-
-        
-# args = Arguments()
 
 def run_main(args):
 
@@ -75,10 +42,12 @@ def run_main(args):
     source_data_path = args.source_data 
     pretrain = args.pretrain
     prediction = args.predition
+    data_name = args.specific_preprocess
 
     reduce_model = args.dimreduce
     predict_hdims = args.p_h_dims.split(",")
     predict_hdims = list(map(int, predict_hdims))
+    
     # Misc
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
     log_path = log_path+now+".txt"
@@ -91,7 +60,8 @@ def run_main(args):
 
     #log=open(log_path,"w")
     #sys.stdout=log
-
+    
+    #Logging infomaion
     logging.basicConfig(level=logging.DEBUG,#控制台打印的日志级别
                     filename=log_path,
                     filemode='a',##模式，有w和a，w就是写模式，每次都会重新写日志，覆盖之前的日志
@@ -112,7 +82,7 @@ def run_main(args):
 
     adata = pp.cal_ncount_ngenes(adata)
 
-
+    # Show statisctic after QX
     sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt'],
                 jitter=0.4, multi_panel=True,save=export_name)
     sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt')
@@ -129,11 +99,13 @@ def run_main(args):
     adata.raw = adata
     adata = adata[:, adata.var.highly_variable]
 
-    if args.specific_preprocess != None:
-
+    # Preprocess data if spcific process is required
+    if data_name == 'GSE117872':
+        adata =  ut.specific_process(adata,dataname=data_name,select_origin=args.batch_id)
+    else:
+        data=adata.X
 
     #Prepare to normailize and split target data
-    data=adata.X
     mmscaler = preprocessing.MinMaxScaler()
     data = mmscaler.fit_transform(data)
 
@@ -360,7 +332,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--specific_preprocess', type=int, default="GSE117872")
-
+    parser.add_argument('--batch_id', type=int, default="HN148")
 
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')

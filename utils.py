@@ -53,154 +53,6 @@ def highly_variable_genes(data,
 
     return adata.var.highly_variable,adata
 
-    
-    if(load!=False):
-        if(os.path.exists(save_path)):
-            net.load_state_dict(torch.load(save_path))           
-            return net, 0
-        else:
-            logging.warning("Failed to load existing file, proceed to the trainning process.")
-    
-    dataset_sizes = {x: data_loaders[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
-    loss_train = {}
-    
-    best_model_wts = copy.deepcopy(net.state_dict())
-    best_loss = np.inf
-
-    for epoch in range(n_epochs):
-        logging.info('Epoch {}/{}'.format(epoch, n_epochs - 1))
-        logging.info('-' * 10)
-
-        # Each epoch has a training and validation phase
-        for phase in ['train', 'val']:
-            if phase == 'train':
-                #optimizer = scheduler(optimizer, epoch)
-                net.train()  # Set model to training mode
-            else:
-                net.eval()  # Set model to evaluate mode
-
-            running_loss = 0.0
-
-            n_iters = len(data_loaders[phase])
-
-
-            # Iterate over data.
-            # for data in data_loaders[phase]:
-            for batchidx, (x, _) in enumerate(data_loaders[phase]):
-
-                x.requires_grad_(True)
-                # encode and decode 
-                output = net(x)
-                # compute loss
-                loss = loss_function(output, x)      
-
-                # zero the parameter (weight) gradients
-                optimizer.zero_grad()
-
-                # backward + optimize only if in training phase
-                if phase == 'train':
-                    loss.backward()
-                    # update the weights
-                    optimizer.step()
-
-                # print loss statistics
-                running_loss += loss.item()
-            
-  
-            epoch_loss = running_loss / n_iters
-
-            
-            if phase == 'train':
-                scheduler.step(epoch_loss)
-                
-            last_lr = scheduler.optimizer.param_groups[0]['lr']
-            loss_train[epoch,phase] = epoch_loss
-            logging.info('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
-            
-            if phase == 'val' and epoch_loss < best_loss:
-                best_loss = epoch_loss
-                best_model_wts = copy.deepcopy(net.state_dict())
-    
-    # Select best model wts
-    torch.save(best_model_wts, save_path)
-    net.load_state_dict(best_model_wts)           
-    
-    return net, loss_train
-
-    
-    if(load!=False):
-        if(os.path.exists(save_path)):
-            net.load_state_dict(torch.load(save_path))           
-            return net, 0
-        else:
-            logging.warning("Failed to load existing file, proceed to the trainning process.")
-    
-    dataset_sizes = {x: data_loaders[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
-    loss_train = {}
-    
-    best_model_wts = copy.deepcopy(net.state_dict())
-    best_loss = np.inf
-
-    for epoch in range(n_epochs):
-        logging.info('Epoch {}/{}'.format(epoch, n_epochs - 1))
-        logging.info('-' * 10)
-
-        # Each epoch has a training and validation phase
-        for phase in ['train', 'val']:
-            if phase == 'train':
-                #optimizer = scheduler(optimizer, epoch)
-                net.train()  # Set model to training mode
-            else:
-                net.eval()  # Set model to evaluate mode
-
-            running_loss = 0.0
-
-            n_iters = len(data_loaders[phase])
-
-
-            # Iterate over data.
-            # for data in data_loaders[phase]:
-            for batchidx, (x, _) in enumerate(data_loaders[phase]):
-
-                x.requires_grad_(True)
-                # encode and decode 
-                output = net(x,adj)
-                # compute loss
-                loss = loss_function(output, x)      
-
-                # zero the parameter (weight) gradients
-                optimizer.zero_grad()
-
-                # backward + optimize only if in training phase
-                if phase == 'train':
-                    loss.backward()
-                    # update the weights
-                    optimizer.step()
-
-                # print loss statistics
-                running_loss += loss.item()
-
-            epoch_loss = running_loss / n_iters
-
-            
-            if phase == 'train':
-                scheduler.step(epoch_loss)
-                
-            last_lr = scheduler.optimizer.param_groups[0]['lr']
-            loss_train[epoch,phase] = epoch_loss
-            logging.info('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
-            
-            if phase == 'val' and epoch_loss < best_loss:
-                best_loss = epoch_loss
-                best_model_wts = copy.deepcopy(net.state_dict())
-    
-    # Select best model wts
-    torch.save(best_model_wts, save_path)
-    net.load_state_dict(best_model_wts)           
-    
-    return net, loss_train
-
-
 def plot_label_hist(Y,save=None):
 
     # the histogram of the data
@@ -264,3 +116,23 @@ def plot_pr_curve(test_y,model_probs,selected_label = 1,title="",path="figures/p
         plt.savefig(path)
     plt.close() 
 
+
+def specific_process(adata,dataname="",**kargs):
+    if dataname =="GSE117872":
+        adata = process_117872(adata,kargs)
+
+    return adata
+
+def process_117872(adata,**kargs):
+
+    annotation = pd.read_csv('data/GSE117872/GSE117872_good_Data_cellinfo.txt',sep="\t")
+    for item in annotation.columns:
+        adata.obs[str(item)] = annotation.loc[:,item].convert_dtypes('str').values
+    
+    if "select_origin" in kargs:
+        origin = kargs['select_origin']
+        selected=adata.obs['origin']==origin
+        selected=selected.to_numpy('bool')
+        return adata[selected, :]
+
+    return adata
