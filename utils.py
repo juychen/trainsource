@@ -119,7 +119,8 @@ def plot_pr_curve(test_y,model_probs,selected_label = 1,title="",path="figures/p
 
 def specific_process(adata,dataname="",**kargs):
     if dataname =="GSE117872":
-        adata = process_117872(adata,kargs)
+        select_origin = kargs['select_origin']
+        adata = process_117872(adata,select_origin=select_origin)
 
     return adata
 

@@ -102,6 +102,8 @@ def run_main(args):
     # Preprocess data if spcific process is required
     if data_name == 'GSE117872':
         adata =  ut.specific_process(adata,dataname=data_name,select_origin=args.batch_id)
+        data=adata.X
+
     else:
         data=adata.X
 
@@ -331,8 +333,8 @@ if __name__ == '__main__':
     parser.add_argument('--p_h_dims', type=str, default="256,128")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
-    parser.add_argument('--specific_preprocess', type=int, default="GSE117872")
-    parser.add_argument('--batch_id', type=int, default="HN148")
+    parser.add_argument('--specific_preprocess', type=str, default="GSE117872")
+    parser.add_argument('--batch_id', type=str, default="HN148")
 
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')
