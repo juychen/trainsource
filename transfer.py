@@ -51,7 +51,7 @@ def run_main(args):
     # Misc
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
     log_path = log_path+now+".txt"
-    export_name = data_path.replace("/","")
+    export_name = data_name
 
     # If target file not exist, 
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
@@ -84,9 +84,9 @@ def run_main(args):
 
     # Show statisctic after QX
     sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt'],
-                jitter=0.4, multi_panel=True,save=export_name)
-    sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt')
-    sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts')
+                jitter=0.4, multi_panel=True,save=export_name+now,show=False)
+    sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt',show=False)
+    sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts',show=False)
 
     #Preprocess data by filtering
     adata = pp.receipe_my(adata,l_n_genes=min_n_genes,r_n_genes=max_n_genes,filter_mincells=args.min_c,
@@ -95,7 +95,7 @@ def run_main(args):
 
     # Select highly variable genes
     sc.pp.highly_variable_genes(adata,min_disp=g_disperson,max_disp=np.inf,max_mean=6)
-    sc.pl.highly_variable_genes(adata,save=export_name)
+    sc.pl.highly_variable_genes(adata,save=export_name+now,show=False)
     adata.raw = adata
     adata = adata[:, adata.var.highly_variable]
 
@@ -294,11 +294,11 @@ def run_main(args):
     sc.tl.leiden(adata)
 
     # Plot tsne
-    sc.pl.tsne(adata,save=export_name,color=["leiden"])
+    sc.pl.tsne(adata,save=export_name+now,color=["leiden"],show=False)
 
     # Differenrial expression genes
     sc.tl.rank_genes_groups(adata, 'leiden', method='wilcoxon')
-    sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,save=export_name)
+    sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,save=export_name+now,show=False)
 
     # Save adata
     adata.write("saved/results"+export_name+now+".h5ad")
@@ -334,7 +334,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--specific_preprocess', type=str, default="GSE117872")
-    parser.add_argument('--batch_id', type=str, default="HN148")
+    parser.add_argument('--batch_id', type=str, default="HN137")
 
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')

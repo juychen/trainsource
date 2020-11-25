@@ -126,10 +126,11 @@ def specific_process(adata,dataname="",**kargs):
 
 def process_117872(adata,**kargs):
 
-    annotation = pd.read_csv('data/GSE117872/GSE117872_good_Data_cellinfo.txt',sep="\t")
+    annotation = pd.read_csv('data/GSE117872/GSE117872_good_Data_cellinfo.txt',sep="\t",index_col="groups")
     for item in annotation.columns:
-        adata.obs[str(item)] = annotation.loc[:,item].convert_dtypes('str').values
-    
+        #adata.obs[str(item)] = annotation.loc[:,item].convert_dtypes('category').values
+        adata.obs[str(item)] = annotation.loc[:,item].astype("category")
+
     if "select_origin" in kargs:
         origin = kargs['select_origin']
         selected=adata.obs['origin']==origin
