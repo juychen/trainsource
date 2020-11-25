@@ -70,6 +70,8 @@ def run_main(args):
                     '%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'
                     #日志格式
                     )
+    logging.getLogger('matplotlib.font_manager').disabled = True
+
 
     logging.info(args)
 
@@ -225,7 +227,7 @@ def run_main(args):
 
 
     # Pretrain target encoder
-    if(bool(pretrain)!=False):
+    if(str(pretrain)!='0'):
         if(os.path.exists(pretrain)==False):
             pretrain = str(pretrain)
 

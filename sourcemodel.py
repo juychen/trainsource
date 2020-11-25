@@ -102,6 +102,7 @@ def run_main(args):
                     '%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'
                     #日志格式
                     )
+    logging.getLogger('matplotlib.font_manager').disabled = True
 
     logging.info(args)
 
@@ -209,7 +210,7 @@ def run_main(args):
 
     dataloaders_train = {'train':trainDataLoader_p,'val':validDataLoader_p}
 
-    if(bool(args.pretrain)==True):
+    if(bool(args.pretrain)!=False):
         dataloaders_pretrain = {'train':X_trainDataLoader,'val':X_validDataLoader}
         if reduce_model == "VAE":
             encoder = VAEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
