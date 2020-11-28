@@ -22,12 +22,14 @@ import utils as ut
 import trainers as t
 from models import AEBase, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor
 
+DATA_MAP={"GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt",}
+
 def run_main(args):
 
     epochs = args.epochs
     dim_au_out = args.bottleneck #8, 16, 32, 64, 128, 256,512
     na = args.missing_value
-    data_path = args.target_data
+    data_path = DATA_MAP[args.target_data]
     test_size = args.test_size
     valid_size = args.valid_size
     g_disperson = args.var_genes_disp
@@ -42,7 +44,7 @@ def run_main(args):
     source_data_path = args.source_data 
     pretrain = args.pretrain
     prediction = args.predition
-    data_name = args.specific_preprocess
+    data_name = args.target_data
 
     reduce_model = args.dimreduce
     predict_hdims = args.p_h_dims.split(",")
@@ -52,11 +54,6 @@ def run_main(args):
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
     log_path = log_path+now+".txt"
     export_name = data_name
-
-    # If target file not exist, 
-    now=time.strftime("%Y-%m-%d-%H-%M-%S")
-
-    log_path = log_path+now+".log"
 
     #log=open(log_path,"w")
     #sys.stdout=log
@@ -329,7 +326,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
-    parser.add_argument('--target_data', type=str, default="data/GSE117872/GSE117872_good_Data_TPM.txt")
+    parser.add_argument('--target_data', type=str, default="GSE117872")
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
@@ -355,7 +352,6 @@ if __name__ == '__main__':
     parser.add_argument('--p_h_dims', type=str, default="256,128")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
-    parser.add_argument('--specific_preprocess', type=str, default="GSE117872")
     parser.add_argument('--batch_id', type=str, default="HN137")
 
     # misc
