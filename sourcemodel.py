@@ -355,6 +355,17 @@ def run_main(args):
         lb_results = np.argmax(dl_result,axis=1)
         #pb_results = np.max(dl_result,axis=1)
         pb_results = dl_result[:,1]
+
+        report_dict = classification_report(Y_test, lb_results, output_dict=True)
+        report_df = pd.DataFrame(report_dict).T
+        ap_score = average_precision_score(Y_test, pb_results)
+        auroc_score = roc_auc_score(Y_test, pb_results)
+
+        report_df['auroc_score'] = auroc_score
+        report_df['ap_score'] = ap_score
+
+        report_df.to_csv("saved/logs/" + reduce_model + args.predictor+ prediction + select_drug+now + '_report.csv')
+
         logging.info(classification_report(Y_test, lb_results))
         logging.info(average_precision_score(Y_test, pb_results))
         logging.info(roc_auc_score(Y_test, pb_results))
@@ -376,6 +387,7 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--data_path', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
+    parser.add_argument('--result_path', type=str, default='saved/logs/result_')
     parser.add_argument('--drug', type=str, default='Cisplatin')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
