@@ -578,6 +578,19 @@ class GCNPredictor(nn.Module):
         return result
 
 
+class DaNN(nn.Module):
+    def __init__(self, source_model,target_model):
+        super(DaNN, self).__init__()
+        self.source_model = source_model
+        self.target_model = target_model
+
+    def forward(self, X_source, X_target):
+     
+        x_src_mmd = self.source_model.encode(X_source)
+        x_tar_mmd = self.target_model.encode(X_target)
+        y_src = self.predictor(x_src_mmd)
+        return y_src, x_src_mmd, x_tar_mmd
+
 def g_loss_function(preds, labels, mu, logvar, n_nodes, norm, pos_weight):
     cost = norm * F.binary_cross_entropy_with_logits(preds, labels, pos_weight=labels * pos_weight)
 

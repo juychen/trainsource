@@ -250,17 +250,22 @@ def run_main(args):
         adata.obsm["X_pre"] = embeddings_p
 
 
-    # Adversairal trainning
-    discriminator,encoder, report_, report2_ = t.train_transfer_model(source_encoder,encoder,discriminator,
-                        dataloaders_source,dataloaders_pretrain,
-                        loss_d,loss_d,
-                        # Should here be all optimizer d?
-                        optimizer_d,optimizer_d,
-                        exp_lr_scheduler_d,exp_lr_scheduler_d,
-                        epochs,device,
-                        target_model_path)
+    if args.transfer =='ADDA':
+        # Adversairal trainning
+        discriminator,encoder, report_, report2_ = t.train_adda_model(source_encoder,encoder,discriminator,
+                            dataloaders_source,dataloaders_pretrain,
+                            loss_d,loss_d,
+                            # Should here be all optimizer d?
+                            optimizer_d,optimizer_d,
+                            exp_lr_scheduler_d,exp_lr_scheduler_d,
+                            epochs,device,
+                            target_model_path)
 
-    logging.info("Transfer finished")
+        logging.info("Transfer finished")
+
+    elif args.transfer == 'DaNN':
+        
+        logging.info("Transfer finished")
 
 
 
@@ -340,6 +345,8 @@ if __name__ == '__main__':
     parser.add_argument('--source_model_path', type=str, default='saved/models/source_model_VAEDNNclassificationCisplatin.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/')
     parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_vae.pkl')
+    parser.add_argument('--transfer', type=str, default="ADDA")
+
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
@@ -353,6 +360,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="HN137")
+    
 
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')

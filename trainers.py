@@ -258,7 +258,7 @@ def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,sche
     
     return net, loss_train
 
-def train_transfer_model(
+def train_adda_model(
     source_encoder, target_encoder, discriminator,
     source_loader, target_loader,
     dis_loss, target_loss,
