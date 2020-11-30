@@ -10,6 +10,9 @@ from tqdm import tqdm
 
 from models import vae_loss
 
+import DaNN.mmd as mmd
+
+
 
 def train_AE_model(net,data_loaders={},optimizer=None,loss_function=None,n_epochs=100,scheduler=None,load=False,save_path="model.pkl"):
     
@@ -514,3 +517,90 @@ def train_GCNpreditor_model(model, z,y, adj,optimizer,loss_function,n_epochs,sch
 
  
     return model,0
+
+def train_DaNN_model(net,source_loader,target_loader,
+                    optimizer,loss_function,n_epochs,scheduler,weight=0.25,
+                    load=False,save_path="model.pkl"):
+
+    if(load!=False):
+        if(os.path.exists(save_path)):
+            net.load_state_dict(torch.load(save_path))           
+            return net, 0
+        else:
+            logging.warning("Failed to load existing file, proceed to the trainning process.")
+    
+    dataset_sizes = {x: source_loader[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
+    loss_train = {}
+    
+    best_model_wts = copy.deepcopy(net.state_dict())
+    best_loss = np.inf
+
+
+
+    for epoch in range(n_epochs):
+        logging.info('Epoch {}/{}'.format(epoch, n_epochs - 1))
+        logging.info('-' * 10)
+
+
+        # Each epoch has a training and validation phase
+        for phase in ['train', 'val']:
+            if phase == 'train':
+                #optimizer = scheduler(optimizer, epoch)
+                net.train()  # Set model to training mode
+            else:
+                net.eval()  # Set model to evaluate mode
+
+            running_loss = 0.0
+            batch_j = 0
+            list_src, list_tar = list(enumerate(source_loader[phase])), list(enumerate(target_loader[phase]))
+            n_iters = min(len(source_loader[phase]), len(target_loader[phase]))
+
+            for batchidx, (x_src, y_src) in enumerate(source_loader[phase]):
+                _, (x_tar, y_tar) = list_tar[batch_j]
+
+                #x.requires_grad_(True)
+                # encode and decode 
+                y_src, x_src_mmd, x_tar_mmd = net(x_src, x_tar)
+                # compute loss
+                loss_c = loss_function(y_src, y_src)      
+                loss_mmd = mmd.mmd_loss(x_src_mmd, x_tar_mmd)
+
+                loss = loss_c + weight * loss_mmd
+
+
+                # zero the parameter (weight) gradients
+                optimizer.zero_grad()
+
+                # backward + optimize only if in training phase
+                if phase == 'train':
+                    loss.backward()
+                    # update the weights
+                    optimizer.step()
+
+                # print loss statistics
+                running_loss += loss.item()
+
+                batch_j += 1
+                if batch_j >= len(list_tar):
+                    batch_j = 0
+            
+
+            epoch_loss = running_loss / n_iters
+
+            if phase == 'train':
+                scheduler.step(epoch_loss)
+                
+            last_lr = scheduler.optimizer.param_groups[0]['lr']
+            loss_train[epoch,phase] = epoch_loss
+            logging.info('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
+            
+            if phase == 'val' and epoch_loss < best_loss:
+                best_loss = epoch_loss
+                best_model_wts = copy.deepcopy(net.state_dict())
+    
+    # Select best model wts
+        torch.save(best_model_wts, save_path)
+        
+    net.load_state_dict(best_model_wts)           
+    
+    return net, loss_train
