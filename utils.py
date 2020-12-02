@@ -19,7 +19,7 @@ import graph_function as g
 from gae.model import GCNModelAE, GCNModelVAE, g_loss_function
 from gae.utils import get_roc_score, mask_test_edges, preprocess_graph
 from models import vae_loss
-
+import re
 
 def highly_variable_genes(data, 
     layer=None, n_top_genes=None, 
@@ -52,6 +52,17 @@ def highly_variable_genes(data,
 
 
     return adata.var.highly_variable,adata
+
+def save_arguments(args,now):
+    args_strings =re.sub("\'|\"|Namespace|\(|\)","",str(args)).split(sep=', ')
+    args_dict = dict()
+    for item in args_strings:
+        items = item.split(sep='=')
+        args_dict[items[0]] = items[1]
+
+    args_df = pd.DataFrame(args_dict,index=[now]).T
+    args_df.to_csv("saved/logs/" +now + '_arguments.csv')
+
 
 def plot_label_hist(Y,save=None):
 

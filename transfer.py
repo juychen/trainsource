@@ -22,6 +22,9 @@ import utils as ut
 import trainers as t
 from models import AEBase, DaNN, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor
 
+import re
+
+
 DATA_MAP={"GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt",}
 
 def run_main(args):
@@ -77,7 +80,10 @@ def run_main(args):
 
 
     logging.info(args)
+    # Save arguments
+    ut.save_arguments(args,now)
 
+    #os.mkdir('figures/'+now)
 
     # Load data and preprocessing
     adata = pp.read_sc_file(data_path)
@@ -427,8 +433,8 @@ if __name__ == '__main__':
 
 
     # misc
-    parser.add_argument('--message', '-m',  type=str, default='')
-    parser.add_argument('--output_name', '-n',  type=str, default='')
+    parser.add_argument('--message', '-m',  type=str, default='message')
+    parser.add_argument('--output_name', '-n',  type=str, default='saved/results')
     parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/transfer_')
 
     #
