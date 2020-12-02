@@ -316,13 +316,16 @@ def run_main(args):
         DaNN_model = DaNN(source_model=source_encoder,target_model=encoder)
         DaNN_model.to(device)
 
-        discriminator,encoder, report_, report2_ = t.train_DaNN_model(DaNN_model,
+        DaNN_model, report_ = t.train_DaNN_model(DaNN_model,
                             dataloaders_source,dataloaders_pretrain,
                             # Should here be all optimizer d?
                             optimizer_d, loss_d,
                             epochs,exp_lr_scheduler_d,
                             load=load_model,
-                            save_path=target_model_path)
+                            save_path=target_model_path+"_DaNN.pkl")
+
+        encoder = DaNN_model.target_model
+        source_model = DaNN_model.source_model        
         logging.info("Transfer finished")
 
 
@@ -403,7 +406,7 @@ if __name__ == '__main__':
 
     # train
     parser.add_argument('--source_model_path', type=str, default='saved/models/source_model_VAEDNNclassificationCisplatin.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/transfer_')
     parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_vae.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
@@ -420,7 +423,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="HN137")
-    parser.add_argument('--load_target_model', type=int, default=0)
+    parser.add_argument('--load_target_model', type=int, default=1)
 
 
     # misc
