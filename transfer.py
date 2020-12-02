@@ -95,7 +95,7 @@ def run_main(args):
 
     # Show statisctic after QX
     sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt'],
-                jitter=0.4, multi_panel=True,save=export_name+now,show=False)
+                jitter=0.4, multi_panel=True,save=export_name,show=False)
     sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt',show=False)
     sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts',show=False)
 
@@ -106,7 +106,7 @@ def run_main(args):
 
     # Select highly variable genes
     sc.pp.highly_variable_genes(adata,min_disp=g_disperson,max_disp=np.inf,max_mean=6)
-    sc.pl.highly_variable_genes(adata,save=export_name+now,show=False)
+    sc.pl.highly_variable_genes(adata,save=export_name,show=False)
     adata.raw = adata
     adata = adata[:, adata.var.highly_variable]
 

@@ -143,6 +143,9 @@ def process_117872(adata,**kargs):
 
     if "select_origin" in kargs:
         origin = kargs['select_origin']
+        if origin=="all":
+            return adata
+            
         selected=adata.obs['origin']==origin
         selected=selected.to_numpy('bool')
         return adata[selected, :]
