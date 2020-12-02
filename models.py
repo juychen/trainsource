@@ -588,7 +588,7 @@ class DaNN(nn.Module):
      
         x_src_mmd = self.source_model.encode(X_source)
         x_tar_mmd = self.target_model.encode(X_target)
-        y_src = self.predictor(x_src_mmd)
+        y_src = self.source_model.predictor(x_src_mmd)
         return y_src, x_src_mmd, x_tar_mmd
 
 def g_loss_function(preds, labels, mu, logvar, n_nodes, norm, pos_weight):

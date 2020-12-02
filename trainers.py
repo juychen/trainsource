@@ -261,7 +261,7 @@ def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,sche
     
     return net, loss_train
 
-def train_adda_model(
+def train_ADDA_model(
     source_encoder, target_encoder, discriminator,
     source_loader, target_loader,
     dis_loss, target_loss,
@@ -520,7 +520,7 @@ def train_GCNpreditor_model(model, z,y, adj,optimizer,loss_function,n_epochs,sch
 
 def train_DaNN_model(net,source_loader,target_loader,
                     optimizer,loss_function,n_epochs,scheduler,weight=0.25,
-                    load=False,save_path="model.pkl"):
+                    load=False,save_path="saved/model.pkl"):
 
     if(load!=False):
         if(os.path.exists(save_path)):
@@ -553,16 +553,22 @@ def train_DaNN_model(net,source_loader,target_loader,
             running_loss = 0.0
             batch_j = 0
             list_src, list_tar = list(enumerate(source_loader[phase])), list(enumerate(target_loader[phase]))
-            n_iters = min(len(source_loader[phase]), len(target_loader[phase]))
+            n_iters = max(len(source_loader[phase]), len(target_loader[phase]))
 
             for batchidx, (x_src, y_src) in enumerate(source_loader[phase]):
                 _, (x_tar, y_tar) = list_tar[batch_j]
 
+                if (x_src.shape[0]!=x_tar.shape[0]):
+                    min_size = min(x_src.shape[0],x_tar.shape[0])
+                    x_src = x_src[:min_size,]
+                    y_src = y_src[:min_size,]
+                    x_tar = x_tar[:min_size,]
+
                 #x.requires_grad_(True)
                 # encode and decode 
-                y_src, x_src_mmd, x_tar_mmd = net(x_src, x_tar)
+                y_pre, x_src_mmd, x_tar_mmd = net(x_src, x_tar)
                 # compute loss
-                loss_c = loss_function(y_src, y_src)      
+                loss_c = loss_function(y_pre, y_src)      
                 loss_mmd = mmd.mmd_loss(x_src_mmd, x_tar_mmd)
 
                 loss = loss_c + weight * loss_mmd

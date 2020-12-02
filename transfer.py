@@ -20,7 +20,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import scanpypip.preprocessing as pp
 import utils as ut
 import trainers as t
-from models import AEBase, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor
+from models import AEBase, DaNN, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor
 
 DATA_MAP={"GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt",}
 
@@ -31,6 +31,8 @@ def run_main(args):
     na = args.missing_value
     data_path = DATA_MAP[args.target_data]
     test_size = args.test_size
+    select_drug = args.drug
+
     valid_size = args.valid_size
     g_disperson = args.var_genes_disp
     min_n_genes = args.min_n_genes
@@ -45,10 +47,14 @@ def run_main(args):
     pretrain = args.pretrain
     prediction = args.predition
     data_name = args.target_data
+    label_path = args.label_path
 
     reduce_model = args.dimreduce
     predict_hdims = args.p_h_dims.split(",")
     predict_hdims = list(map(int, predict_hdims))
+
+    load_model = bool(args.load_target_model)
+
     
     # Misc
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
@@ -155,31 +161,59 @@ def run_main(args):
 
     # Read source data
     data_r=pd.read_csv(source_data_path,index_col=0)
+    label_r=pd.read_csv(label_path,index_col=0)
+    label_r=label_r.fillna(na)
+
+    # Extract labels
+    selected_idx = label_r.loc[:,select_drug]!=na
+    label = label_r.loc[selected_idx,select_drug]
+
+    label = label.values.reshape(-1,1)
+
+    if prediction == "regression":
+        lbscaler = preprocessing.MinMaxScaler()
+        label = lbscaler.fit_transform(label)
+        dim_model_out = 1
+    else:
+        le = preprocessing.LabelEncoder()
+        label = le.fit_transform(label)
+        dim_model_out = 2
 
     # Process source data
-    source_scaler = preprocessing.MinMaxScaler()
+    mmscaler = preprocessing.MinMaxScaler()
     source_data = mmscaler.fit_transform(data_r)
 
     # Split source data
-    Xsource_train_all, Xsource_test = train_test_split(source_data, test_size=test_size, random_state=42)
-    Xsource_train, Xsource_valid = train_test_split(Xsource_train_all, test_size=valid_size, random_state=42)
+    Xsource_train_all, Xsource_test, Ysource_train_all, Ysource_test = train_test_split(source_data,label, test_size=test_size, random_state=42)
+    Xsource_train, Xsource_valid, Ysource_train, Ysource_valid = train_test_split(Xsource_train_all,Ysource_train_all, test_size=valid_size, random_state=42)
 
     # Transform source data
     # Construct datasets and data loaders
     Xsource_trainTensor = torch.FloatTensor(Xsource_train).to(device)
     Xsource_validTensor = torch.FloatTensor(Xsource_valid).to(device)
-    Xsource_testTensor = torch.FloatTensor(Xsource_test).to(device)
-    Xsource_allTensor = torch.FloatTensor(source_data).to(device)
+    #Xsource_testTensor = torch.FloatTensor(Xsource_test).to(device)
+    #Xsource_allTensor = torch.FloatTensor(source_data).to(device)
+
+    if prediction  == "regression":
+        Ysource_trainTensor = torch.FloatTensor(Ysource_train).to(device)
+        #Ysource_trainallTensor = torch.FloatTensor(Ysource_train_all).to(device)
+        Ysource_validTensor = torch.FloatTensor(Ysource_valid).to(device)
+    else:
+        Ysource_trainTensor = torch.LongTensor(Ysource_train).to(device)
+        #Ysource_trainallTensor = torch.LongTensor(Ysource_train_all).to(device)
+        Ysource_validTensor = torch.LongTensor(Ysource_valid).to(device)
 
 
-    sourcetrain_dataset = TensorDataset(Xsource_trainTensor, Xsource_trainTensor)
-    sourcevalid_dataset = TensorDataset(Xsource_validTensor, Xsource_validTensor)
-    sourcetest_dataset = TensorDataset(Xsource_testTensor, Xsource_testTensor)
-    sourceall_dataset = TensorDataset(Xsource_allTensor, Xsource_allTensor)
+    sourcetrain_dataset = TensorDataset(Xsource_trainTensor, Ysource_trainTensor)
+    sourcevalid_dataset = TensorDataset(Xsource_validTensor, Ysource_validTensor)
+    #sourcetest_dataset = TensorDataset(Xsource_testTensor, Ysource_trainallTensor)
+    #sourceall_dataset = TensorDataset(Xsource_allTensor, Ysource_validTensor)
 
     Xsource_trainDataLoader = DataLoader(dataset=sourcetrain_dataset, batch_size=batch_size, shuffle=True)
     Xsource_validDataLoader = DataLoader(dataset=sourcevalid_dataset, batch_size=batch_size, shuffle=True)
-    X_allDataLoader = DataLoader(dataset=sourceall_dataset, batch_size=batch_size, shuffle=True)
+    #X_allDataLoader = DataLoader(dataset=sourceall_dataset, batch_size=batch_size, shuffle=True)
+
+
 
     dataloaders_source = {'train':Xsource_trainDataLoader,'val':Xsource_validDataLoader}
 
@@ -215,12 +249,12 @@ def run_main(args):
     source_encoder.to(device)
 
 
-    # Set discriminator model
-    discriminator = Predictor(input_dim=dim_au_out,output_dim=2)
-    discriminator.to(device)
-    loss_d = nn.CrossEntropyLoss()
-    optimizer_d = optim.Adam(encoder.parameters(), lr=1e-2)
-    exp_lr_scheduler_d = lr_scheduler.ReduceLROnPlateau(optimizer_d)
+    # # Set discriminator model
+    # discriminator = Predictor(input_dim=dim_au_out,output_dim=2)
+    # discriminator.to(device)
+    # loss_d = nn.CrossEntropyLoss()
+    # optimizer_d = optim.Adam(encoder.parameters(), lr=1e-2)
+    # exp_lr_scheduler_d = lr_scheduler.ReduceLROnPlateau(optimizer_d)
 
 
     # Pretrain target encoder
@@ -251,8 +285,16 @@ def run_main(args):
 
 
     if args.transfer =='ADDA':
+
+        # Set discriminator model
+        discriminator = Predictor(input_dim=dim_au_out,output_dim=2)
+        discriminator.to(device)
+        loss_d = nn.CrossEntropyLoss()
+        optimizer_d = optim.Adam(encoder.parameters(), lr=1e-2)
+        exp_lr_scheduler_d = lr_scheduler.ReduceLROnPlateau(optimizer_d)
+
         # Adversairal trainning
-        discriminator,encoder, report_, report2_ = t.train_adda_model(source_encoder,encoder,discriminator,
+        discriminator,encoder, report_, report2_ = t.train_ADDA_model(source_encoder,encoder,discriminator,
                             dataloaders_source,dataloaders_pretrain,
                             loss_d,loss_d,
                             # Should here be all optimizer d?
@@ -264,7 +306,23 @@ def run_main(args):
         logging.info("Transfer finished")
 
     elif args.transfer == 'DaNN':
-        
+
+        # Set discriminator model
+        loss_d = nn.CrossEntropyLoss()
+        optimizer_d = optim.Adam(encoder.parameters(), lr=1e-2)
+        exp_lr_scheduler_d = lr_scheduler.ReduceLROnPlateau(optimizer_d)
+
+        # Adversairal trainning
+        DaNN_model = DaNN(source_model=source_encoder,target_model=encoder)
+        DaNN_model.to(device)
+
+        discriminator,encoder, report_, report2_ = t.train_DaNN_model(DaNN_model,
+                            dataloaders_source,dataloaders_pretrain,
+                            # Should here be all optimizer d?
+                            optimizer_d, loss_d,
+                            epochs,exp_lr_scheduler_d,
+                            load=load_model,
+                            save_path=target_model_path)
         logging.info("Transfer finished")
 
 
@@ -331,7 +389,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
+    parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
     parser.add_argument('--target_data', type=str, default="GSE117872")
+    parser.add_argument('--drug', type=str, default='Cisplatin')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
@@ -345,7 +405,7 @@ if __name__ == '__main__':
     parser.add_argument('--source_model_path', type=str, default='saved/models/source_model_VAEDNNclassificationCisplatin.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/')
     parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_vae.pkl')
-    parser.add_argument('--transfer', type=str, default="ADDA")
+    parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
@@ -360,7 +420,8 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="HN137")
-    
+    parser.add_argument('--load_target_model', type=int, default=0)
+
 
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')
