@@ -406,7 +406,7 @@ if __name__ == '__main__':
     parser.add_argument('--min_c', type=int, default=3)
 
     # train
-    parser.add_argument('--source_model_path', type=str, default='saved/models/source_model_VAEDNNclassificationCisplatin.pkl')
+    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAEDNNclassificationCisplatin.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/transfer_')
     parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_vae.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
