@@ -34,6 +34,8 @@ def run_main(args):
     test_size = args.test_size
     select_drug = args.drug
 
+    freeze = args.freeze_pretrain
+
     valid_size = args.valid_size
     g_disperson = args.var_genes_disp
     min_n_genes = args.min_n_genes
@@ -156,7 +158,9 @@ def run_main(args):
     if torch.cuda.is_available():
         encoder.cuda()
 
+    logging.info("Target encoder structure is: ")
     logging.info(encoder)
+
     encoder.to(device)
     optimizer_e = optim.Adam(encoder.parameters(), lr=1e-2)
     loss_function_e = nn.MSELoss()
@@ -234,7 +238,7 @@ def run_main(args):
 
         source_model = PretrainedPredictor(input_dim=Xsource_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
                 hidden_dims_predictor=predict_hdims,output_dim=dim_model_out,
-                pretrained_weights=None,freezed=False)
+                pretrained_weights=None,freezed=freeze)
         source_model.load_state_dict(torch.load(source_model_path))
 
         source_encoder = source_model
@@ -244,10 +248,12 @@ def run_main(args):
 
         source_model = PretrainedVAEPredictor(input_dim=Xsource_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
                 hidden_dims_predictor=predict_hdims,output_dim=dim_model_out,
-                pretrained_weights=None,freezed=False,z_reparam=bool(args.VAErepram))
+                pretrained_weights=None,freezed=freeze,z_reparam=bool(args.VAErepram))
         source_model.load_state_dict(torch.load(source_model_path))
 
         source_encoder = source_model
+    logging.info("Load pretrained source model from: "+source_model_path)
+
 
            
     source_encoder.to(device)
@@ -270,7 +276,7 @@ def run_main(args):
         else:
             pretrain = str(pretrain)
             encoder.load_state_dict(torch.load(pretrain))
-            logging.info("Load finished")
+            logging.info("Load pretrained target encoder from "+pretrain)
 
 
         # Extract pretrain feature
@@ -298,7 +304,7 @@ def run_main(args):
                             epochs,device,
                             target_model_path)
 
-        logging.info("Transfer finished")
+        logging.info("Transfer ADDA finished")
 
     elif args.transfer == 'DaNN':
 
@@ -321,7 +327,7 @@ def run_main(args):
 
         encoder = DaNN_model.target_model
         source_model = DaNN_model.source_model        
-        logging.info("Transfer finished")
+        logging.info("Transfer DaNN finished")
 
 
 
@@ -341,14 +347,14 @@ def run_main(args):
     sc.tl.pca(adata, svd_solver='arpack')
 
     # Add embeddings to the adata package
-    adata.obsm["X_AE"] = embeddings
+    adata.obsm["X_TRANS"] = embeddings
 
     # Generate neighbor graph
-    sc.pp.neighbors(adata, n_neighbors=10,use_rep="X_AE")
+    sc.pp.neighbors(adata, n_neighbors=10,use_rep="X_TRANS")
     #sc.tl.umap(adata)
 
     # Use t-sne 
-    sc.tl.tsne(adata,use_rep="X_AE")
+    sc.tl.tsne(adata,use_rep="X_TRANS")
 
     # Leiden on the data
     sc.tl.leiden(adata)
@@ -370,7 +376,7 @@ def run_main(args):
     sc.tl.leiden(adata,resolution=0.5)
     sc.pl.umap(adata,color=["cluster","origin","leiden","cell_color",'sens_preds'],save=export_name+"_umap_"+now,show=False)
     # Plot umap
-    sc.pp.neighbors(adata,use_rep='X_AE',key_added="Trans")
+    sc.pp.neighbors(adata,use_rep='X_TRANS',key_added="Trans")
     sc.tl.umap(adata,neighbors_key="Trans")
     sc.tl.leiden(adata,neighbors_key="Trans",key_added="leiden_trans",resolution=0.5)
     sc.pl.umap(adata,color=["cluster","origin","leiden_trans","cell_color","sens_preds"],neighbors_key="Trans",save=export_name+"_umap_TL"+now,show=False)
@@ -418,7 +424,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="HN137")
-    parser.add_argument('--load_target_model', type=int, default=1)
+    parser.add_argument('--load_target_model', type=int, default=0)
 
 
     # misc

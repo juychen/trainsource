@@ -170,12 +170,15 @@ class PretrainedPredictor(AEBase):
         
         ## Free parameters until the bottleneck layer
         if freezed == True:
+            bottlenect_reached = False
             for p in self.parameters():
-                print("Layer weight is freezed:",format(p.shape))
+                if ((bottlenect_reached == True)&(p.shape.numel()>self.latent_dim)):
+                    break
                 p.requires_grad = False
+                print("Layer weight is freezed:",format(p.shape))
                 # Stop until the bottleneck layer
                 if p.shape.numel() == self.latent_dim:
-                    break
+                    bottlenect_reached = True
         # Only extract encoder
         del self.decoder
         del self.decoder_input
@@ -422,12 +425,16 @@ class PretrainedVAEPredictor(VAEBase):
         
         ## Free parameters until the bottleneck layer
         if freezed == True:
+            bottlenect_reached = False
             for p in self.parameters():
-                print("Layer weight is freezed:",format(p.shape))
-                p.requires_grad = False
-                # Stop until the bottleneck layer
-                if p.shape.numel() == self.latent_dim:
+                if ((bottlenect_reached == True)&(p.shape[0]>self.latent_dim)):
                     break
+                p.requires_grad = False
+                print("Layer weight is freezed:",format(p.shape))
+                # Stop until the bottleneck layer
+                if p.shape[0] == self.latent_dim:
+                    bottlenect_reached = True
+
         # Only extract encoder
         del self.decoder
         del self.decoder_input
