@@ -347,14 +347,14 @@ def run_main(args):
     sc.tl.pca(adata, svd_solver='arpack')
 
     # Add embeddings to the adata package
-    adata.obsm["X_TRANS"] = embeddings
+    adata.obsm["X_Trans"] = embeddings
 
     # Generate neighbor graph
-    sc.pp.neighbors(adata, n_neighbors=10,use_rep="X_TRANS")
+    sc.pp.neighbors(adata, n_neighbors=10,use_rep="X_Trans")
     #sc.tl.umap(adata)
 
     # Use t-sne 
-    sc.tl.tsne(adata,use_rep="X_TRANS")
+    sc.tl.tsne(adata,use_rep="X_Trans")
 
     # Leiden on the data
     sc.tl.leiden(adata)
@@ -376,7 +376,7 @@ def run_main(args):
     sc.tl.leiden(adata,resolution=0.5)
     sc.pl.umap(adata,color=["cluster","origin","leiden","cell_color",'sens_preds'],save=export_name+"_umap_"+now,show=False)
     # Plot umap
-    sc.pp.neighbors(adata,use_rep='X_TRANS',key_added="Trans")
+    sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
     sc.tl.umap(adata,neighbors_key="Trans")
     sc.tl.leiden(adata,neighbors_key="Trans",key_added="leiden_trans",resolution=0.5)
     sc.pl.umap(adata,color=["cluster","origin","leiden_trans","cell_color","sens_preds"],neighbors_key="Trans",save=export_name+"_umap_TL"+now,show=False)
