@@ -22,10 +22,8 @@ import utils as ut
 import trainers as t
 from models import AEBase, DaNN, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor
 
-import re
 
-
-DATA_MAP={"GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt",}
+DATA_MAP={"GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt"}
 
 def run_main(args):
 
@@ -68,7 +66,7 @@ def run_main(args):
     #sys.stdout=log
     
     #Logging infomaion
-    logging.basicConfig(level=logging.DEBUG,#控制台打印的日志级别
+    logging.basicConfig(level=logging.INFO,#控制台打印的日志级别
                     filename=log_path,
                     filemode='a',##模式，有w和a，w就是写模式，每次都会重新写日志，覆盖之前的日志
                     #a是追加模式，默认如果不写的话，就是追加模式
@@ -253,15 +251,6 @@ def run_main(args):
 
            
     source_encoder.to(device)
-
-
-    # # Set discriminator model
-    # discriminator = Predictor(input_dim=dim_au_out,output_dim=2)
-    # discriminator.to(device)
-    # loss_d = nn.CrossEntropyLoss()
-    # optimizer_d = optim.Adam(encoder.parameters(), lr=1e-2)
-    # exp_lr_scheduler_d = lr_scheduler.ReduceLROnPlateau(optimizer_d)
-
 
     # Pretrain target encoder
     if(str(pretrain)!='0'):

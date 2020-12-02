@@ -61,8 +61,7 @@ def save_arguments(args,now):
         args_dict[items[0]] = items[1]
 
     args_df = pd.DataFrame(args_dict,index=[now]).T
-    args_df.to_csv("saved/logs/" +now + '_arguments.csv')
-
+    args_df.to_csv("saved/logs/arguments_" +now + '.csv')
 
 def plot_label_hist(Y,save=None):
 
