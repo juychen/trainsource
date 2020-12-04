@@ -89,10 +89,12 @@ def run_main(args):
 
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
 
+    # Initialize logging and std out
     log_path = log_path+now+".log"
+    out_path = log_path+now+".out"
 
-    #log=open(log_path,"w")
-    #sys.stdout=log
+    out=open(out_path,"w")
+    sys.stdout=out
 
     logging.basicConfig(level=logging.INFO,#控制台打印的日志级别
                     filename=log_path,

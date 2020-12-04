@@ -5,7 +5,7 @@ import argparse
 import os
 import time
 import logging
-
+import sys
 
 import numpy as np
 import pandas as pd
@@ -61,11 +61,13 @@ def run_main(args):
     
     # Misc
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
-    log_path = log_path+now+".txt"
-    export_name = data_name
 
-    #log=open(log_path,"w")
-    #sys.stdout=log
+    # Initialize logging and std out
+    log_path = log_path+now+".log"
+    out_path = log_path+now+".out"
+
+    out=open(out_path,"w")
+    sys.stdout=out
     
     #Logging infomaion
     logging.basicConfig(level=logging.INFO,#控制台打印的日志级别
@@ -369,17 +371,21 @@ def run_main(args):
     # Save adata
     adata.write("saved/results"+export_name+now+".h5ad")
 
+    title = "Cell scatter plot"
+    if(data_name=='GSE117872'):
+        logging.info()
+
     # Simple analysis do neighbors in adata
     # Plot umap
     sc.pp.neighbors(adata)
     sc.tl.umap(adata)
     sc.tl.leiden(adata,resolution=0.5)
-    sc.pl.umap(adata,color=["cluster","origin","leiden","cell_color",'sens_preds'],save=export_name+"_umap_"+now,show=False)
+    sc.pl.umap(adata,color=["cluster","origin",'sens_preds'],save=export_name+"_umap_"+now,show=False)
     # Plot umap
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
     sc.tl.umap(adata,neighbors_key="Trans")
     sc.tl.leiden(adata,neighbors_key="Trans",key_added="leiden_trans",resolution=0.5)
-    sc.pl.umap(adata,color=["cluster","origin","leiden_trans","cell_color","sens_preds"],neighbors_key="Trans",save=export_name+"_umap_TL"+now,show=False)
+    sc.pl.umap(adata,color=["cluster","origin","sens_preds"],neighbors_key="Trans",save=export_name+"_umap_TL"+now,show=False)
     # Plot tsne
     sc.pl.tsne(adata,color=["cluster","sens_preds","cell_color"],neighbors_key="Trans",save=export_name+"_tsne-TL_"+now,show=False)
     # Plot tsne pretrained
