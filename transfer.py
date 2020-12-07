@@ -21,7 +21,10 @@ import scanpypip.preprocessing as pp
 import utils as ut
 import trainers as t
 from models import AEBase, DaNN, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor
-
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import (auc, average_precision_score,
+                             classification_report, mean_squared_error,
+                             precision_recall_curve, r2_score, roc_auc_score)
 
 DATA_MAP={"GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt"}
 
@@ -97,7 +100,7 @@ def run_main(args):
 
     # Show statisctic after QX
     sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt'],
-                jitter=0.4, multi_panel=True,save=export_name,show=False)
+                jitter=0.4, multi_panel=True,save=data_name,show=False)
     sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt',show=False)
     sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts',show=False)
 
@@ -108,7 +111,7 @@ def run_main(args):
 
     # Select highly variable genes
     sc.pp.highly_variable_genes(adata,min_disp=g_disperson,max_disp=np.inf,max_mean=6)
-    sc.pl.highly_variable_genes(adata,save=export_name,show=False)
+    sc.pl.highly_variable_genes(adata,save=data_name,show=False)
     adata.raw = adata
     adata = adata[:, adata.var.highly_variable]
 
@@ -362,17 +365,24 @@ def run_main(args):
     sc.tl.leiden(adata)
 
     # Plot tsne
-    sc.pl.tsne(adata,save=export_name+now,color=["leiden"],show=False)
+    sc.pl.tsne(adata,save=data_name+now,color=["leiden"],show=False)
 
     # Differenrial expression genes
     sc.tl.rank_genes_groups(adata, 'leiden', method='wilcoxon')
-    sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,save=export_name+now,show=False)
+    sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,save=data_name+now,show=False)
 
     # Save adata
-    adata.write("saved/results"+export_name+now+".h5ad")
+    adata.write("saved/results"+data_name+now+".h5ad")
 
     title = "Cell scatter plot"
     if(data_name=='GSE117872'):
+
+        label = adata.obs['cluster']
+        label[label != "Sensitive"] = 'Resistant'
+        le_sc = LabelEncoder()
+        test_label = le_sc.fit_transform(label)
+
+
         logging.info()
 
     # Simple analysis do neighbors in adata
@@ -380,19 +390,19 @@ def run_main(args):
     sc.pp.neighbors(adata)
     sc.tl.umap(adata)
     sc.tl.leiden(adata,resolution=0.5)
-    sc.pl.umap(adata,color=["cluster","origin",'sens_preds'],save=export_name+"_umap_"+now,show=False)
+    sc.pl.umap(adata,color=["cluster","origin",'sens_preds'],save=data_name+"_umap_"+now,show=False)
     # Plot umap
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
     sc.tl.umap(adata,neighbors_key="Trans")
     sc.tl.leiden(adata,neighbors_key="Trans",key_added="leiden_trans",resolution=0.5)
-    sc.pl.umap(adata,color=["cluster","origin","sens_preds"],neighbors_key="Trans",save=export_name+"_umap_TL"+now,show=False)
+    sc.pl.umap(adata,color=["cluster","origin","sens_preds"],neighbors_key="Trans",save=data_name+"_umap_TL"+now,show=False)
     # Plot tsne
-    sc.pl.tsne(adata,color=["cluster","sens_preds","cell_color"],neighbors_key="Trans",save=export_name+"_tsne-TL_"+now,show=False)
+    sc.pl.tsne(adata,color=["cluster","sens_preds","cell_color"],neighbors_key="Trans",save=data_name+"_tsne-TL_"+now,show=False)
     # Plot tsne pretrained
     sc.pp.neighbors(adata,use_rep='X_pre',key_added="Pret")
     sc.tl.umap(adata,neighbors_key="Pret")
     sc.tl.leiden(adata,neighbors_key="Pret",key_added="leiden_Pret",resolution=0.5)
-    sc.pl.umap(adata,color=["cluster","origin","leiden_trans","cell_color"],neighbors_key="Pret",save=export_name+"_tsne_Pretrain_"+now,show=False)
+    sc.pl.umap(adata,color=["cluster","origin","leiden_trans","cell_color"],neighbors_key="Pret",save=data_name+"_tsne_Pretrain_"+now,show=False)
 
 
 if __name__ == '__main__':
@@ -430,7 +440,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="HN137")
-    parser.add_argument('--load_target_model', type=int, default=0)
+    parser.add_argument('--load_target_model', type=int, default=1)
 
 
     # misc
