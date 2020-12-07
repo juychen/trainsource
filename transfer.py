@@ -380,7 +380,11 @@ def run_main(args):
         label = adata.obs['cluster']
         label[label != "Sensitive"] = 'Resistant'
         le_sc = LabelEncoder()
-        test_label = le_sc.fit_transform(label)
+        le_sc.fit(['Resistant','Sensitive'])
+        pb_results = adata.obs['sens_preds']
+        Y_test = le_sc.transform(label)
+        ap_score = average_precision_score(Y_test, pb_results)
+        auroc_score = roc_auc_score(Y_test, pb_results)
 
 
         logging.info()
@@ -390,19 +394,19 @@ def run_main(args):
     sc.pp.neighbors(adata)
     sc.tl.umap(adata)
     sc.tl.leiden(adata,resolution=0.5)
-    sc.pl.umap(adata,color=["cluster","origin",'sens_preds'],save=data_name+"_umap_"+now,show=False)
+    sc.pl.umap(adata,color=["cluster","origin",'sens_preds'],save=data_name+"_umap_"+now,show=False,title=title)
     # Plot umap
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
     sc.tl.umap(adata,neighbors_key="Trans")
     sc.tl.leiden(adata,neighbors_key="Trans",key_added="leiden_trans",resolution=0.5)
-    sc.pl.umap(adata,color=["cluster","origin","sens_preds"],neighbors_key="Trans",save=data_name+"_umap_TL"+now,show=False)
+    sc.pl.umap(adata,color=["cluster","origin","sens_preds"],neighbors_key="Trans",save=data_name+"_umap_TL"+now,show=False,title=title)
     # Plot tsne
-    sc.pl.tsne(adata,color=["cluster","sens_preds","cell_color"],neighbors_key="Trans",save=data_name+"_tsne-TL_"+now,show=False)
+    sc.pl.tsne(adata,color=["cluster","sens_preds","cell_color"],neighbors_key="Trans",save=data_name+"_tsne-TL_"+now,show=False,title=title)
     # Plot tsne pretrained
     sc.pp.neighbors(adata,use_rep='X_pre',key_added="Pret")
     sc.tl.umap(adata,neighbors_key="Pret")
     sc.tl.leiden(adata,neighbors_key="Pret",key_added="leiden_Pret",resolution=0.5)
-    sc.pl.umap(adata,color=["cluster","origin","leiden_trans","cell_color"],neighbors_key="Pret",save=data_name+"_tsne_Pretrain_"+now,show=False)
+    sc.pl.umap(adata,color=["cluster","origin","leiden_trans","cell_color"],neighbors_key="Pret",save=data_name+"_tsne_Pretrain_"+now,show=False,title=title)
 
 
 if __name__ == '__main__':
