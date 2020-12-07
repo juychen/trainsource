@@ -90,8 +90,13 @@ def run_main(args):
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
 
     # Initialize logging and std out
+    # Initialize logging and std out
     log_path = log_path+now+".log"
-    out_path = log_path+now+".out"
+    out_path = log_path+now+".err"
+
+    out=open(out_path,"w")
+    sys.stderr=out
+    
 
     out=open(out_path,"w")
     sys.stdout=out

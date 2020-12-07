@@ -67,10 +67,10 @@ def run_main(args):
 
     # Initialize logging and std out
     log_path = log_path+now+".log"
-    out_path = log_path+now+".out"
+    out_path = log_path+now+".err"
 
     out=open(out_path,"w")
-    sys.stdout=out
+    sys.stderr=out
     
     #Logging infomaion
     logging.basicConfig(level=logging.INFO,#控制台打印的日志级别
@@ -386,8 +386,7 @@ def run_main(args):
         ap_score = average_precision_score(Y_test, pb_results)
         auroc_score = roc_auc_score(Y_test, pb_results)
 
-
-        logging.info()
+        title = ap_score
 
     # Simple analysis do neighbors in adata
     # Plot umap
@@ -444,7 +443,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="HN137")
-    parser.add_argument('--load_target_model', type=int, default=1)
+    parser.add_argument('--load_target_model', type=int, default=0)
 
 
     # misc
