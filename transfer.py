@@ -66,8 +66,8 @@ def run_main(args):
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
 
     # Initialize logging and std out
-    log_path = log_path+now+".log"
     out_path = log_path+now+".err"
+    log_path = log_path+now+".log"
 
     out=open(out_path,"w")
     sys.stderr=out
