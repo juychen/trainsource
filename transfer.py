@@ -378,7 +378,8 @@ def run_main(args):
     if(data_name=='GSE117872'):
 
         label = adata.obs['cluster']
-        label[label != "Sensitive"] = 'Resistant'
+        if len(label[label != "Sensitive"] )>0:
+            label[label != "Sensitive"] = 'Resistant'
         le_sc = LabelEncoder()
         le_sc.fit(['Resistant','Sensitive'])
         pb_results = adata.obs['sens_preds']
@@ -442,8 +443,8 @@ if __name__ == '__main__':
     parser.add_argument('--p_h_dims', type=str, default="256,128")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
-    parser.add_argument('--batch_id', type=str, default="HN137")
-    parser.add_argument('--load_target_model', type=int, default=0)
+    parser.add_argument('--batch_id', type=str, default="HN148")
+    parser.add_argument('--load_target_model', type=int, default=1)
 
 
     # misc
