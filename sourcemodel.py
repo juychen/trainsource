@@ -89,6 +89,9 @@ def run_main(args):
 
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
 
+    ut.save_arguments(args,now)
+
+
     # Initialize logging and std out
     out_path = log_path+now+".err"
     log_path = log_path+now+".log"
@@ -423,7 +426,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_name', '-n',  type=str, default='')
     parser.add_argument('--source_model_path', '-p',  type=str, default='saved/models/source_model_')
     parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/log')
-    parser.add_argument('--load_source_model',  type=int, default=1)
+    parser.add_argument('--load_source_model',  type=int, default=0)
     warnings.filterwarnings("ignore")
 
     args, unknown = parser.parse_known_args()
