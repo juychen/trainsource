@@ -399,7 +399,7 @@ def run_main(args):
         report_df['auroc_score'] = auroc_score
         report_df['ap_score'] = ap_score
 
-        report_df.to_csv("saved/logs/" + reduce_model + args.predictor+ prediction + select_drug+now + '_report.csv')
+        report_df.to_csv("saved/logs/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
     else:
         
         color_list = ["leiden",'sens_preds']
