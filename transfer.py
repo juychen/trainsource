@@ -25,6 +25,8 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import (auc, average_precision_score,
                              classification_report, mean_squared_error,
                              precision_recall_curve, r2_score, roc_auc_score)
+from decimal import Decimal
+
 
 DATA_MAP={"GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt"}
 
@@ -387,26 +389,33 @@ def run_main(args):
         ap_score = average_precision_score(Y_test, pb_results)
         auroc_score = roc_auc_score(Y_test, pb_results)
 
-        title = ap_score
+        ap_title = "ap: "+str(Decimal(ap_score).quantize(Decimal('0.0000')))
+        auroc_title = "roc: "+str(Decimal(auroc_score).quantize(Decimal('0.0000')))
 
+        color_list = ["cluster","origin",'sens_preds']
+        title_list = ['',ap_title,auroc_title]
+    else:
+        
+        color_list = ["leiden",'sens_preds']
+        title_list = ['',""]
     # Simple analysis do neighbors in adata
     # Plot umap
     sc.pp.neighbors(adata)
     sc.tl.umap(adata)
     sc.tl.leiden(adata,resolution=0.5)
-    sc.pl.umap(adata,color=["cluster","origin",'sens_preds'],save=data_name+"_umap_"+now,show=False,title=['','',title])
+    sc.pl.umap(adata,color=color_list,save=data_name+"_umap_"+now,show=False,title=title_list)
     # Plot umap
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
     sc.tl.umap(adata,neighbors_key="Trans")
     sc.tl.leiden(adata,neighbors_key="Trans",key_added="leiden_trans",resolution=0.5)
-    sc.pl.umap(adata,color=["cluster","origin","sens_preds"],neighbors_key="Trans",save=data_name+"_umap_TL"+now,show=False,title=['','',title])
+    sc.pl.umap(adata,color=color_list,neighbors_key="Trans",save=data_name+"_umap_TL"+now,show=False,title=title_list)
     # Plot tsne
-    sc.pl.tsne(adata,color=["cluster","origin","sens_preds"],neighbors_key="Trans",save=data_name+"_tsne-TL_"+now,show=False,title=['','',title])
+    sc.pl.tsne(adata,color=color_list,neighbors_key="Trans",save=data_name+"_tsne-TL_"+now,show=False,title=title_list)
     # Plot tsne pretrained
     sc.pp.neighbors(adata,use_rep='X_pre',key_added="Pret")
     sc.tl.umap(adata,neighbors_key="Pret")
     sc.tl.leiden(adata,neighbors_key="Pret",key_added="leiden_Pret",resolution=0.5)
-    sc.pl.umap(adata,color=["cluster","origin","leiden_trans","cell_color"],neighbors_key="Pret",save=data_name+"_tsne_Pretrain_"+now,show=False)
+    sc.pl.umap(adata,color=["leiden_trans"],neighbors_key="Pret",save=data_name+"_tsne_Pretrain_"+now,show=False)
 
 
 if __name__ == '__main__':
@@ -437,14 +446,14 @@ if __name__ == '__main__':
     parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="VAE")
     parser.add_argument('--predictor', type=str, default="DNN")
-    parser.add_argument('--freeze_pretrain', type=int, default=1)
+    parser.add_argument('--freeze_pretrain', type=int, default=0)
     parser.add_argument('--source_h_dims', type=str, default="2048,1024")
     parser.add_argument('--target_h_dims', type=str, default="512,256")
     parser.add_argument('--p_h_dims', type=str, default="256,128")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="HN148")
-    parser.add_argument('--load_target_model', type=int, default=1)
+    parser.add_argument('--load_target_model', type=int, default=0)
 
 
     # misc
