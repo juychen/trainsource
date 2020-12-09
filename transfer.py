@@ -394,6 +394,12 @@ def run_main(args):
 
         color_list = ["cluster","origin",'sens_preds']
         title_list = ['',ap_title,auroc_title]
+
+        report_df = pd.DataFrame()
+        report_df['auroc_score'] = auroc_score
+        report_df['ap_score'] = ap_score
+
+        report_df.to_csv("saved/logs/" + reduce_model + args.predictor+ prediction + select_drug+now + '_report.csv')
     else:
         
         color_list = ["leiden",'sens_preds']
