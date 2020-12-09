@@ -63,6 +63,8 @@ def save_arguments(args,now):
     args_df = pd.DataFrame(args_dict,index=[now]).T
     args_df.to_csv("saved/logs/arguments_" +now + '.csv')
 
+    return args_df
+
 def plot_label_hist(Y,save=None):
 
     # the histogram of the data

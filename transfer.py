@@ -88,7 +88,7 @@ def run_main(args):
 
     logging.info(args)
     # Save arguments
-    ut.save_arguments(args,now)
+    args_df = ut.save_arguments(args,now)
 
     #os.mkdir('figures/'+now)
 
@@ -395,7 +395,7 @@ def run_main(args):
         color_list = ["cluster","origin",'sens_preds']
         title_list = ['',ap_title,auroc_title]
 
-        report_df = pd.DataFrame()
+        report_df = args_df
         report_df['auroc_score'] = auroc_score
         report_df['ap_score'] = ap_score
 
