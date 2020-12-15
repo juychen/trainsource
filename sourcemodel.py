@@ -26,6 +26,8 @@ from torch.autograd import Variable
 from torch.nn import functional as F
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, TensorDataset
+from sklearn.decomposition import PCA
+
 
 import gae.utils as gut
 import graph_function as g
@@ -73,6 +75,7 @@ def run_main(args):
     reduce_model = args.dimreduce
     prediction = args.predition
     sampling = args.sampling
+    PCA_dim = args.PCA_dim
 
     encoder_hdims = list(map(int, encoder_hdims) )
     preditor_hdims = list(map(int, preditor_hdims) )
@@ -127,6 +130,12 @@ def run_main(args):
     else:
         data = data_r.loc[selected_idx,:]
 
+    # Do PCA if PCA_dim!=0
+    if PCA_dim !=0 :
+        data = PCA(n_components = PCA_dim).fit_transform(data)
+    else:
+        data = data
+        
     # Extract labels
     label = label_r.loc[selected_idx,select_drug]
 
@@ -400,6 +409,7 @@ if __name__ == '__main__':
     parser.add_argument('--valid_size', type=float, default=0.2)
     parser.add_argument('--var_genes_disp', type=float, default=None)
     parser.add_argument('--sampling', type=str, default=None)
+    parser.add_argument('--PCA_dim', type=int, default=0)
 
     # trainv
     parser.add_argument('--encoder_path','-e', type=str, default='saved/models/encoder_ae.pkl')
