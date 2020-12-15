@@ -61,6 +61,7 @@ def run_main(args):
     reduce_model = args.dimreduce
     predict_hdims = args.p_h_dims.split(",")
     predict_hdims = list(map(int, predict_hdims))
+    leiden_damp = args.cluster_damp
 
     load_model = bool(args.load_target_model)
 
@@ -418,23 +419,22 @@ def run_main(args):
     # Plot umap
     sc.pp.neighbors(adata)
     sc.tl.umap(adata)
-    sc.tl.leiden(adata,resolution=0.5)
+    sc.tl.leiden(adata,resolution=leiden_damp)
     sc.pl.umap(adata,color=color_list,save=data_name+"_umap_"+now,show=False,title=title_list)
     # Plot umap
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
     sc.tl.umap(adata,neighbors_key="Trans")
-    sc.tl.leiden(adata,neighbors_key="Trans",key_added="leiden_trans",resolution=0.5)
+    sc.tl.leiden(adata,neighbors_key="Trans",key_added="leiden_trans",resolution=leiden_damp)
     sc.pl.umap(adata,color=color_list,neighbors_key="Trans",save=data_name+"_umap_TL"+now,show=False,title=title_list)
     # Plot tsne
     sc.pl.tsne(adata,color=color_list,neighbors_key="Trans",save=data_name+"_tsne-TL_"+now,show=False,title=title_list)
     # Plot tsne pretrained
     sc.pp.neighbors(adata,use_rep='X_pre',key_added="Pret")
     sc.tl.umap(adata,neighbors_key="Pret")
-    sc.tl.leiden(adata,neighbors_key="Pret",key_added="leiden_Pret",resolution=0.5)
+    sc.tl.leiden(adata,neighbors_key="Pret",key_added="leiden_Pret",resolution=leiden_damp)
     sc.pl.umap(adata,color=["leiden_trans"],neighbors_key="Pret",save=data_name+"_tsne_Pretrain_"+now,show=False)
 
     if(data_name!='GSE117872'):
-
         ari_score_trans  = adjusted_rand_score(adata.obs['leiden_trans'],adata.obs['sens_label'])
         ari_score = adjusted_rand_score(adata.obs['leiden'],adata.obs['sens_label'])
 
@@ -460,6 +460,8 @@ if __name__ == '__main__':
     parser.add_argument('--max_n_genes', type=int, default=20000)
     parser.add_argument('--min_g', type=int, default=200)
     parser.add_argument('--min_c', type=int, default=3)
+    parser.add_argument('--cluster_damp', type=int, default=0.3)
+
 
     # train
     parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAEDNNclassificationCisplatin.pkl')
