@@ -26,6 +26,7 @@ from sklearn.metrics import (auc, average_precision_score,
                              classification_report, mean_squared_error,
                              precision_recall_curve, r2_score, roc_auc_score)
 from decimal import Decimal
+from sklearn.metrics.cluster import adjusted_rand_score
 
 
 DATA_MAP={"GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt"}
@@ -341,14 +342,17 @@ def run_main(args):
     # Extract feature
     # embeddings = encoder.encode(X_allTensor).detach().cpu().numpy()
     embeddings = encoder.encode(X_allTensor)
-    predictions = source_model.predictor(embeddings)
+    prediction_tensor = source_model.predictor(embeddings)
     embeddings = embeddings.detach().cpu().numpy()
-    predictions = predictions.detach().cpu().numpy()
+    predictions = prediction_tensor.detach().cpu().numpy()
 
     if(prediction=="regression"):
         adata.obs["sens_preds"] = predictions
     else:
         adata.obs["sens_preds"] = predictions[:,1]
+        adata.obs["sens_label"] = predictions.argmax(axis=1)
+        adata.obs["sens_label"] = adata.obs["sens_label"].astype('category')
+
  
     # PCA
     sc.tl.pca(adata, svd_solver='arpack')
@@ -387,7 +391,13 @@ def run_main(args):
         pb_results = adata.obs['sens_preds']
         Y_test = le_sc.transform(label)
         ap_score = average_precision_score(Y_test, pb_results)
-        auroc_score = roc_auc_score(Y_test, pb_results)
+
+        try:
+            auroc_score = roc_auc_score(Y_test, pb_results)
+        except:
+            logging.warning("Only one class, no ROC")
+            auroc_score = 0
+        
 
         ap_title = "ap: "+str(Decimal(ap_score).quantize(Decimal('0.0000')))
         auroc_title = "roc: "+str(Decimal(auroc_score).quantize(Decimal('0.0000')))
@@ -422,6 +432,17 @@ def run_main(args):
     sc.tl.umap(adata,neighbors_key="Pret")
     sc.tl.leiden(adata,neighbors_key="Pret",key_added="leiden_Pret",resolution=0.5)
     sc.pl.umap(adata,color=["leiden_trans"],neighbors_key="Pret",save=data_name+"_tsne_Pretrain_"+now,show=False)
+
+    if(data_name!='GSE117872'):
+
+        ari_score_trans  = adjusted_rand_score(adata.obs['leiden_trans'],adata.obs['sens_label'])
+        ari_score = adjusted_rand_score(adata.obs['leiden'],adata.obs['sens_label'])
+
+        report_df = args_df
+        report_df['ari_score'] = ari_score
+        report_df['ari_trans_score'] = ari_score_trans
+        report_df.to_csv("saved/logs/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+
 
 
 if __name__ == '__main__':
@@ -459,7 +480,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="HN148")
-    parser.add_argument('--load_target_model', type=int, default=0)
+    parser.add_argument('--load_target_model', type=int, default=1)
 
 
     # misc
