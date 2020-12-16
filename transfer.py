@@ -8,6 +8,7 @@ import logging
 import sys
 
 import numpy as np
+from numpy.lib.function_base import gradient
 import pandas as pd
 import scanpy as sc
 import torch
@@ -342,10 +343,13 @@ def run_main(args):
 
     # Extract feature
     # embeddings = encoder.encode(X_allTensor).detach().cpu().numpy()
-    embeddings = encoder.encode(X_allTensor)
-    prediction_tensor = source_model.predictor(embeddings)
-    embeddings = embeddings.detach().cpu().numpy()
-    predictions = prediction_tensor.detach().cpu().numpy()
+    embedding_tensors = encoder.encode(X_allTensor)
+    prediction_tensors = source_model.predictor(embedding_tensors)
+    embeddings = embedding_tensors.detach().cpu().numpy()
+    predictions = prediction_tensors.detach().cpu().numpy()
+
+    gradient = ut.gradient_check(net=encoder,input=Xtarget_trainTensor,batch_size=Xtarget_trainTensor.shape[0],
+                                    output_dim=embeddings.shape[1],input_dim=Xtarget_trainTensor.shape[1])
 
     if(prediction=="regression"):
         adata.obs["sens_preds"] = predictions
