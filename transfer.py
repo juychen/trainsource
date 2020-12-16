@@ -393,8 +393,6 @@ def run_main(args):
     sc.tl.rank_genes_groups(adata, 'leiden', method='wilcoxon')
     sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,save=data_name+now,show=False)
 
-    # Save adata
-    adata.write("saved/results/adata/"+data_name+now+".h5ad")
 
     title = "Cell scatter plot"
     if(data_name=='GSE117872'):
@@ -459,6 +457,8 @@ def run_main(args):
         report_df.to_csv("saved/logs/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
 
+    # Save adata
+    adata.write("saved/adata/"+data_name+now+".h5ad")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
