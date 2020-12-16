@@ -135,13 +135,20 @@ def run_main(args):
 
     else:
         data=adata.X
-        # Process sparse data
-        if(type(data).format=='csr'):
-            data = data.todense()
+ 
 
     #Prepare to normailize and split target data
     mmscaler = preprocessing.MinMaxScaler()
-    data = mmscaler.fit_transform(data)
+
+    try:
+        data = mmscaler.fit_transform(data)
+
+    except:
+        logging.warning("Only one class, no ROC")
+
+        # Process sparse data
+        data = data.todense()
+        data = mmscaler.fit_transform(data)
 
     # Split data to train and valid set
     Xtarget_train, Xtarget_valid = train_test_split(data, test_size=valid_size, random_state=42)
@@ -497,7 +504,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="all")
-    parser.add_argument('--load_target_model', type=int, default=1)
+    parser.add_argument('--load_target_model', type=int, default=0)
 
 
     # misc
