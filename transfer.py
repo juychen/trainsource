@@ -30,7 +30,15 @@ from decimal import Decimal
 from sklearn.metrics.cluster import adjusted_rand_score
 
 
-DATA_MAP={"GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt"}
+DATA_MAP={
+"GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt",
+"GSE117309":'data/GSE117309/filtered_gene_bc_matrices_HBCx-22/hg19/',
+"GSE117309_TAMR":'data/GSE117309/filtered_gene_bc_matrices_HBCx22-TAMR/hg19/',
+"GSE121107":'data/GSE121107/GSM3426289_untreated_out_gene_exon_tagged.dge.txt',
+"GSE121107_1H":'data/GSE121107/GSM3426290_entinostat_1hr_out_gene_exon_tagged.dge.txt',
+"GSE121107_6H":'data/GSE121107/GSM3426291_entinostat_6hr_out_gene_exon_tagged.dge.txt',
+"GSE111014":'data/GSE111014/'
+}
 
 def run_main(args):
 
@@ -127,6 +135,9 @@ def run_main(args):
 
     else:
         data=adata.X
+        # Process sparse data
+        if(type(data).format=='csr'):
+            data = data.todense()
 
     #Prepare to normailize and split target data
     mmscaler = preprocessing.MinMaxScaler()
@@ -348,8 +359,8 @@ def run_main(args):
     embeddings = embedding_tensors.detach().cpu().numpy()
     predictions = prediction_tensors.detach().cpu().numpy()
 
-    gradient = ut.gradient_check(net=encoder,input=Xtarget_trainTensor,batch_size=Xtarget_trainTensor.shape[0],
-                                    output_dim=embeddings.shape[1],input_dim=Xtarget_trainTensor.shape[1])
+    # gradient = ut.gradient_check(net=encoder,input=Xtarget_trainTensor,batch_size=Xtarget_trainTensor.shape[0],
+    #                                 output_dim=embeddings.shape[1],input_dim=Xtarget_trainTensor.shape[1])
 
     if(prediction=="regression"):
         adata.obs["sens_preds"] = predictions
@@ -383,7 +394,7 @@ def run_main(args):
     sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,save=data_name+now,show=False)
 
     # Save adata
-    adata.write("saved/results"+data_name+now+".h5ad")
+    adata.write("saved/results/adata/"+data_name+now+".h5ad")
 
     title = "Cell scatter plot"
     if(data_name=='GSE117872'):
@@ -454,7 +465,7 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
-    parser.add_argument('--target_data', type=str, default="GSE117872")
+    parser.add_argument('--target_data', type=str, default="GSE117309")
     parser.add_argument('--drug', type=str, default='Cisplatin')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
@@ -479,13 +490,13 @@ if __name__ == '__main__':
     parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="VAE")
     parser.add_argument('--predictor', type=str, default="DNN")
-    parser.add_argument('--freeze_pretrain', type=int, default=0)
+    parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--source_h_dims', type=str, default="2048,1024")
     parser.add_argument('--target_h_dims', type=str, default="512,256")
     parser.add_argument('--p_h_dims', type=str, default="256,128")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
-    parser.add_argument('--batch_id', type=str, default="HN148")
+    parser.add_argument('--batch_id', type=str, default="all")
     parser.add_argument('--load_target_model', type=int, default=1)
 
 
