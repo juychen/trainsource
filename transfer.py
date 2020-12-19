@@ -477,7 +477,7 @@ def run_main(args):
                 cluster_auroc_score = roc_auc_score(binary_labels, p )
                 cluster_auprc_score = average_precision_score(binary_labels, p )
                 report_df[class+'_auroc_c_'+str(c)] = cluster_auroc_score
-                report_df['auroc_c_'+str(c)] = cluster_auprc_score
+                report_df[class+'_auroc_c_'+str(c)] = cluster_auprc_score
 
     # Save adata
     adata.write("saved/adata/"+data_name+now+".h5ad")
