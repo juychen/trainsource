@@ -375,6 +375,8 @@ def run_main(args):
         adata.obs["sens_preds"] = predictions[:,1]
         adata.obs["sens_label"] = predictions.argmax(axis=1)
         adata.obs["sens_label"] = adata.obs["sens_label"].astype('category')
+        adata.obs["rest_preds"] = predictions[:,0]
+
 
  
     # PCA
@@ -402,6 +404,8 @@ def run_main(args):
 
 
     title = "Cell scatter plot"
+    # Generate reports
+    report_df = args_df
     if(data_name=='GSE117872'):
 
         label = adata.obs['cluster']
@@ -409,12 +413,12 @@ def run_main(args):
             label[label != "Sensitive"] = 'Resistant'
         le_sc = LabelEncoder()
         le_sc.fit(['Resistant','Sensitive'])
-        pb_results = adata.obs['sens_preds']
+        sens_pb_results = adata.obs['sens_preds']
         Y_test = le_sc.transform(label)
-        ap_score = average_precision_score(Y_test, pb_results)
+        ap_score = average_precision_score(Y_test, sens_pb_results)
 
         try:
-            auroc_score = roc_auc_score(Y_test, pb_results)
+            auroc_score = roc_auc_score(Y_test, sens_pb_results)
         except:
             logging.warning("Only one class, no ROC")
             auroc_score = 0
@@ -426,11 +430,11 @@ def run_main(args):
         color_list = ["cluster","origin",'sens_preds']
         title_list = ['',ap_title,auroc_title]
 
-        report_df = args_df
+        #report_df = args_df
         report_df['auroc_score'] = auroc_score
         report_df['ap_score'] = ap_score
 
-        report_df.to_csv("saved/logs/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+        #report_df.to_csv("saved/logs/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
     else:
         
         color_list = ["leiden",'sens_preds']
@@ -454,18 +458,33 @@ def run_main(args):
     sc.tl.leiden(adata,neighbors_key="Pret",key_added="leiden_Pret",resolution=leiden_res)
     sc.pl.umap(adata,color=["leiden_trans"],neighbors_key="Pret",save=data_name+"_tsne_Pretrain_"+now,show=False)
 
-    if(data_name!='GSE117872'):
+    if(data_name!='0'):
         ari_score_trans  = adjusted_rand_score(adata.obs['leiden_trans'],adata.obs['sens_label'])
         ari_score = adjusted_rand_score(adata.obs['leiden'],adata.obs['sens_label'])
 
-        report_df = args_df
+        #report_df = args_df
         report_df['ari_score'] = ari_score
         report_df['ari_trans_score'] = ari_score_trans
-        report_df.to_csv("saved/logs/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
+        cluster_ids = set(adata.obs['leiden'])
+
+        # Two classes
+        for class in ['rest_preds','sens_preds']:
+            p =  adata.obs[class]
+            # One vs all metric
+            for c in cluster_ids:
+                binary_labels = adata.obs['leiden'] == c
+                cluster_auroc_score = roc_auc_score(binary_labels, p )
+                cluster_auprc_score = average_precision_score(binary_labels, p )
+                report_df[class+'_auroc_c_'+str(c)] = cluster_auroc_score
+                report_df['auroc_c_'+str(c)] = cluster_auprc_score
 
     # Save adata
     adata.write("saved/adata/"+data_name+now+".h5ad")
+
+    # Save log
+    report_df.to_csv("saved/logs/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
