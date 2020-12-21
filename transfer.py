@@ -458,28 +458,27 @@ def run_main(args):
     sc.tl.leiden(adata,neighbors_key="Pret",key_added="leiden_Pret",resolution=leiden_res)
     sc.pl.umap(adata,color=["leiden_trans"],neighbors_key="Pret",save=data_name+"_tsne_Pretrain_"+now,show=False)
 
-    if(data_name!='0'):
-        ari_score_trans  = adjusted_rand_score(adata.obs['leiden_trans'],adata.obs['sens_label'])
-        ari_score = adjusted_rand_score(adata.obs['leiden'],adata.obs['sens_label'])
+    ari_score_trans  = adjusted_rand_score(adata.obs['leiden_trans'],adata.obs['sens_label'])
+    ari_score = adjusted_rand_score(adata.obs['leiden'],adata.obs['sens_label'])
 
-        #report_df = args_df
-        report_df['ari_score'] = ari_score
-        report_df['ari_trans_score'] = ari_score_trans
+    #report_df = args_df
+    report_df['ari_score'] = ari_score
+    report_df['ari_trans_score'] = ari_score_trans
 
-        cluster_ids = set(adata.obs['leiden'])
+    cluster_ids = set(adata.obs['leiden'])
 
-        # Two classes
-        for class in ['rest_preds','sens_preds']:
-            p =  adata.obs[class]
-            # One vs all metric
-            for c in cluster_ids:
-                binary_labels = adata.obs['leiden'] == c
-                cluster_auroc_score = roc_auc_score(binary_labels, p )
-                cluster_auprc_score = average_precision_score(binary_labels, p )
-                report_df[class+'_auroc_c_'+str(c)] = cluster_auroc_score
-                report_df[class+'_auroc_c_'+str(c)] = cluster_auprc_score
+    # Two classes
+    for class_key in ['rest_preds','sens_preds']:
+        p =  adata.obs[class_key]
+        # One vs all metric
+        for c in cluster_ids:
+            binary_labels = adata.obs['leiden'] == c
+            cluster_auroc_score = roc_auc_score(binary_labels, p )
+            cluster_auprc_score = average_precision_score(binary_labels, p )
+            report_df[class_key+'_auroc_c_'+str(c)] = cluster_auroc_score
+            report_df[class_key+'_auroc_c_'+str(c)] = cluster_auprc_score
 
-    # Save adata
+# Save adata
     adata.write("saved/adata/"+data_name+now+".h5ad")
 
     # Save log
@@ -523,7 +522,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="all")
-    parser.add_argument('--load_target_model', type=int, default=1)
+    parser.add_argument('--load_target_model', type=int, default=0)
 
 
     # misc
