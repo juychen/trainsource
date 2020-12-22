@@ -11,6 +11,7 @@ from tqdm import tqdm
 from models import vae_loss
 
 import DaNN.mmd as mmd
+import utils as ut
 
 
 
@@ -520,7 +521,7 @@ def train_GCNpreditor_model(model, z,y, adj,optimizer,loss_function,n_epochs,sch
 
 def train_DaNN_model(net,source_loader,target_loader,
                     optimizer,loss_function,n_epochs,scheduler,weight=0.25,GAMMA=10^3,
-                    load=False,save_path="saved/model.pkl"):
+                    load=False,save_path="saved/model.pkl",return_grad=True):
 
     if(load!=False):
         if(os.path.exists(save_path)):
@@ -557,9 +558,10 @@ def train_DaNN_model(net,source_loader,target_loader,
 
             for batchidx, (x_src, y_src) in enumerate(source_loader[phase]):
                 _, (x_tar, y_tar) = list_tar[batch_j]
+                
+                min_size = min(x_src.shape[0],x_tar.shape[0])
 
                 if (x_src.shape[0]!=x_tar.shape[0]):
-                    min_size = min(x_src.shape[0],x_tar.shape[0])
                     x_src = x_src[:min_size,]
                     y_src = y_src[:min_size,]
                     x_tar = x_tar[:min_size,]
@@ -586,6 +588,7 @@ def train_DaNN_model(net,source_loader,target_loader,
                 # print loss statistics
                 running_loss += loss.item()
 
+
                 batch_j += 1
                 if batch_j >= len(list_tar):
                     batch_j = 0
@@ -603,6 +606,8 @@ def train_DaNN_model(net,source_loader,target_loader,
             if phase == 'val' and epoch_loss < best_loss:
                 best_loss = epoch_loss
                 best_model_wts = copy.deepcopy(net.state_dict())
+
+ 
     
     # Select best model wts
         torch.save(best_model_wts, save_path)

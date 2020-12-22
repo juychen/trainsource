@@ -156,11 +156,15 @@ def process_117872(adata,**kargs):
 
 def gradient_check(net,input,batch_size,output_dim,input_dim):
     net.zero_grad()
-    output = net.encode(input)
 
-    g = torch.zeros(batch_size, output_dim, input_dim)
+    if len(input)==1:
+        output = net.encode(input)
 
-    for i in range(output_dim):
-        g[:, i] = torch.autograd.grad(output[:, i].sum(), input, retain_graph=True)[0].data
+        g = torch.zeros(batch_size, output_dim, input_dim)
 
-    return g
+        for i in range(output_dim):
+            g[:, i] = torch.autograd.grad(output[:, i].sum(), input, retain_graph=True)[0].data
+
+
+        return g
+    return 0
