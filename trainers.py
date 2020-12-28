@@ -537,6 +537,8 @@ def train_DaNN_model(net,source_loader,target_loader,
     best_loss = np.inf
 
 
+    g_tar_outputs = []
+    g_src_outputs = []
 
     for epoch in range(n_epochs):
         logging.info('Epoch {}/{}'.format(epoch, n_epochs - 1))
@@ -559,6 +561,9 @@ def train_DaNN_model(net,source_loader,target_loader,
             for batchidx, (x_src, y_src) in enumerate(source_loader[phase]):
                 _, (x_tar, y_tar) = list_tar[batch_j]
                 
+                x_tar.requires_grad_(True)
+                x_src.requires_grad_(True)
+
                 min_size = min(x_src.shape[0],x_tar.shape[0])
 
                 if (x_src.shape[0]!=x_tar.shape[0]):
@@ -581,9 +586,17 @@ def train_DaNN_model(net,source_loader,target_loader,
 
                 # backward + optimize only if in training phase
                 if phase == 'train':
-                    loss.backward()
+                    loss.backward(retain_graph=True)
                     # update the weights
                     optimizer.step()
+
+                    if return_grad == True:
+                        g_tar = torch.autograd.grad(outputs=loss,inputs=x_tar,retain_graph=True)[0]
+                        g_src = torch.autograd.grad(outputs=loss,inputs=x_src,retain_graph=True)[0]
+
+                        g_src_outputs.append(g_src)
+                        g_tar_outputs.append(g_tar)
+
 
                 # print loss statistics
                 running_loss += loss.item()
@@ -592,8 +605,10 @@ def train_DaNN_model(net,source_loader,target_loader,
                 batch_j += 1
                 if batch_j >= len(list_tar):
                     batch_j = 0
-            
 
+            g_src = torch.cat(g_src_outputs, dim=1)
+            g_tar = torch.cat(g_tar_outputs, dim=1)
+            
             epoch_loss = running_loss / n_iters
 
             if phase == 'train':

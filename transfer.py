@@ -522,7 +522,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="all")
-    parser.add_argument('--load_target_model', type=int, default=1)
+    parser.add_argument('--load_target_model', type=int, default=0)
 
 
     # misc
