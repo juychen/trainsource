@@ -2,33 +2,34 @@
 # coding: utf-8
 
 import argparse
-import os
-import time
 import logging
+import os
 import sys
+import time
+from decimal import Decimal
 
 import numpy as np
-from numpy.lib.function_base import gradient
 import pandas as pd
 import scanpy as sc
 import torch
+from captum.attr import IntegratedGradients
+from numpy.lib.function_base import gradient
 from sklearn import preprocessing
+from sklearn.metrics import (auc, average_precision_score,
+                             classification_report, mean_squared_error,
+                             precision_recall_curve, r2_score, roc_auc_score)
+from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 from torch import nn, optim
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, TensorDataset
 
 import scanpypip.preprocessing as pp
-import utils as ut
 import trainers as t
-from models import AEBase, DaNN, Predictor, PretrainedPredictor,VAEBase,PretrainedVAEPredictor
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import (auc, average_precision_score,
-                             classification_report, mean_squared_error,
-                             precision_recall_curve, r2_score, roc_auc_score)
-from decimal import Decimal
-from sklearn.metrics.cluster import adjusted_rand_score
-
+import utils as ut
+from models import (AEBase, DaNN, Predictor, PretrainedPredictor,
+                    PretrainedVAEPredictor, VAEBase, TargetModel)
 
 DATA_MAP={
 "GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt",
@@ -357,6 +358,20 @@ def run_main(args):
         source_model = DaNN_model.source_model        
         logging.info("Transfer DaNN finished")
 
+        # Attribute test
+
+        target_model = TargetModel(source_model,encoder)
+        ig = IntegratedGradients(target_model)
+
+        Xtarget_validTensor.requires_grad_()
+        attr, delta = ig.attribute(Xtarget_validTensor,target=1, return_convergence_delta=True)
+        attr = attr.detach().cpu().numpy()
+        adata.var['integrated_gradient_sens'] = attr.mean(axis=0)
+        df_top_genes = adata.var.nlargest(args.n_DL_genes,"integrated_gradient_sens",keep='all')
+        df_tail_genes = adata.var.nsmallest(args.n_DL_genes,"integrated_gradient_sens",keep='all')
+        df_top_genes.to_csv("saved/results/top_genes" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+        df_tail_genes.to_csv("saved/results/tail_genes" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+
 
 
     # Extract feature
@@ -478,11 +493,11 @@ def run_main(args):
             report_df[class_key+'_auroc_c_'+str(c)] = cluster_auroc_score
             report_df[class_key+'_auroc_c_'+str(c)] = cluster_auprc_score
 
-# Save adata
+    # Save adata
     adata.write("saved/adata/"+data_name+now+".h5ad")
 
-    # Save log
-    report_df.to_csv("saved/logs/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+    # Save report
+    report_df.to_csv("saved/results/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
 
 if __name__ == '__main__':
@@ -522,7 +537,11 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="all")
-    parser.add_argument('--load_target_model', type=int, default=0)
+    parser.add_argument('--load_target_model', type=int, default=1)
+
+
+    # Analysis
+    parser.add_argument('--n_DL_genes', type=int, default=50)
 
 
     # misc

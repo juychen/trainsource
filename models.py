@@ -598,6 +598,19 @@ class DaNN(nn.Module):
         y_src = self.source_model.predictor(x_src_mmd)
         return y_src, x_src_mmd, x_tar_mmd
 
+
+class TargetModel(nn.Module):
+    def __init__(self, source_predcitor,target_encoder):
+        super(TargetModel, self).__init__()
+        self.source_predcitor = source_predcitor
+        self.target_encoder = target_encoder
+
+    def forward(self, X_target):
+     
+        x_tar = self.target_encoder.encode(X_target)
+        y_src = self.source_predcitor.predictor(x_tar)
+        return y_src
+
 def g_loss_function(preds, labels, mu, logvar, n_nodes, norm, pos_weight):
     cost = norm * F.binary_cross_entropy_with_logits(preds, labels, pos_weight=labels * pos_weight)
 
