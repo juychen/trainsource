@@ -31,6 +31,8 @@ import utils as ut
 from models import (AEBase, DaNN, Predictor, PretrainedPredictor,
                     PretrainedVAEPredictor, VAEBase, TargetModel)
 
+from trajectory import trajectory
+
 DATA_MAP={
 "GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt",
 "GSE117309":'data/GSE117309/filtered_gene_bc_matrices_HBCx-22/hg19/',
@@ -493,6 +495,7 @@ def run_main(args):
             report_df[class_key+'_auroc_c_'+str(c)] = cluster_auroc_score
             report_df[class_key+'_auroc_c_'+str(c)] = cluster_auprc_score
 
+    adata = trajectory(adata)
     # Save adata
     adata.write("saved/adata/"+data_name+now+".h5ad")
 
@@ -515,8 +518,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_n_genes', type=int, default=20000)
     parser.add_argument('--min_g', type=int, default=200)
     parser.add_argument('--min_c', type=int, default=3)
-    parser.add_argument('--cluster_res', type=int, default=0.3)
-
+    parser.add_argument('--cluster_res', type=float, default=0.3)
 
     # train
     parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAEDNNclassificationCisplatin.pkl')
