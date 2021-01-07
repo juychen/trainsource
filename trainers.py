@@ -521,7 +521,7 @@ def train_GCNpreditor_model(model, z,y, adj,optimizer,loss_function,n_epochs,sch
 
 def train_DaNN_model(net,source_loader,target_loader,
                     optimizer,loss_function,n_epochs,scheduler,weight=0.25,GAMMA=10^3,
-                    load=False,save_path="saved/model.pkl",return_grad=True):
+                    load=False,save_path="saved/model.pkl",return_grad=False):
 
     if(load!=False):
         if(os.path.exists(save_path)):
