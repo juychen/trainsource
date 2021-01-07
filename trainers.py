@@ -590,12 +590,12 @@ def train_DaNN_model(net,source_loader,target_loader,
                     # update the weights
                     optimizer.step()
 
-                    if return_grad == True:
-                        g_tar = torch.autograd.grad(outputs=loss,inputs=x_tar,retain_graph=True)[0]
-                        g_src = torch.autograd.grad(outputs=loss,inputs=x_src,retain_graph=True)[0]
+                    # if return_grad == True:
+                    #     g_tar = torch.autograd.grad(outputs=loss,inputs=x_tar,retain_graph=True)[0]
+                    #     g_src = torch.autograd.grad(outputs=loss,inputs=x_src,retain_graph=True)[0]
 
-                        g_src_outputs.append(g_src)
-                        g_tar_outputs.append(g_tar)
+                    #     g_src_outputs.append(g_src)
+                    #     g_tar_outputs.append(g_tar)
 
 
                 # print loss statistics
