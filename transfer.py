@@ -43,6 +43,8 @@ DATA_MAP={
 "GSE111014":'data/GSE111014/'
 }
 
+REMOVE_GENES=["mt","rps","rpl"]
+
 def run_main(args):
 
     epochs = args.epochs
@@ -120,9 +122,13 @@ def run_main(args):
     sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt',show=False)
     sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts',show=False)
 
+    if args.remove_genes == 0:
+        r_genes = []
+    else:
+        r_genes = REMOVE_GENES
     #Preprocess data by filtering
     adata = pp.receipe_my(adata,l_n_genes=min_n_genes,r_n_genes=max_n_genes,filter_mincells=args.min_c,
-                        filter_mingenes=args.min_g,normalize=True,log=True)
+                        filter_mingenes=args.min_g,normalize=True,log=True,remove_genes=r_genes)
 
 
     # Select highly variable genes
@@ -519,6 +525,7 @@ if __name__ == '__main__':
     parser.add_argument('--min_g', type=int, default=200)
     parser.add_argument('--min_c', type=int, default=3)
     parser.add_argument('--cluster_res', type=float, default=0.3)
+    parser.add_argument('--remove_genes', type=int, default=1)
 
     # train
     parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAEDNNclassificationCisplatin.pkl')
