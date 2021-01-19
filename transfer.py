@@ -369,16 +369,18 @@ def run_main(args):
         # Attribute test
 
         target_model = TargetModel(source_model,encoder)
-        ig = IntegratedGradients(target_model)
-
         Xtarget_validTensor.requires_grad_()
-        attr, delta = ig.attribute(Xtarget_validTensor,target=1, return_convergence_delta=True)
-        attr = attr.detach().cpu().numpy()
-        adata.var['integrated_gradient_sens'] = attr.mean(axis=0)
-        df_top_genes = adata.var.nlargest(args.n_DL_genes,"integrated_gradient_sens",keep='all')
-        df_tail_genes = adata.var.nsmallest(args.n_DL_genes,"integrated_gradient_sens",keep='all')
-        df_top_genes.to_csv("saved/results/top_genes" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
-        df_tail_genes.to_csv("saved/results/tail_genes" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+
+        adata,attr = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,adata=adata,n_genes=args.n_DL_genes
+                                    ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
+
+        # attr, delta = ig.attribute(Xtarget_validTensor,target=1, return_convergence_delta=True)
+        # attr = attr.detach().cpu().numpy()
+        # adata.var['integrated_gradient_sens'] = attr.mean(axis=0)
+        # df_top_genes = adata.var.nlargest(args.n_DL_genes,"integrated_gradient_sens",keep='all')
+        # df_tail_genes = adata.var.nsmallest(args.n_DL_genes,"integrated_gradient_sens",keep='all')
+        # df_top_genes.to_csv("saved/results/top_genes" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+        # df_tail_genes.to_csv("saved/results/tail_genes" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
 
 
@@ -536,13 +538,13 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
-    parser.add_argument('--bottleneck', type=int, default=32)
+    parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="VAE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
-    parser.add_argument('--source_h_dims', type=str, default="512,256")
-    parser.add_argument('--target_h_dims', type=str, default="512,256")
-    parser.add_argument('--p_h_dims', type=str, default="16,8")
+    parser.add_argument('--source_h_dims', type=str, default="2048,1024")
+    parser.add_argument('--target_h_dims', type=str, default="2048,1024")
+    parser.add_argument('--p_h_dims', type=str, default="256,128")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="all")

@@ -1,6 +1,7 @@
 import copy
 import logging
 import os
+import re
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +9,7 @@ import pandas as pd
 import scanpy as sc
 import scipy.sparse as sp
 import torch
+from captum.attr import IntegratedGradients
 from sklearn.metrics import auc, precision_recall_curve, roc_curve
 from torch import device, nn, optim, t
 from torch.autograd import Variable
@@ -19,7 +21,7 @@ import graph_function as g
 from gae.model import GCNModelAE, GCNModelVAE, g_loss_function
 from gae.utils import get_roc_score, mask_test_edges, preprocess_graph
 from models import vae_loss
-import re
+
 
 def highly_variable_genes(data, 
     layer=None, n_top_genes=None, 
@@ -154,17 +156,14 @@ def process_117872(adata,**kargs):
 
     return adata
 
-def gradient_check(net,input,batch_size,output_dim,input_dim):
-    net.zero_grad()
+def integrated_gradient_check(net,input,adata,n_genes,save_name="feature_gradients"):
+        ig = IntegratedGradients(net)
+        attr, delta = ig.attribute(input,target=1, return_convergence_delta=True)
+        attr = attr.detach().cpu().numpy()
+        adata.var['integrated_gradient_sens'] = attr.mean(axis=0)
+        df_top_genes = adata.var.nlargest(n_genes,"integrated_gradient_sens",keep='all')
+        df_tail_genes = adata.var.nsmallest(n_genes,"integrated_gradient_sens",keep='all')
+        df_top_genes.to_csv("saved/results/top_genes" + save_name + '.csv')
+        df_tail_genes.to_csv("saved/results/tail_genes" + save_name + '.csv')
 
-    if len(input)==1:
-        output = net.encode(input)
-
-        g = torch.zeros(batch_size, output_dim, input_dim)
-
-        for i in range(output_dim):
-            g[:, i] = torch.autograd.grad(output[:, i].sum(), input, retain_graph=True)[0].data
-
-
-        return g
-    return 0
+        return adata,attr

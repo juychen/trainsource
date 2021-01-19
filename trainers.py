@@ -606,8 +606,8 @@ def train_DaNN_model(net,source_loader,target_loader,
                 if batch_j >= len(list_tar):
                     batch_j = 0
 
-            g_src = torch.cat(g_src_outputs, dim=1)
-            g_tar = torch.cat(g_tar_outputs, dim=1)
+            # g_src = torch.cat(g_src_outputs, dim=1)
+            # g_tar = torch.cat(g_tar_outputs, dim=1)
             
             epoch_loss = running_loss / n_iters
 
