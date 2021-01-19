@@ -21,6 +21,7 @@ import graph_function as g
 from gae.model import GCNModelAE, GCNModelVAE, g_loss_function
 from gae.utils import get_roc_score, mask_test_edges, preprocess_graph
 from models import vae_loss
+from scipy.stats import wilcoxon
 
 
 def highly_variable_genes(data, 
@@ -156,13 +157,43 @@ def process_117872(adata,**kargs):
 
     return adata
 
-def integrated_gradient_check(net,input,adata,n_genes,save_name="feature_gradients"):
+def integrated_gradient_check(net,input,target,adata,n_genes,test_value="gradient",save_name="feature_gradients"):
         ig = IntegratedGradients(net)
         attr, delta = ig.attribute(input,target=1, return_convergence_delta=True)
         attr = attr.detach().cpu().numpy()
         adata.var['integrated_gradient_sens'] = attr.mean(axis=0)
+
+        sen_index = (target == 1)
+        res_index = (target == 0)
+
+        # Add col names to the DF
+        attr = pd.DataFrame(attr, columns = adata.var.index)
+
+        # Construct attr as a dafaframe
         df_top_genes = adata.var.nlargest(n_genes,"integrated_gradient_sens",keep='all')
         df_tail_genes = adata.var.nsmallest(n_genes,"integrated_gradient_sens",keep='all')
+        list_topg = df_top_genes.index 
+        list_tailg = df_tail_genes.index 
+
+        top_pvals = []
+        tail_pvals = []
+
+        if(test_value=='gradient'):
+            feature_sens = attr[sen_index]
+            feature_rest = attr[res_index]
+
+        for g in list_topg:
+            f_sens = feature_sens.loc[:,g]
+            f_rest = feature_rest.loc[:,g]
+            stat,p =  wilcoxon(f_sens,f_rest)
+            top_pvals.append(p)
+
+        for g in list_tailg:
+            f_sens = feature_sens.loc[:,g]
+            f_rest = feature_rest.loc[:,g]
+            stat,p =  wilcoxon(f_sens,f_rest)
+            tail_pvals.append(p)
+
         df_top_genes.to_csv("saved/results/top_genes" + save_name + '.csv')
         df_tail_genes.to_csv("saved/results/tail_genes" + save_name + '.csv')
 

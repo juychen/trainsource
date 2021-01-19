@@ -370,8 +370,11 @@ def run_main(args):
 
         target_model = TargetModel(source_model,encoder)
         Xtarget_validTensor.requires_grad_()
-
-        adata,attr = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,adata=adata,n_genes=args.n_DL_genes
+        ytarget_validPred = target_model(Xtarget_validTensor).detach().cpu().numpy()
+        ytarget_validPred = ytarget_validPred.argmax(axis=1)
+        
+        adata,attr = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred
+                                    ,adata=adata,n_genes=args.n_DL_genes
                                     ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
 
         # attr, delta = ig.attribute(Xtarget_validTensor,target=1, return_convergence_delta=True)
