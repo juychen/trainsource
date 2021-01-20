@@ -434,7 +434,7 @@ def run_main(args):
     # Differenrial expression genes
     sc.tl.rank_genes_groups(adata, 'sens_label', method='wilcoxon')
     df_degs = get_de_dataframe(adata,'sens_label')
-    df_degs.to_csv("saved/results/report_DEG_" + args.predictor+ prediction + select_drug+now + '.csv')
+    df_degs.to_csv("saved/results/DEGs_" + args.predictor+ prediction + select_drug+now + '.csv')
 
     #sc.pl.rank_genes_groups(adata,  n_genes=args.n_DE_genes, sharey=False,save=data_name+now,show=False)
 
