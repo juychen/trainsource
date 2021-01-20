@@ -204,7 +204,7 @@ def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test
         df_top_genes['pval']=top_pvals
         df_tail_genes['pval']=tail_pvals
 
-        df_top_genes.to_csv("saved/results/top_genes" + save_name + '.csv')
-        df_tail_genes.to_csv("saved/results/tail_genes" + save_name + '.csv')
+        df_top_genes.to_csv("saved/results/top_genes_class" +str(target_class)+ save_name + '.csv')
+        df_tail_genes.to_csv("saved/results/top_genes_class" +str(target_class)+ save_name + '.csv')
 
         return adata,attr
