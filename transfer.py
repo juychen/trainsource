@@ -29,8 +29,8 @@ import scanpypip.preprocessing as pp
 import trainers as t
 import utils as ut
 from models import (AEBase, DaNN, Predictor, PretrainedPredictor,
-                    PretrainedVAEPredictor, VAEBase, TargetModel)
-
+                    PretrainedVAEPredictor, TargetModel, VAEBase)
+from scanpypip.utils import get_de_dataframe
 from trajectory import trajectory
 
 DATA_MAP={
@@ -428,8 +428,15 @@ def run_main(args):
 
     # Differenrial expression genes
     sc.tl.rank_genes_groups(adata, 'leiden', method='wilcoxon')
-    sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False,save=data_name+now,show=False)
+    sc.pl.rank_genes_groups(adata, n_genes=args.n_DE_genes, sharey=False,save=data_name+now,show=False)
 
+
+    # Differenrial expression genes
+    sc.tl.rank_genes_groups(adata, 'sens_label', method='wilcoxon')
+    df_degs = get_de_dataframe(adata,'sens_label')
+    df_degs.to_csv("saved/results/report_DEG_" + args.predictor+ prediction + select_drug+now + '.csv')
+
+    #sc.pl.rank_genes_groups(adata,  n_genes=args.n_DE_genes, sharey=False,save=data_name+now,show=False)
 
 
     title = "Cell scatter plot"
@@ -562,6 +569,7 @@ if __name__ == '__main__':
 
     # Analysis
     parser.add_argument('--n_DL_genes', type=int, default=50)
+    parser.add_argument('--n_DE_genes', type=int, default=50)
 
 
     # misc
