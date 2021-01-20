@@ -433,8 +433,10 @@ def run_main(args):
 
     # Differenrial expression genes
     sc.tl.rank_genes_groups(adata, 'sens_label', method='wilcoxon')
-    df_degs = get_de_dataframe(adata,'sens_label')
-    df_degs.to_csv("saved/results/DEGs_" + args.predictor+ prediction + select_drug+now + '.csv')
+
+    for label in [0,1]:
+        df_degs = get_de_dataframe(adata,label)
+        df_degs.to_csv("saved/results/DEGs_class_" +str(label)+ args.predictor+ prediction + select_drug+now + '.csv')
 
     #sc.pl.rank_genes_groups(adata,  n_genes=args.n_DE_genes, sharey=False,save=data_name+now,show=False)
 
@@ -543,7 +545,7 @@ if __name__ == '__main__':
     parser.add_argument('--min_g', type=int, default=200)
     parser.add_argument('--min_c', type=int, default=3)
     parser.add_argument('--cluster_res', type=float, default=0.3)
-    parser.add_argument('--remove_genes', type=int, default=1)
+    parser.add_argument('--remove_genes', type=int, default=0)
 
     # train
     parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAEDNNclassificationCisplatin.pkl')
