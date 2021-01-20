@@ -73,5 +73,7 @@ def trajectory(adata):
     sc.pp.scale(adata_raw)
     adata.raw = adata_raw
     sc.pl.draw_graph(adata2, color=['leiden', 'dpt_pseudotime'], legend_loc='on data',save=True)
+
+    
     return adata2
     
