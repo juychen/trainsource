@@ -366,7 +366,7 @@ def run_main(args):
         source_model = DaNN_model.source_model        
         logging.info("Transfer DaNN finished")
 
-        # Attribute test
+        # Attribute test using integrated gradient
 
         target_model = TargetModel(source_model,encoder)
         Xtarget_validTensor.requires_grad_()
