@@ -475,7 +475,7 @@ def run_main(args):
         #report_df.to_csv("saved/logs/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
     else:
         
-        color_list = ["leiden",'sens_preds']
+        color_list = ["leiden","leiden_trans",'sens_preds']
         title_list = ['',""]
     # Simple analysis do neighbors in adata
     # Plot umap
