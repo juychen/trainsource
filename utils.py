@@ -10,6 +10,8 @@ import scanpy as sc
 import scipy.sparse as sp
 import torch
 from captum.attr import IntegratedGradients
+from pandas import read_excel
+from scipy.stats import mannwhitneyu, wilcoxon
 from sklearn.metrics import auc, precision_recall_curve, roc_curve
 from torch import device, nn, optim, t
 from torch.autograd import Variable
@@ -21,9 +23,6 @@ import graph_function as g
 from gae.model import GCNModelAE, GCNModelVAE, g_loss_function
 from gae.utils import get_roc_score, mask_test_edges, preprocess_graph
 from models import vae_loss
-from scipy.stats import wilcoxon
-from scipy.stats import mannwhitneyu
-
 
 
 def highly_variable_genes(data, 
@@ -138,6 +137,8 @@ def specific_process(adata,dataname="",**kargs):
     if dataname =="GSE117872":
         select_origin = kargs['select_origin']
         adata = process_117872(adata,select_origin=select_origin)
+    elif dataname == "GSE122843":
+        adata = process_122843(adata)
 
     return adata
 
@@ -157,6 +158,37 @@ def process_117872(adata,**kargs):
         selected=selected.to_numpy('bool')
         return adata[selected, :]
 
+    return adata
+
+def process_122843(adata,**kargs):
+    # Data specific preprocessing of cell info
+    file_name = 'data/GSE122843/GSE122843_CellInfo.xlsx' # change it to the name of your excel file
+    df_cellinfo = read_excel(file_name,header=2)
+    df_cellinfo = df_cellinfo.fillna(method='pad')
+
+    # Dictionary of DMSO between cell info and expression matrix
+    match_dict={'DMSO':'DMSO (D7)',
+            "DMSOw8":'DMSO (D56)',
+            "IBET400":"400nM IBET",
+           "IBET600":"600nM IBET",
+           "IBET800":"800nM IBET",
+           "IBETI1000":"1000nM IBET",
+           "IBET1000w8":"1000nM IBET (D56)"}
+    inv_match_dict = {v: k for k, v in match_dict.items()}
+
+    index = [inv_match_dict[sn]+'_' for sn in df_cellinfo.loc[:,'Sample Name']]
+
+    # Creat index in the count matrix style
+    inversindex = index+df_cellinfo.loc[:,'Well Position']
+    inversindex.name = 'Index'
+    df_cellinfo.index = inversindex
+
+    # Inner join of the obs adata information
+    obs_merge = pd.merge(adata.obs,df_cellinfo,left_index=True,right_index=True,how='left')
+
+    # Replace obs
+    adata.obs = obs_merge
+    
     return adata
 
 def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test_value="expression",save_name="feature_gradients"):

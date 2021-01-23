@@ -141,7 +141,9 @@ def run_main(args):
     if data_name == 'GSE117872':
         adata =  ut.specific_process(adata,dataname=data_name,select_origin=args.batch_id)
         data=adata.X
-
+    elif data_name =='GSE122843':
+        adata =  ut.specific_process(adata,dataname=data_name)
+        data=adata.X
     else:
         data=adata.X
  
