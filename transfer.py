@@ -144,6 +144,9 @@ def run_main(args):
     elif data_name =='GSE122843':
         adata =  ut.specific_process(adata,dataname=data_name)
         data=adata.X
+    elif data_name =='GSE110894':
+        adata =  ut.specific_process(adata,dataname=data_name)
+        data=adata.X
     else:
         data=adata.X
  

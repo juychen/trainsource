@@ -139,7 +139,8 @@ def specific_process(adata,dataname="",**kargs):
         adata = process_117872(adata,select_origin=select_origin)
     elif dataname == "GSE122843":
         adata = process_122843(adata)
-
+    elif dataname == "GSE110894":
+        adata = process_110894(adata)
     return adata
 
 def process_117872(adata,**kargs):
@@ -189,6 +190,19 @@ def process_122843(adata,**kargs):
     # Replace obs
     adata.obs = obs_merge
     
+    return adata
+def process_110894(adata,**kargs):
+    # Data specific preprocessing of cell info
+    file_name = 'GSE110894/GSE110894_CellInfo.xlsx' # change it to the name of your excel file
+    df_cellinfo = read_excel(file_name,header=3)
+    df_cellinfo=df_cellinfo.dropna(how="all")
+    df_cellinfo = df_cellinfo.fillna(method='pad')
+    well_post = ["_"+wp.split("=")[0] for wp in df_cellinfo.loc[:,'Well position']]
+    inversindex = df_cellinfo.loc[:,'Plate#']+well_post
+    inversindex.name = 'Index'
+    df_cellinfo.index = inversindex
+    obs_merge = pd.merge(adata.obs,df_cellinfo,left_index=True,right_index=True,how='left')
+    adata.obs = obs_merge
     return adata
 
 def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test_value="expression",save_name="feature_gradients"):
