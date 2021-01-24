@@ -16,7 +16,7 @@ def trajectory(adata):
     ##draw
     sc.tl.draw_graph(adata2)
     ##sc.pl.draw_graph(adata2, color='sens_preds')
-    sc.pl.draw_graph(adata2, color='leiden')
+    #sc.pl.draw_graph(adata2, color='leiden')
     #sc.pl.draw_graph(adata2, color='leiden_trans')
     
     
@@ -24,7 +24,7 @@ def trajectory(adata):
     ## trajectory1
     sc.tl.paga(adata2, groups='leiden_trans',neighbors_key='Trans')
     sc.pl.paga(adata2, color=['leiden_trans'])  ## bugs here ,
-    
+
     sc.tl.draw_graph(adata2, init_pos='paga')
     sc.pl.draw_graph(adata2, color=['leiden_trans'], legend_loc='on data')
     pl.figure(figsize=(8, 2))
