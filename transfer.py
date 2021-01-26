@@ -47,15 +47,14 @@ REMOVE_GENES=["mt","rps","rpl"]
 
 def run_main(args):
 
+    # Read parameters
     epochs = args.epochs
     dim_au_out = args.bottleneck #8, 16, 32, 64, 128, 256,512
     na = args.missing_value
     data_path = DATA_MAP[args.target_data]
     test_size = args.test_size
     select_drug = args.drug
-
     freeze = args.freeze_pretrain
-
     valid_size = args.valid_size
     g_disperson = args.var_genes_disp
     min_n_genes = args.min_n_genes
@@ -70,19 +69,16 @@ def run_main(args):
     pretrain = args.pretrain
     prediction = args.predition
     data_name = args.target_data
-    label_path = args.label_path
-
+    label_path = args.label_paths
     reduce_model = args.dimreduce
     predict_hdims = args.p_h_dims.split(",")
     predict_hdims = list(map(int, predict_hdims))
     leiden_res = args.cluster_res
-
     load_model = bool(args.load_target_model)
 
     
     # Misc
     now=time.strftime("%Y-%m-%d-%H-%M-%S")
-
     # Initialize logging and std out
     out_path = log_path+now+".err"
     log_path = log_path+now+".log"
@@ -181,8 +177,6 @@ def run_main(args):
 
     train_dataset = TensorDataset(Xtarget_trainTensor, Xtarget_trainTensor)
     valid_dataset = TensorDataset(Xtarget_validTensor, Xtarget_validTensor)
-    all_dataset = TensorDataset(X_allTensor, X_allTensor)
-
 
     Xtarget_trainDataLoader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
     Xtarget_validDataLoader = DataLoader(dataset=valid_dataset, batch_size=batch_size, shuffle=True)
@@ -241,67 +235,52 @@ def run_main(args):
     # Construct datasets and data loaders
     Xsource_trainTensor = torch.FloatTensor(Xsource_train).to(device)
     Xsource_validTensor = torch.FloatTensor(Xsource_valid).to(device)
-    #Xsource_testTensor = torch.FloatTensor(Xsource_test).to(device)
-    #Xsource_allTensor = torch.FloatTensor(source_data).to(device)
 
     if prediction  == "regression":
         Ysource_trainTensor = torch.FloatTensor(Ysource_train).to(device)
-        #Ysource_trainallTensor = torch.FloatTensor(Ysource_train_all).to(device)
         Ysource_validTensor = torch.FloatTensor(Ysource_valid).to(device)
     else:
         Ysource_trainTensor = torch.LongTensor(Ysource_train).to(device)
-        #Ysource_trainallTensor = torch.LongTensor(Ysource_train_all).to(device)
         Ysource_validTensor = torch.LongTensor(Ysource_valid).to(device)
-
 
     sourcetrain_dataset = TensorDataset(Xsource_trainTensor, Ysource_trainTensor)
     sourcevalid_dataset = TensorDataset(Xsource_validTensor, Ysource_validTensor)
-    #sourcetest_dataset = TensorDataset(Xsource_testTensor, Ysource_trainallTensor)
-    #sourceall_dataset = TensorDataset(Xsource_allTensor, Ysource_validTensor)
+
 
     Xsource_trainDataLoader = DataLoader(dataset=sourcetrain_dataset, batch_size=batch_size, shuffle=True)
     Xsource_validDataLoader = DataLoader(dataset=sourcevalid_dataset, batch_size=batch_size, shuffle=True)
-    #X_allDataLoader = DataLoader(dataset=sourceall_dataset, batch_size=batch_size, shuffle=True)
-
-
 
     dataloaders_source = {'train':Xsource_trainDataLoader,'val':Xsource_validDataLoader}
 
 
-    # Load source model
-
+    # Load source model before transfer
     if prediction == "regression":
             dim_model_out = 1
     else:
             dim_model_out = 2
-
+    # Load AE model
     if reduce_model == "AE":
-
 
         source_model = PretrainedPredictor(input_dim=Xsource_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
                 hidden_dims_predictor=predict_hdims,output_dim=dim_model_out,
                 pretrained_weights=None,freezed=freeze)
         source_model.load_state_dict(torch.load(source_model_path))
-
         source_encoder = source_model
+    # Load VAE model
     else:
-        # source_encoder = VAEBase(input_dim=data_r.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
-        # source_encoder.load_state_dict(torch.load(source_model_path))
-
         source_model = PretrainedVAEPredictor(input_dim=Xsource_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
                 hidden_dims_predictor=predict_hdims,output_dim=dim_model_out,
                 pretrained_weights=None,freezed=freeze,z_reparam=bool(args.VAErepram))
         source_model.load_state_dict(torch.load(source_model_path))
-
         source_encoder = source_model
     logging.info("Load pretrained source model from: "+source_model_path)
-
-
            
     source_encoder.to(device)
 
     # Pretrain target encoder
+    # Pretain using autoencoder is pretrain is not False
     if(str(pretrain)!='0'):
+        # Pretrained target encoder if there are not stored files in the harddisk
         if(os.path.exists(pretrain)==False):
             pretrain = str(pretrain)
 
@@ -316,17 +295,20 @@ def run_main(args):
                                 n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
 
         else:
+            # Load pretrained target encoder if there are stored files in the harddisk
             pretrain = str(pretrain)
             encoder.load_state_dict(torch.load(pretrain))
             logging.info("Load pretrained target encoder from "+pretrain)
 
 
-        # Extract pretrain feature
+        # Extract pretrain feature and save it in the adata obsm
         embeddings_p = encoder.encode(X_allTensor).detach().cpu().numpy()
         # Add embeddings to the adata package
         adata.obsm["X_pre"] = embeddings_p
 
+    # Transfer learning
 
+    # Using ADDA transfer learning
     if args.transfer =='ADDA':
 
         # Set discriminator model
@@ -348,17 +330,19 @@ def run_main(args):
 
         logging.info("Transfer ADDA finished")
 
+    # DaNN model
     elif args.transfer == 'DaNN':
 
-        # Set discriminator model
+        # Set predictor loss
         loss_d = nn.CrossEntropyLoss()
         optimizer_d = optim.Adam(encoder.parameters(), lr=1e-2)
         exp_lr_scheduler_d = lr_scheduler.ReduceLROnPlateau(optimizer_d)
 
-        # Adversairal trainning
+        # Set DaNN model
         DaNN_model = DaNN(source_model=source_encoder,target_model=encoder)
         DaNN_model.to(device)
 
+        # Tran DaNN model
         DaNN_model, report_ = t.train_DaNN_model(DaNN_model,
                             dataloaders_source,dataloaders_pretrain,
                             # Should here be all optimizer d?
@@ -373,35 +357,31 @@ def run_main(args):
 
         # Attribute test using integrated gradient
 
+        # Generate a target model including encoder and predictor
         target_model = TargetModel(source_model,encoder)
+
+        # Allow require gradients and process label
         Xtarget_validTensor.requires_grad_()
         ytarget_validPred = target_model(Xtarget_validTensor).detach().cpu().numpy()
         ytarget_validPred = ytarget_validPred.argmax(axis=1)
         
+        # Run integrated gradient check
+        # Return adata and feature integrated gradient
         adata,attr = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred
                                     ,adata=adata,n_genes=args.n_DL_genes
                                     ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
 
-        # attr, delta = ig.attribute(Xtarget_validTensor,target=1, return_convergence_delta=True)
-        # attr = attr.detach().cpu().numpy()
-        # adata.var['integrated_gradient_sens'] = attr.mean(axis=0)
-        # df_top_genes = adata.var.nlargest(args.n_DL_genes,"integrated_gradient_sens",keep='all')
-        # df_tail_genes = adata.var.nsmallest(args.n_DL_genes,"integrated_gradient_sens",keep='all')
-        # df_top_genes.to_csv("saved/results/top_genes" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
-        # df_tail_genes.to_csv("saved/results/tail_genes" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
 
 
-    # Extract feature
-    # embeddings = encoder.encode(X_allTensor).detach().cpu().numpy()
+    # Extract feature embeddings 
+    # Extract prediction probabilities
     embedding_tensors = encoder.encode(X_allTensor)
     prediction_tensors = source_model.predictor(embedding_tensors)
     embeddings = embedding_tensors.detach().cpu().numpy()
     predictions = prediction_tensors.detach().cpu().numpy()
 
-    # gradient = ut.gradient_check(net=encoder,input=Xtarget_trainTensor,batch_size=Xtarget_trainTensor.shape[0],
-    #                                 output_dim=embeddings.shape[1],input_dim=Xtarget_trainTensor.shape[1])
-
+    # Transform predict8ion probabilities to 0-1 labels
     if(prediction=="regression"):
         adata.obs["sens_preds"] = predictions
     else:
@@ -411,7 +391,8 @@ def run_main(args):
         adata.obs["rest_preds"] = predictions[:,0]
 
 
- 
+    # Pipeline of scanpy 
+
     # PCA
     sc.tl.pca(adata, svd_solver='arpack')
 
@@ -436,21 +417,21 @@ def run_main(args):
     sc.pl.rank_genes_groups(adata, n_genes=args.n_DE_genes, sharey=False,save=data_name+now,show=False)
 
 
-    # Differenrial expression genes
+    # Differenrial expression genes across 0-1 classes
     sc.tl.rank_genes_groups(adata, 'sens_label', method='wilcoxon')
 
+    # save DE genes between 0-1 class
     for label in [0,1]:
         df_degs = get_de_dataframe(adata,label)
         df_degs.to_csv("saved/results/DEGs_class_" +str(label)+ args.predictor+ prediction + select_drug+now + '.csv')
 
-    #sc.pl.rank_genes_groups(adata,  n_genes=args.n_DE_genes, sharey=False,save=data_name+now,show=False)
 
-
-    title = "Cell scatter plot"
-    # Generate reports
+    # Generate reports of scores
     report_df = args_df
-    if(data_name=='GSE117872'):
 
+    # Data specific benchmarking
+    if(data_name=='GSE117872'):
+        
         label = adata.obs['cluster']
         if len(label[label != "Sensitive"] )>0:
             label[label != "Sensitive"] = 'Resistant'
@@ -482,25 +463,32 @@ def run_main(args):
         
         color_list = ["leiden","leiden_trans",'sens_preds']
         title_list = ['',""]
-    # Simple analysis do neighbors in adata
-    # Plot umap
+
+    # Simple analysis do neighbors in adata using PCA embeddings
     sc.pp.neighbors(adata)
+
+    # Run UMAP dimension reduction
     sc.tl.umap(adata)
+    # Run leiden clustering
     sc.tl.leiden(adata,resolution=leiden_res)
+    # Plot uamp
     sc.pl.umap(adata,color=color_list,save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
-    # Plot umap
+
+    # Run embeddings using transfered embeddings
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
     sc.tl.umap(adata,neighbors_key="Trans")
     sc.tl.leiden(adata,neighbors_key="Trans",key_added="leiden_trans",resolution=leiden_res)
     sc.pl.umap(adata,color=color_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_TL"+now,show=False,title=title_list)
     # Plot tsne
     sc.pl.tsne(adata,color=color_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_TL"+now,show=False,title=title_list)
-    # Plot tsne pretrained
+    
+    # Plot tsne of the pretrained (autoencoder) embeddings
     sc.pp.neighbors(adata,use_rep='X_pre',key_added="Pret")
     sc.tl.umap(adata,neighbors_key="Pret")
     sc.tl.leiden(adata,neighbors_key="Pret",key_added="leiden_Pret",resolution=leiden_res)
     sc.pl.umap(adata,color=["leiden_trans"],neighbors_key="Pret",save=data_name+args.transfer+args.dimreduce+"_tsne_Pretrain_"+now,show=False)
 
+    # Ari between two transfer learning embedding and sensitivity label
     ari_score_trans  = adjusted_rand_score(adata.obs['leiden_trans'],adata.obs['sens_label'])
     ari_score = adjusted_rand_score(adata.obs['leiden'],adata.obs['sens_label'])
 
@@ -510,7 +498,7 @@ def run_main(args):
 
     cluster_ids = set(adata.obs['leiden'])
 
-    # Two classes
+    # Two class: sens and resistant between clustering label
     for class_key in ['rest_preds','sens_preds']:
         p =  adata.obs[class_key]
         # One vs all metric
@@ -521,6 +509,7 @@ def run_main(args):
             report_df[class_key+'_auroc_c_'+str(c)] = cluster_auroc_score
             report_df[class_key+'_auroc_c_'+str(c)] = cluster_auprc_score
 
+    # Trajectory of adata
     adata = trajectory(adata)
 
     # Draw PDF
