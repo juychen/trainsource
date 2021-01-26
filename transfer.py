@@ -532,11 +532,11 @@ def run_main(args):
             report_df[class_key+'_auroc_c_'+str(c)] = cluster_auprc_score
 
     # Trajectory of adata
-    adata = trajectory(adata)
+    #adata = trajectory(adata)
 
     # Draw PDF
-    sc.pl.draw_graph(adata, color=['leiden', 'dpt_pseudotime'],save=data_name+args.dimreduce+"leiden+trajectory")
-    sc.pl.draw_graph(adata, color=['sens_preds', 'dpt_pseudotime_leiden_trans','leiden_trans'],save=data_name+args.dimreduce+"sens_preds+trajectory")
+    #sc.pl.draw_graph(adata, color=['leiden', 'dpt_pseudotime'],save=data_name+args.dimreduce+"leiden+trajectory")
+    #sc.pl.draw_graph(adata, color=['sens_preds', 'dpt_pseudotime_leiden_trans','leiden_trans'],save=data_name+args.dimreduce+"sens_preds+trajectory")
 
     # Save adata
     adata.write("saved/adata/"+data_name+now+".h5ad")
