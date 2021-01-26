@@ -471,6 +471,15 @@ def run_main(args):
             auroc_score = 0
         report_df['auroc_score'] = auroc_score
         report_df['ap_score'] = ap_score
+
+
+        ap_title = "ap: "+str(Decimal(ap_score).quantize(Decimal('0.0000')))
+        auroc_title = "roc: "+str(Decimal(auroc_score).quantize(Decimal('0.0000')))
+
+
+        color_list = ["cluster","origin",'sens_preds']
+        title_list = ['',ap_title,auroc_title]
+
       
     else:
         
