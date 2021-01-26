@@ -40,7 +40,8 @@ DATA_MAP={
 "GSE121107":'data/GSE121107/GSM3426289_untreated_out_gene_exon_tagged.dge.txt',
 "GSE121107_1H":'data/GSE121107/GSM3426290_entinostat_1hr_out_gene_exon_tagged.dge.txt',
 "GSE121107_6H":'data/GSE121107/GSM3426291_entinostat_6hr_out_gene_exon_tagged.dge.txt',
-"GSE111014":'data/GSE111014/'
+"GSE111014":'data/GSE111014/',
+"GSE110894":"data/GSE110894/GSE110894.csv"
 }
 
 REMOVE_GENES=["mt","rps","rpl"]
@@ -69,7 +70,7 @@ def run_main(args):
     pretrain = args.pretrain
     prediction = args.predition
     data_name = args.target_data
-    label_path = args.label_paths
+    label_path = args.label_path
     reduce_model = args.dimreduce
     predict_hdims = args.p_h_dims.split(",")
     predict_hdims = list(map(int, predict_hdims))
@@ -526,8 +527,8 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
-    parser.add_argument('--target_data', type=str, default="GSE117872")
-    parser.add_argument('--drug', type=str, default='Cisplatin')
+    parser.add_argument('--target_data', type=str, default="GSE110894")
+    parser.add_argument('--drug', type=str, default='I-BET-762')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
@@ -540,25 +541,25 @@ if __name__ == '__main__':
     parser.add_argument('--remove_genes', type=int, default=0)
 
     # train
-    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAEDNNclassificationCisplatin.pkl')
+    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAEDNNclassificationI-BET-762.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/transfer_')
-    parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_vae.pkl')
+    parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_IBET_vae.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
-    parser.add_argument('--bottleneck', type=int, default=512)
+    parser.add_argument('--bottleneck', type=int, default=32)
     parser.add_argument('--dimreduce', type=str, default="VAE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=int, default=1)
-    parser.add_argument('--source_h_dims', type=str, default="2048,1024")
-    parser.add_argument('--target_h_dims', type=str, default="2048,1024")
-    parser.add_argument('--p_h_dims', type=str, default="256,128")
+    parser.add_argument('--source_h_dims', type=str, default="128,64")
+    parser.add_argument('--target_h_dims', type=str, default="128,64")
+    parser.add_argument('--p_h_dims', type=str, default="16,8")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="all")
-    parser.add_argument('--load_target_model', type=int, default=1)
+    parser.add_argument('--load_target_model', type=int, default=0)
 
 
     # Analysis
