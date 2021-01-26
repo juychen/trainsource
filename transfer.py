@@ -458,6 +458,20 @@ def run_main(args):
         report_df['ap_score'] = ap_score
 
         #report_df.to_csv("saved/logs/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+    
+    elif (data_name=='GSE110894'):
+        Y_test = adata.obs['sensitive']
+        sens_pb_results = adata.obs['sens_preds']
+        ap_score = average_precision_score(Y_test, sens_pb_results)
+
+        try:
+            auroc_score = roc_auc_score(Y_test, sens_pb_results)
+        except:
+            logging.warning("Only one class, no ROC")
+            auroc_score = 0
+        report_df['auroc_score'] = auroc_score
+        report_df['ap_score'] = ap_score
+      
     else:
         
         color_list = ["leiden","leiden_trans",'sens_preds']
@@ -471,7 +485,7 @@ def run_main(args):
     # Run leiden clustering
     sc.tl.leiden(adata,resolution=leiden_res)
     # Plot uamp
-    sc.pl.umap(adata,color=color_list,save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
+    sc.pl.umap(adata,color=["leiden",'sens_preds'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
 
     # Run embeddings using transfered embeddings
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
@@ -559,7 +573,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="all")
-    parser.add_argument('--load_target_model', type=int, default=0)
+    parser.add_argument('--load_target_model', type=int, default=1)
 
 
     # Analysis
