@@ -203,6 +203,8 @@ def process_110894(adata,**kargs):
     df_cellinfo.index = inversindex
     obs_merge = pd.merge(adata.obs,df_cellinfo,left_index=True,right_index=True,how='left')
     adata.obs = obs_merge
+    sensitive = [int(row.find("RESISTANT")==-1) for row in obs_merge.loc[:,"Sample name"]]
+    adata.obs['sensitive'] = sensitive
     return adata
 
 def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test_value="expression",save_name="feature_gradients"):

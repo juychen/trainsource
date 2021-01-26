@@ -542,7 +542,7 @@ if __name__ == '__main__':
 
     # train
     parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAEDNNclassificationI-BET-762.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/transfer_')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/transfer_IBET_')
     parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_IBET_vae.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
