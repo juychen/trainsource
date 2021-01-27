@@ -24,6 +24,8 @@ from sklearn.preprocessing import LabelEncoder
 from torch import nn, optim
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, TensorDataset
+from sklearn.metrics import classification_report
+
 
 import scanpypip.preprocessing as pp
 import trainers as t
@@ -438,7 +440,14 @@ def run_main(args):
         le_sc.fit(['Resistant','Sensitive'])
         sens_pb_results = adata.obs['sens_preds']
         Y_test = le_sc.transform(label)
+
+        lb_results = adata.obs['sens_label']
+
         ap_score = average_precision_score(Y_test, sens_pb_results)
+
+        report_dict = classification_report(Y_test, lb_results, output_dict=True)
+        report_df = pd.DataFrame(report_dict).T
+
 
         try:
             auroc_score = roc_auc_score(Y_test, sens_pb_results)
@@ -460,9 +469,18 @@ def run_main(args):
         #report_df.to_csv("saved/logs/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
     
     elif (data_name=='GSE110894'):
+
+        report_df = report_df.T
         Y_test = adata.obs['sensitive']
         sens_pb_results = adata.obs['sens_preds']
+        lb_results = adata.obs['sens_label']
+        
         ap_score = average_precision_score(Y_test, sens_pb_results)
+
+        report_dict = classification_report(Y_test, lb_results, output_dict=True)
+        classification_report_df = pd.DataFrame(report_dict).T
+        classification_report_df.to_csv("saved/results/" + reduce_model + args.predictor+ prediction + select_drug+now + '_clf_report.csv')
+
 
         try:
             auroc_score = roc_auc_score(Y_test, sens_pb_results)
@@ -542,6 +560,8 @@ def run_main(args):
     adata.write("saved/adata/"+data_name+now+".h5ad")
 
     # Save report
+
+    report_df = report_df.T
     report_df.to_csv("saved/results/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
 
