@@ -446,7 +446,8 @@ def run_main(args):
         ap_score = average_precision_score(Y_test, sens_pb_results)
 
         report_dict = classification_report(Y_test, lb_results, output_dict=True)
-        report_df = pd.DataFrame(report_dict).T
+        classification_report_df = pd.DataFrame(report_dict).T
+        classification_report_df.to_csv("saved/results/" + reduce_model + args.predictor+ prediction + select_drug+now + '_clf_report.csv')
 
 
         try:
