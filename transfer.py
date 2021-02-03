@@ -568,7 +568,7 @@ def run_main(args):
             report_df[class_key+'_auroc_c_'+str(c)] = cluster_auprc_score
 
     # Trajectory of adata
-    #adata = trajectory(adata)
+    adata = trajectory(adata)
 
     # Draw PDF
     #sc.pl.draw_graph(adata, color=['leiden', 'dpt_pseudotime'],save=data_name+args.dimreduce+"leiden+trajectory")
@@ -588,8 +588,8 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
-    parser.add_argument('--target_data', type=str, default="GSE117872")
-    parser.add_argument('--drug', type=str, default='Cisplatin')
+    parser.add_argument('--target_data', type=str, default="GSE122843")
+    parser.add_argument('--drug', type=str, default='I-BET-762')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
@@ -602,9 +602,9 @@ if __name__ == '__main__':
     parser.add_argument('--remove_genes', type=int, default=0)
 
     # train
-    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAEDNN32_Cis.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/transfer_Cis_')
-    parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_117872_vae.pkl')
+    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_32_VAEDNNclassificationI-BET-762.pkl')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/transfer_IBET_')
+    parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_GSE122843_vae.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)

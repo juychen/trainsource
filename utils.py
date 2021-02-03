@@ -234,8 +234,8 @@ def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test
         attr = pd.DataFrame(attr, columns = adata.var.index)
 
         # Construct attr as a dafaframe
-        df_top_genes = adata.var.nlargest(n_genes,"integrated_gradient_sens",keep='all')
-        df_tail_genes = adata.var.nsmallest(n_genes,"integrated_gradient_sens",keep='all')
+        df_top_genes = adata.var.nlargest(n_genes,"integrated_gradient_sens_class"+str(target_class),keep='all')
+        df_tail_genes = adata.var.nsmallest(n_genes,"integrated_gradient_sens_class"+str(target_class),keep='all')
         list_topg = df_top_genes.index 
         list_tailg = df_tail_genes.index 
 
