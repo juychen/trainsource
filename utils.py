@@ -225,7 +225,7 @@ def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test
         ig = IntegratedGradients(net)
         attr, delta = ig.attribute(input,target=target_class, return_convergence_delta=True)
         attr = attr.detach().cpu().numpy()
-        adata.var['integrated_gradient_sens'] = attr.mean(axis=0)
+        adata.var['integrated_gradient_sens_class'+str(target_class)] = attr.mean(axis=0)
 
         sen_index = (target == 1)
         res_index = (target == 0)

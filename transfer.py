@@ -34,6 +34,8 @@ from models import (AEBase, DaNN, Predictor, PretrainedPredictor,
                     PretrainedVAEPredictor, TargetModel, VAEBase)
 from scanpypip.utils import get_de_dataframe
 from trajectory import trajectory
+import DaNN.mmd as mmd
+
 
 DATA_MAP={
 "GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt",
@@ -43,7 +45,8 @@ DATA_MAP={
 "GSE121107_1H":'data/GSE121107/GSM3426290_entinostat_1hr_out_gene_exon_tagged.dge.txt',
 "GSE121107_6H":'data/GSE121107/GSM3426291_entinostat_6hr_out_gene_exon_tagged.dge.txt',
 "GSE111014":'data/GSE111014/',
-"GSE110894":"data/GSE110894/GSE110894.csv"
+"GSE110894":"data/GSE110894/GSE110894.csv",
+"GSE122843":"data/GSE122843/GSE122843.txt"
 }
 
 REMOVE_GENES=["mt","rps","rpl"]
@@ -347,12 +350,19 @@ def run_main(args):
         DaNN_model = DaNN(source_model=source_encoder,target_model=encoder)
         DaNN_model.to(device)
 
+        def loss(x,y,GAMMA=args.GAMMA_mmd):
+            result = mmd.mmd_loss(x,y,GAMMA)
+            return result
+
+        loss_disrtibution = loss
+
         # Tran DaNN model
         DaNN_model, report_ = t.train_DaNN_model(DaNN_model,
                             dataloaders_source,dataloaders_pretrain,
                             # Should here be all optimizer d?
                             optimizer_d, loss_d,
                             epochs,exp_lr_scheduler_d,
+                            dist_loss=loss,
                             load=load_model,
                             save_path=target_model_path+"_DaNN.pkl")
 
@@ -376,6 +386,9 @@ def run_main(args):
                                     ,adata=adata,n_genes=args.n_DL_genes
                                     ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
 
+        adata,attr0 = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred,
+                                    target_class=0,adata=adata,n_genes=args.n_DL_genes
+                                    ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
 
 
 
@@ -575,8 +588,8 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
-    parser.add_argument('--target_data', type=str, default="GSE110894")
-    parser.add_argument('--drug', type=str, default='I-BET-762')
+    parser.add_argument('--target_data', type=str, default="GSE117872")
+    parser.add_argument('--drug', type=str, default='Cisplatin')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
@@ -589,9 +602,9 @@ if __name__ == '__main__':
     parser.add_argument('--remove_genes', type=int, default=0)
 
     # train
-    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAEDNNclassificationI-BET-762.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/transfer_IBET_')
-    parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_IBET_vae.pkl')
+    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAEDNN32_Cis.pkl')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/transfer_Cis_')
+    parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_117872_vae.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
@@ -600,7 +613,7 @@ if __name__ == '__main__':
     parser.add_argument('--bottleneck', type=int, default=32)
     parser.add_argument('--dimreduce', type=str, default="VAE")
     parser.add_argument('--predictor', type=str, default="DNN")
-    parser.add_argument('--freeze_pretrain', type=int, default=1)
+    parser.add_argument('--freeze_pretrain', type=int, default=0)
     parser.add_argument('--source_h_dims', type=str, default="128,64")
     parser.add_argument('--target_h_dims', type=str, default="128,64")
     parser.add_argument('--p_h_dims', type=str, default="16,8")
@@ -608,6 +621,7 @@ if __name__ == '__main__':
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="all")
     parser.add_argument('--load_target_model', type=int, default=0)
+    parser.add_argument('--GAMMA_mmd', type=int, default=10^3)
 
     parser.add_argument('--runs', type=int, default=1)
 

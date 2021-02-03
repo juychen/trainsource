@@ -520,7 +520,7 @@ def train_GCNpreditor_model(model, z,y, adj,optimizer,loss_function,n_epochs,sch
     return model,0
 
 def train_DaNN_model(net,source_loader,target_loader,
-                    optimizer,loss_function,n_epochs,scheduler,weight=0.25,GAMMA=10^3,
+                    optimizer,loss_function,n_epochs,scheduler,dist_loss,weight=0.25,GAMMA=10^3,
                     load=False,save_path="saved/model.pkl",return_grad=False):
 
     if(load!=False):
@@ -576,7 +576,7 @@ def train_DaNN_model(net,source_loader,target_loader,
                 y_pre, x_src_mmd, x_tar_mmd = net(x_src, x_tar)
                 # compute loss
                 loss_c = loss_function(y_pre, y_src)      
-                loss_mmd = mmd.mmd_loss(x_src_mmd, x_tar_mmd,gamma=GAMMA)
+                loss_mmd = dist_loss(x_src_mmd, x_tar_mmd)
 
                 loss = loss_c + weight * loss_mmd
 
