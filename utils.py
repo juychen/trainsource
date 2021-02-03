@@ -141,6 +141,9 @@ def specific_process(adata,dataname="",**kargs):
         adata = process_122843(adata)
     elif dataname == "GSE110894":
         adata = process_110894(adata)
+    elif dataname == "GSE112274":
+        adata = process_112274(adata)
+
     return adata
 
 def process_117872(adata,**kargs):
@@ -205,6 +208,17 @@ def process_110894(adata,**kargs):
     adata.obs = obs_merge
     sensitive = [int(row.find("RESISTANT")==-1) for row in obs_merge.loc[:,"Sample name"]]
     adata.obs['sensitive'] = sensitive
+    return adata
+
+
+def process_112274(adata,**kargs):
+    obs_names = adata.obs.index
+    annotation_dict = {}
+    for section in [0,1,2,3]:
+        svals = [index.split("_")[section] for index in obs_names]
+        annotation_dict["name_section_"+str(section+1)] = svals
+    df_annotation=pd.DataFrame(annotation_dict,index=obs_names)
+    adata.obs=df_annotation
     return adata
 
 def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test_value="expression",save_name="feature_gradients"):
