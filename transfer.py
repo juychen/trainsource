@@ -309,10 +309,14 @@ def run_main(args):
             logging.info("Load pretrained target encoder from "+pretrain)
 
 
+        # Before Transfer learning, we test the performance of using no transfer performance:
+
         # Extract pretrain feature and save it in the adata obsm
         embeddings_p = encoder.encode(X_allTensor).detach().cpu().numpy()
         # Add embeddings to the adata package
         adata.obsm["X_pre"] = embeddings_p
+
+
 
     # Transfer learning
 

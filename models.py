@@ -199,7 +199,10 @@ class PretrainedPredictor(AEBase):
         embedding = self.encode(input)
         output = self.predictor(embedding)
         return  output
-    
+   
+    def predict(self, embedding, **kwargs):
+        output = self.predictor(embedding)
+        return  output 
 
 def vae_loss(recon_x, x, mu, logvar,reconstruction_function,weight=1):
     """
@@ -452,6 +455,10 @@ class PretrainedVAEPredictor(VAEBase):
 
     def forward(self, input, **kwargs):
         embedding = self.encode(input,repram=self.z_reparam)
+        output = self.predictor(embedding)
+        return  output
+
+    def predict(self, embedding, **kwargs):
         output = self.predictor(embedding)
         return  output
 
