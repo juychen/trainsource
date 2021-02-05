@@ -311,10 +311,31 @@ def run_main(args):
 
         # Before Transfer learning, we test the performance of using no transfer performance:
 
-        # Extract pretrain feature and save it in the adata obsm
-        embeddings_p = encoder.encode(X_allTensor).detach().cpu().numpy()
-        # Add embeddings to the adata package
-        adata.obsm["X_pre"] = embeddings_p
+        # Use vae result to predict 
+        embeddings_pretrain = encoder.encode(X_allTensor)
+        pretrain_prob_prediction = source_model.predict(embeddings_pretrain).detach().cpu().numpy()
+        adata.obs["sens_preds_pret"] = pretrain_prob_prediction[:,1]
+        adata.obs["sens_label_pret"] = pretrain_prob_prediction.argmax(axis=1)
+
+        # Use umap result to predict 
+        sc.tl.umap(adata, n_components=encoder_hdims)
+        embeddings_umap = torch.FloatTensor(adata.obsm["umap"]).to(device)
+        umap_prob_prediction = source_model.predict(embeddings_umap).detach().cpu().numpy()
+        adata.obs["sens_preds_umap"] = umap_prob_prediction[:,1]
+        adata.obs["sens_label_umap"] = umap_prob_prediction.argmax(axis=1)
+
+
+        # Use tsne result to predict 
+        sc.tl.tsne(adata, n_components=encoder_hdims)
+        embeddings_tsne = torch.FloatTensor(adata.obsm["tsne"]).to(device)
+        tsne_prob_prediction = source_model.predict(embeddings_tsne).detach().cpu().numpy()
+        adata.obs["sens_preds_tsne"] = tsne_prob_prediction[:,1]
+        adata.obs["sens_label_tsne"] = tsne_prob_prediction.argmax(axis=1)
+
+
+        # Add embeddings to the adata object
+        embeddings_pretrain = embeddings_pretrain.detach().cpu().numpy()
+        adata.obsm["X_pre"] = embeddings_pretrain
 
 
 
