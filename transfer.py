@@ -362,6 +362,7 @@ def run_main(args):
                             target_model_path)
 
         logging.info("Transfer ADDA finished")
+        
 
     # DaNN model
     elif args.transfer == 'DaNN':
@@ -473,6 +474,16 @@ def run_main(args):
     report_df = args_df
 
     # Data specific benchmarking
+    
+    sens_pb_pret = adata.obs['sens_preds_pret']
+    lb_pret = adata.obs['sens_label_pret']
+    
+    sens_pb_umap = adata.obs['sens_preds_umap']
+    lb_umap = adata.obs['sens_label_umap']
+    
+    sens_pb_tsne = adata.obs['sens_preds_tsne']
+    lb_tsne = adata.obs['sens_label_tsne']
+        
     if(data_name=='GSE117872'):
         
         label = adata.obs['cluster']
@@ -485,18 +496,38 @@ def run_main(args):
 
         lb_results = adata.obs['sens_label']
 
-        ap_score = average_precision_score(Y_test, sens_pb_results)
+        ap_score = average_precision_score(Y_test, sens_pb_results)                
+        
+        ap_pret = average_precision_score(Y_test, sens_pb_pret)
+        ap_umap = average_precision_score(Y_test, sens_pb_umap)
+        ap_tsne = average_precision_score(Y_test, sens_pb_tsne)
 
         report_dict = classification_report(Y_test, lb_results, output_dict=True)
         classification_report_df = pd.DataFrame(report_dict).T
-        classification_report_df.to_csv("saved/results/clf_report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+        classification_report_df.to_csv("saved/results/clf_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
+        report_dict_umap = classification_report(Y_test, lb_pret, output_dict=True)
+        classification_report_umap_df = pd.DataFrame(report_dict_umap).T
+        classification_report_umap_df.to_csv("saved/results/clf_umap_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+
+        report_dict_pret = classification_report(Y_test, lb_umap, output_dict=True)
+        classification_report_pret_df = pd.DataFrame(report_dict_pret).T
+        classification_report_pret_df.to_csv("saved/results/clf_pret_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+
+        report_dict_tsne = classification_report(Y_test, lb_tsne, output_dict=True)
+        classification_report_tsne_df = pd.DataFrame(report_dict_tsne).T
+        classification_report_tsne_df.to_csv("saved/results/clf_tsne_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
         try:
             auroc_score = roc_auc_score(Y_test, sens_pb_results)
+                        
+            auroc_pret = average_precision_score(Y_test, sens_pb_pret)
+            auroc_umap = average_precision_score(Y_test, sens_pb_umap)
+            auroc_tsne = average_precision_score(Y_test, sens_pb_tsne)
+
         except:
             logging.warning("Only one class, no ROC")
-            auroc_score = 0
+            auroc_pret=auroc_umap=auroc_tsne=auroc_score = 0
         
 
         ap_title = "ap: "+str(Decimal(ap_score).quantize(Decimal('0.0000')))
@@ -509,6 +540,15 @@ def run_main(args):
         report_df['auroc_score'] = auroc_score
         report_df['ap_score'] = ap_score
 
+        report_df['auroc_pret'] = auroc_pret
+        report_df['ap_score'] = ap_pret
+
+        report_df['auroc_umap'] = auroc_umap
+        report_df['ap_score'] = ap_umap
+
+        report_df['auroc_tsne'] = auroc_tsne
+        report_df['ap_tsne'] = ap_tsne
+
         #report_df.to_csv("saved/logs/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
     
     elif (data_name=='GSE110894'):
@@ -520,18 +560,53 @@ def run_main(args):
         
         ap_score = average_precision_score(Y_test, sens_pb_results)
 
+        ap_pret = average_precision_score(Y_test, sens_pb_pret)
+        ap_umap = average_precision_score(Y_test, sens_pb_umap)
+        ap_tsne = average_precision_score(Y_test, sens_pb_tsne)
+
+        
         report_dict = classification_report(Y_test, lb_results, output_dict=True)
         classification_report_df = pd.DataFrame(report_dict).T
-        classification_report_df.to_csv("saved/results/" + reduce_model + args.predictor+ prediction + select_drug+now + '_clf_report.csv')
+        classification_report_df.to_csv("saved/results/clf_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+
+        report_dict_umap = classification_report(Y_test, lb_pret, output_dict=True)
+        classification_report_umap_df = pd.DataFrame(report_dict_umap).T
+        classification_report_umap_df.to_csv("saved/results/clf_umap_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+
+        report_dict_pret = classification_report(Y_test, lb_umap, output_dict=True)
+        classification_report_pret_df = pd.DataFrame(report_dict_pret).T
+        classification_report_pret_df.to_csv("saved/results/clf_pret_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+
+        report_dict_tsne = classification_report(Y_test, lb_tsne, output_dict=True)
+        classification_report_tsne_df = pd.DataFrame(report_dict_tsne).T
+        classification_report_tsne_df.to_csv("saved/results/clf_tsne_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
 
         try:
             auroc_score = roc_auc_score(Y_test, sens_pb_results)
+                        
+            auroc_pret = average_precision_score(Y_test, sens_pb_pret)
+            auroc_umap = average_precision_score(Y_test, sens_pb_umap)
+            auroc_tsne = average_precision_score(Y_test, sens_pb_tsne)
         except:
             logging.warning("Only one class, no ROC")
-            auroc_score = 0
+            auroc_pret=auroc_umap=auroc_tsne=auroc_score = 0
+
         report_df['auroc_score'] = auroc_score
-        report_df['ap_score'] = ap_score
+        report_df['ap_score'] = ap_score        
+        
+        
+        report_df['auroc_pret'] = auroc_pret
+        report_df['ap_score'] = ap_pret
+
+        report_df['auroc_umap'] = auroc_umap
+        report_df['ap_score'] = ap_umap
+
+        report_df['auroc_tsne'] = auroc_tsne
+        report_df['ap_tsne'] = ap_tsne
+
+
+
 
 
         ap_title = "ap: "+str(Decimal(ap_score).quantize(Decimal('0.0000')))
@@ -645,7 +720,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="all")
-    parser.add_argument('--load_target_model', type=int, default=0)
+    parser.add_argument('--load_target_model', type=int, default=1)
     parser.add_argument('--GAMMA_mmd', type=int, default=10^3)
 
     parser.add_argument('--runs', type=int, default=1)
