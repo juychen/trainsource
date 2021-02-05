@@ -464,7 +464,7 @@ def run_main(args):
 
         report_dict = classification_report(Y_test, lb_results, output_dict=True)
         classification_report_df = pd.DataFrame(report_dict).T
-        classification_report_df.to_csv("saved/results/" + reduce_model + args.predictor+ prediction + select_drug+now + '_clf_report.csv')
+        classification_report_df.to_csv("saved/results/clf_report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
 
         try:
@@ -599,7 +599,7 @@ if __name__ == '__main__':
     parser.add_argument('--min_g', type=int, default=200)
     parser.add_argument('--min_c', type=int, default=3)
     parser.add_argument('--cluster_res', type=float, default=0.3)
-    parser.add_argument('--remove_genes', type=int, default=0)
+    parser.add_argument('--remove_genes', type=int, default=1)
 
     # train
     parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_32_VAEDNNclassificationI-BET-762.pkl')
