@@ -318,6 +318,12 @@ def run_main(args):
         adata.obs["sens_label_pret"] = pretrain_prob_prediction.argmax(axis=1)
 
         # Use umap result to predict 
+
+                # PCA
+        sc.tl.pca(adata, svd_solver='arpack')
+
+        # Generate neighbor graph
+        sc.pp.neighbors(adata, n_neighbors=10,use_rep="X_Trans")
         sc.tl.umap(adata, n_components=encoder_hdims)
         embeddings_umap = torch.FloatTensor(adata.obsm["umap"]).to(device)
         umap_prob_prediction = source_model.predict(embeddings_umap).detach().cpu().numpy()
@@ -436,15 +442,9 @@ def run_main(args):
 
 
     # Pipeline of scanpy 
-
-    # PCA
-    sc.tl.pca(adata, svd_solver='arpack')
-
     # Add embeddings to the adata package
     adata.obsm["X_Trans"] = embeddings
 
-    # Generate neighbor graph
-    sc.pp.neighbors(adata, n_neighbors=10,use_rep="X_Trans")
     #sc.tl.umap(adata)
 
     # Use t-sne 
@@ -688,8 +688,8 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
-    parser.add_argument('--target_data', type=str, default="GSE122843")
-    parser.add_argument('--drug', type=str, default='I-BET-762')
+    parser.add_argument('--target_data', type=str, default="GSE117872")
+    parser.add_argument('--drug', type=str, default='Cisplatin')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
@@ -699,12 +699,12 @@ if __name__ == '__main__':
     parser.add_argument('--min_g', type=int, default=200)
     parser.add_argument('--min_c', type=int, default=3)
     parser.add_argument('--cluster_res', type=float, default=0.3)
-    parser.add_argument('--remove_genes', type=int, default=1)
+    parser.add_argument('--remove_genes', type=int, default=0)
 
     # train
-    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_32_VAEDNNclassificationI-BET-762.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/transfer_IBET_')
-    parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_GSE122843_vae.pkl')
+    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAEDNN32_Cis.pkl')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/transfer_Cis_')
+    parser.add_argument('--pretrain', type=str, default='saved/models/target_encoder_117872_vae.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
