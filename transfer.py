@@ -635,7 +635,7 @@ def run_main(args):
     # Run leiden clustering
     sc.tl.leiden(adata,resolution=leiden_res)
     # Plot uamp
-    sc.pl.umap(adata,color=["leiden",'sens_preds'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
+    sc.pl.umap(adata,color=["leiden",'sens_preds','sens_label'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
 
     # Run embeddings using transfered embeddings
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
