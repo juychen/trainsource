@@ -341,6 +341,7 @@ def run_main(args):
         tsne_prob_prediction = source_model.predict(embeddings_tsne).detach().cpu().numpy()
         adata.obs["sens_preds_tsne"] = tsne_prob_prediction[:,1]
         adata.obs["sens_label_tsne"] = tsne_prob_prediction.argmax(axis=1)
+        adata.obsm["X_tsne_pret"] = X_tsne
 
 
         # Add embeddings to the adata object
@@ -452,7 +453,7 @@ def run_main(args):
     #sc.tl.umap(adata)
     sc.pp.neighbors(adata, n_neighbors=10,use_rep="X_Trans")
 
-    # Use t-sne 
+    # Use t-sne on transfer learning features
     sc.tl.tsne(adata,use_rep="X_Trans")
 
     # Leiden on the data
@@ -498,63 +499,8 @@ def run_main(args):
         le_sc.fit(['Resistant','Sensitive'])
         sens_pb_results = adata.obs['sens_preds']
         Y_test = le_sc.transform(label)
-
         lb_results = adata.obs['sens_label']
-
-        ap_score = average_precision_score(Y_test, sens_pb_results)                
-        
-        ap_pret = average_precision_score(Y_test, sens_pb_pret)
-        ap_umap = average_precision_score(Y_test, sens_pb_umap)
-        ap_tsne = average_precision_score(Y_test, sens_pb_tsne)
-
-        report_dict = classification_report(Y_test, lb_results, output_dict=True)
-        classification_report_df = pd.DataFrame(report_dict).T
-        classification_report_df.to_csv("saved/results/clf_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
-
-        report_dict_umap = classification_report(Y_test, lb_pret, output_dict=True)
-        classification_report_umap_df = pd.DataFrame(report_dict_umap).T
-        classification_report_umap_df.to_csv("saved/results/clf_umap_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
-
-        report_dict_pret = classification_report(Y_test, lb_umap, output_dict=True)
-        classification_report_pret_df = pd.DataFrame(report_dict_pret).T
-        classification_report_pret_df.to_csv("saved/results/clf_pret_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
-
-        report_dict_tsne = classification_report(Y_test, lb_tsne, output_dict=True)
-        classification_report_tsne_df = pd.DataFrame(report_dict_tsne).T
-        classification_report_tsne_df.to_csv("saved/results/clf_tsne_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
-
-        try:
-            auroc_score = roc_auc_score(Y_test, sens_pb_results)
-                        
-            auroc_pret = average_precision_score(Y_test, sens_pb_pret)
-            auroc_umap = average_precision_score(Y_test, sens_pb_umap)
-            auroc_tsne = average_precision_score(Y_test, sens_pb_tsne)
-
-        except:
-            logging.warning("Only one class, no ROC")
-            auroc_pret=auroc_umap=auroc_tsne=auroc_score = 0
-        
-
-        ap_title = "ap: "+str(Decimal(ap_score).quantize(Decimal('0.0000')))
-        auroc_title = "roc: "+str(Decimal(auroc_score).quantize(Decimal('0.0000')))
-
-        color_list = ["cluster","origin",'sens_preds']
-        title_list = ['',ap_title,auroc_title]
-
-        #report_df = args_df
-        report_df['auroc_score'] = auroc_score
-        report_df['ap_score'] = ap_score
-
-        report_df['auroc_pret'] = auroc_pret
-        report_df['ap_score'] = ap_pret
-
-        report_df['auroc_umap'] = auroc_umap
-        report_df['ap_score'] = ap_umap
-
-        report_df['auroc_tsne'] = auroc_tsne
-        report_df['ap_tsne'] = ap_tsne
-
-        #report_df.to_csv("saved/logs/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+        color_list = ["cluster","sens_label",'sens_preds']
     
     elif (data_name=='GSE110894'):
 
@@ -562,9 +508,11 @@ def run_main(args):
         Y_test = adata.obs['sensitive']
         sens_pb_results = adata.obs['sens_preds']
         lb_results = adata.obs['sens_label']
-        
-        ap_score = average_precision_score(Y_test, sens_pb_results)
+        color_list = ["Sample name","sens_label",'sens_preds']
 
+    
+    if (data_name in ['GSE110894','GSE117872']):
+        ap_score = average_precision_score(Y_test, sens_pb_results)
         ap_pret = average_precision_score(Y_test, sens_pb_pret)
         ap_umap = average_precision_score(Y_test, sens_pb_umap)
         ap_tsne = average_precision_score(Y_test, sens_pb_tsne)
@@ -610,22 +558,14 @@ def run_main(args):
         report_df['auroc_tsne'] = auroc_tsne
         report_df['ap_tsne'] = ap_tsne
 
-
-
-
-
         ap_title = "ap: "+str(Decimal(ap_score).quantize(Decimal('0.0000')))
         auroc_title = "roc: "+str(Decimal(auroc_score).quantize(Decimal('0.0000')))
-
-
-        color_list = ["Sample name",'sens_preds']
         title_list = [ap_title,auroc_title]
-
-      
+ 
     else:
         
         color_list = ["leiden","leiden_trans",'sens_preds']
-        title_list = ['',""]
+        title_list = ['',"",""]
 
     # Simple analysis do neighbors in adata using PCA embeddings
     sc.pp.neighbors(adata)
@@ -635,7 +575,7 @@ def run_main(args):
     # Run leiden clustering
     sc.tl.leiden(adata,resolution=leiden_res)
     # Plot uamp
-    sc.pl.umap(adata,color=["leiden",'sens_preds','sens_label'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
+    sc.pl.umap(adata,color=["leiden",'sens_preds_umap','sens_label_umap'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
 
     # Run embeddings using transfered embeddings
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
@@ -643,8 +583,15 @@ def run_main(args):
     sc.tl.leiden(adata,neighbors_key="Trans",key_added="leiden_trans",resolution=leiden_res)
     sc.pl.umap(adata,color=color_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_TL"+now,show=False,title=title_list)
     # Plot tsne
+
+    # This tsne is based on transfer learning feature
     sc.pl.tsne(adata,color=color_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_TL"+now,show=False,title=title_list)
-    
+    # Use tsne origianl version to visualize
+
+    sc.tl.tsne(adata)
+    # This tsne is based on transfer learning feature
+    sc.pl.tsne(adata,color=color=["leiden",'sens_preds_tsne','sens_label_tsne'],save=data_name+args.transfer+args.dimreduce+"_original_tsne"+now,show=False,title=title_list)
+
     # Plot tsne of the pretrained (autoencoder) embeddings
     sc.pp.neighbors(adata,use_rep='X_pre',key_added="Pret")
     sc.tl.umap(adata,neighbors_key="Pret")
