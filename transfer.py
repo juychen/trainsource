@@ -319,21 +319,25 @@ def run_main(args):
 
         # Use umap result to predict 
 
-                # PCA
-        sc.tl.pca(adata, svd_solver='arpack')
+        # PCA
+        sc.tl.pca(adata,  n_comps=max(50,2*dim_au_out),svd_solver='arpack')
 
         # Generate neighbor graph
-        sc.pp.neighbors(adata, n_neighbors=10,use_rep="X_Trans")
-        sc.tl.umap(adata, n_components=encoder_hdims)
-        embeddings_umap = torch.FloatTensor(adata.obsm["umap"]).to(device)
+        sc.pp.neighbors(adata, n_neighbors=10)
+        sc.tl.umap(adata, n_components=dim_au_out)
+        embeddings_umap = torch.FloatTensor(adata.obsm["X_umap"]).to(device)
         umap_prob_prediction = source_model.predict(embeddings_umap).detach().cpu().numpy()
         adata.obs["sens_preds_umap"] = umap_prob_prediction[:,1]
         adata.obs["sens_label_umap"] = umap_prob_prediction.argmax(axis=1)
 
 
         # Use tsne result to predict 
-        sc.tl.tsne(adata, n_components=encoder_hdims)
-        embeddings_tsne = torch.FloatTensor(adata.obsm["tsne"]).to(device)
+        #sc.tl.tsne(adata, n_pcs=dim_au_out)
+
+        from sklearn.manifold import TSNE
+        X_pca = adata.obsm["X_pca"]
+        X_tsne = TSNE(n_components=dim_au_out,method='exact').fit_transform(X_pca)
+        embeddings_tsne = torch.FloatTensor(X_tsne).to(device)
         tsne_prob_prediction = source_model.predict(embeddings_tsne).detach().cpu().numpy()
         adata.obs["sens_preds_tsne"] = tsne_prob_prediction[:,1]
         adata.obs["sens_label_tsne"] = tsne_prob_prediction.argmax(axis=1)
@@ -446,6 +450,7 @@ def run_main(args):
     adata.obsm["X_Trans"] = embeddings
 
     #sc.tl.umap(adata)
+    sc.pp.neighbors(adata, n_neighbors=10,use_rep="X_Trans")
 
     # Use t-sne 
     sc.tl.tsne(adata,use_rep="X_Trans")
