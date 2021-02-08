@@ -590,7 +590,7 @@ def run_main(args):
 
     sc.tl.tsne(adata)
     # This tsne is based on transfer learning feature
-    sc.pl.tsne(adata,color=color=["leiden",'sens_preds_tsne','sens_label_tsne'],save=data_name+args.transfer+args.dimreduce+"_original_tsne"+now,show=False,title=title_list)
+    sc.pl.tsne(adata,color=["leiden",'sens_preds_tsne','sens_label_tsne'],save=data_name+args.transfer+args.dimreduce+"_original_tsne"+now,show=False,title=title_list)
 
     # Plot tsne of the pretrained (autoencoder) embeddings
     sc.pp.neighbors(adata,use_rep='X_pre',key_added="Pret")
