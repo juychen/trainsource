@@ -5,7 +5,7 @@ from matplotlib import rcParams
 import scanpy as sc
 
 
-def trajectory(adata):
+def trajectory(adata,now):
     sc.settings.verbosity = 0  # verbosity: errors (0), warnings (1), info (2), hints (3)
     #sc.logging.print_versions()
     #sc.settings.set_figure_params(dpi=80, frameon=False, figsize=(3, 3), facecolor='white')  # low dpi (dots per inch) yields small inline figures
@@ -26,51 +26,51 @@ def trajectory(adata):
     sc.pl.paga(adata2, color=['leiden_trans'])  ## bugs here ,
 
     sc.tl.draw_graph(adata2, init_pos='paga')
-    sc.pl.draw_graph(adata2, color=['leiden_trans'], legend_loc='on data')
-    pl.figure(figsize=(8, 2))
-    for i in range(8):
-        pl.scatter(i, 1, c=sc.pl.palettes.zeileis_28[i], s=200)
-    pl.show()
+    sc.pl.draw_graph(adata2, color=['leiden_trans'], legend_loc='on data',save="Drawgraph_1"+now)
+    # pl.figure(figsize=(8, 2))
+    # for i in range(8):
+    #     pl.scatter(i, 1, c=sc.pl.palettes.zeileis_28[i], s=200)
+    # pl.show()
     zeileis_colors = np.array(sc.pl.palettes.zeileis_28)
     sc.pl.paga_compare(
         adata2, threshold=0.03, title='', right_margin=0.2, size=10,
         edge_width_scale=0.5,legend_fontsize=12, fontsize=12, frameon=False,
-        edges=True, save=True)
+        edges=True,save="Paga_cp1")
     adata2.uns['iroot'] = np.flatnonzero(adata2.obs['leiden_trans']  == '0')[0]
     sc.tl.dpt(adata2)
     adata_raw = adata2
     sc.pp.log1p(adata_raw)
     sc.pp.scale(adata_raw)
     adata.raw = adata_raw
-    sc.pl.draw_graph(adata2, color=['sens_preds', 'dpt_pseudotime'], legend_loc='on data',save=True)
+    sc.pl.draw_graph(adata2, color=['sens_preds', 'dpt_pseudotime'], legend_loc='on data',save="Drawgraph_2"+now)
     
     
     
     
     ## trajectory2
     sc.tl.paga(adata2, groups='leiden')
-    sc.pl.paga(adata2, color='leiden')
+    sc.pl.paga(adata2, color='leiden',save="Paga_1"+now)
     adata2.obs['leiden'].cat.categories
     sc.tl.paga(adata2, groups='leiden')
-    sc.pl.paga(adata2, threshold=0.03, show=False)
+    sc.pl.paga(adata2, threshold=0.03, show=False,save="Paga_3"+now)
     sc.tl.draw_graph(adata2, init_pos='paga')
-    sc.pl.draw_graph(adata2, color=['leiden'], legend_loc='on data')
+    sc.pl.draw_graph(adata2, color=['leiden'], legend_loc='on data',save="Drawgraph_3"+now)
     pl.figure(figsize=(8, 2))
-    for i in range(8):
-        pl.scatter(i, 1, c=sc.pl.palettes.zeileis_28[i], s=200)
-    pl.show()
+    # for i in range(8):
+    #     pl.scatter(i, 1, c=sc.pl.palettes.zeileis_28[i], s=200)
+    # pl.show()
     zeileis_colors = np.array(sc.pl.palettes.zeileis_28)
     sc.pl.paga_compare(
         adata2, threshold=0.03, title='', right_margin=0.2, size=10,
         edge_width_scale=0.5,legend_fontsize=12, fontsize=12, frameon=False,
-        edges=True)
+        edges=True,save="Paga_cp2")
     adata2.uns['iroot'] = np.flatnonzero(adata2.obs['leiden']  == '0')[0]
     sc.tl.dpt(adata2)
     adata_raw = adata2
     sc.pp.log1p(adata_raw)
     sc.pp.scale(adata_raw)
     adata.raw = adata_raw
-    sc.pl.draw_graph(adata2, color=['leiden', 'dpt_pseudotime'], legend_loc='on data',save=True)
+    sc.pl.draw_graph(adata2, color=['leiden', 'dpt_pseudotime'], legend_loc='on data',save="Drawgraph_4"+now)
 
     
     return adata2

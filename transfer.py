@@ -46,7 +46,8 @@ DATA_MAP={
 "GSE121107_6H":'data/GSE121107/GSM3426291_entinostat_6hr_out_gene_exon_tagged.dge.txt',
 "GSE111014":'data/GSE111014/',
 "GSE110894":"data/GSE110894/GSE110894.csv",
-"GSE122843":"data/GSE122843/GSE122843.txt"
+"GSE122843":"data/GSE122843/GSE122843.txt",
+"GSE112274":"data/GSE112274/GSE112274_cell_gene_FPKM.csv"
 }
 
 REMOVE_GENES=["mt","rps","rpl"]
@@ -472,8 +473,12 @@ def run_main(args):
 
     # save DE genes between 0-1 class
     for label in [0,1]:
-        df_degs = get_de_dataframe(adata,label)
-        df_degs.to_csv("saved/results/DEGs_class_" +str(label)+ args.predictor+ prediction + select_drug+now + '.csv')
+
+        try:
+            df_degs = get_de_dataframe(adata,label)
+            df_degs.to_csv("saved/results/DEGs_class_" +str(label)+ args.predictor+ prediction + select_drug+now + '.csv')
+        except:
+            logging.warning("Only one class, no two calsses critical genes")
 
 
     # Generate reports of scores
@@ -550,10 +555,10 @@ def run_main(args):
         
         
         report_df['auroc_pret'] = auroc_pret
-        report_df['ap_score'] = ap_pret
+        report_df['ap_pret'] = ap_pret
 
         report_df['auroc_umap'] = auroc_umap
-        report_df['ap_score'] = ap_umap
+        report_df['ap_umap'] = ap_umap
 
         report_df['auroc_tsne'] = auroc_tsne
         report_df['ap_tsne'] = ap_tsne
@@ -620,11 +625,11 @@ def run_main(args):
             report_df[class_key+'_auroc_c_'+str(c)] = cluster_auprc_score
 
     # Trajectory of adata
-    adata = trajectory(adata)
+    adata = trajectory(adata,now=now)
 
     # Draw PDF
-    #sc.pl.draw_graph(adata, color=['leiden', 'dpt_pseudotime'],save=data_name+args.dimreduce+"leiden+trajectory")
-    #sc.pl.draw_graph(adata, color=['sens_preds', 'dpt_pseudotime_leiden_trans','leiden_trans'],save=data_name+args.dimreduce+"sens_preds+trajectory")
+    sc.pl.draw_graph(adata, color=['leiden', 'dpt_pseudotime'],save=data_name+args.dimreduce+"leiden+trajectory")
+    sc.pl.draw_graph(adata, color=['sens_preds', 'dpt_pseudotime_leiden_trans','leiden_trans'],save=data_name+args.dimreduce+"sens_preds+trajectory")
 
     # Save adata
     adata.write("saved/adata/"+data_name+now+".h5ad")
@@ -672,7 +677,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="all")
-    parser.add_argument('--load_target_model', type=int, default=1)
+    parser.add_argument('--load_target_model', type=int, default=0)
     parser.add_argument('--GAMMA_mmd', type=int, default=10^3)
 
     parser.add_argument('--runs', type=int, default=1)
