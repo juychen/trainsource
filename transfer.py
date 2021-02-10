@@ -668,7 +668,7 @@ if __name__ == '__main__':
     parser.add_argument('--min_g', type=int, default=200)
     parser.add_argument('--min_c', type=int, default=3)
     parser.add_argument('--cluster_res', type=float, default=0.3)
-    parser.add_argument('--remove_genes', type=int, default=1)
+    parser.add_argument('--remove_genes', type=int, default=0)
 
     # train
     parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_AE32UF_AEDNNclassificationCisplatin.pkl')
@@ -689,7 +689,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="all")
-    parser.add_argument('--load_target_model', type=int, default=1)
+    parser.add_argument('--load_target_model', type=int, default=0)
     parser.add_argument('--GAMMA_mmd', type=int, default=10^3)
 
     parser.add_argument('--runs', type=int, default=1)
