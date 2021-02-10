@@ -672,18 +672,18 @@ if __name__ == '__main__':
 
     # train
     parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_AE32UF_AEDNNclassificationCisplatin.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_VAE_64U_GSE112274')
-    parser.add_argument('--pretrain', type=str, default='saved/models//GSE112274_encoder_vae64.pkl')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_VAE_32UF_GSE117872_')
+    parser.add_argument('--pretrain', type=str, default='saved/models/GSE117872_encoder_ae32.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
-    parser.add_argument('--bottleneck', type=int, default=64)
+    parser.add_argument('--bottleneck', type=int, default=32)
     parser.add_argument('--dimreduce', type=str, default="VAE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=int, default=0)
-    parser.add_argument('--source_h_dims', type=str, default="256,128")
+    parser.add_argument('--source_h_dims', type=str, default="128,64")
     parser.add_argument('--target_h_dims', type=str, default="128,64")
     parser.add_argument('--p_h_dims', type=str, default="16,8")
     parser.add_argument('--predition', type=str, default="classification")
