@@ -498,14 +498,19 @@ def run_main(args):
     if(data_name=='GSE117872'):
         
         label = adata.obs['cluster']
+        label_no_ho =  label
+
         if len(label[label != "Sensitive"] )>0:
-            label[label != "Sensitive"] = 'Resistant'
+            # label[label != "Sensitive"] = 'Resistant'
+            label_no_ho[label_no_ho != "Resistant"] = 'Sensitive'
+            adata.obs['sens_truth'] = label_no_ho
+
         le_sc = LabelEncoder()
         le_sc.fit(['Resistant','Sensitive'])
         sens_pb_results = adata.obs['sens_preds']
-        Y_test = le_sc.transform(label)
+        Y_test = le_sc.transform(label_no_ho)
         lb_results = adata.obs['sens_label']
-        color_list = ["cluster","sens_label",'sens_preds']
+        color_list = ["sens_truth","sens_label",'sens_preds']
     
     elif (data_name=='GSE110894'):
 
@@ -513,7 +518,14 @@ def run_main(args):
         Y_test = adata.obs['sensitive']
         sens_pb_results = adata.obs['sens_preds']
         lb_results = adata.obs['sens_label']
-        color_list = ["Sample name","sens_label",'sens_preds']
+
+        le_sc = LabelEncoder()
+        le_sc.fit(['Resistant','Sensitive'])
+        label_descrbie = le_sc.inverse_transform(Y_test)
+        adata.obs['sens_truth'] = label_descrbie
+
+
+        color_list = ["sens_truth","sens_label",'sens_preds']
 
     
     if (data_name in ['GSE110894','GSE117872']):
@@ -565,7 +577,7 @@ def run_main(args):
 
         ap_title = "ap: "+str(Decimal(ap_score).quantize(Decimal('0.0000')))
         auroc_title = "roc: "+str(Decimal(auroc_score).quantize(Decimal('0.0000')))
-        title_list = [ap_title,auroc_title]
+        title_list = ["Ground truth","Prediction","Probability"]
  
     else:
         
