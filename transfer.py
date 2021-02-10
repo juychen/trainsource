@@ -581,8 +581,8 @@ def run_main(args):
  
     else:
         
-        color_list = ["leiden","leiden_trans",'sens_preds']
-        title_list = ['',"",""]
+        color_list = ["leiden","sens_label",'sens_preds']
+        title_list = ['Cluster',"Prediction","Probability"]
 
     # Simple analysis do neighbors in adata using PCA embeddings
     sc.pp.neighbors(adata)
@@ -592,7 +592,7 @@ def run_main(args):
     # Run leiden clustering
     sc.tl.leiden(adata,resolution=leiden_res)
     # Plot uamp
-    sc.pl.umap(adata,color=["leiden",'sens_preds_umap','sens_label_umap'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
+    sc.pl.umap(adata,color=[color_list[0],'sens_preds_umap','sens_label_umap'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
 
     # Run embeddings using transfered embeddings
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
@@ -607,13 +607,13 @@ def run_main(args):
 
     sc.tl.tsne(adata)
     # This tsne is based on transfer learning feature
-    sc.pl.tsne(adata,color=["leiden",'sens_preds_tsne','sens_label_tsne'],save=data_name+args.transfer+args.dimreduce+"_original_tsne"+now,show=False,title=title_list)
+    sc.pl.tsne(adata,color=[color_list[0],'sens_preds_tsne','sens_label_tsne'],save=data_name+args.transfer+args.dimreduce+"_original_tsne"+now,show=False,title=title_list)
 
     # Plot tsne of the pretrained (autoencoder) embeddings
     sc.pp.neighbors(adata,use_rep='X_pre',key_added="Pret")
     sc.tl.umap(adata,neighbors_key="Pret")
     sc.tl.leiden(adata,neighbors_key="Pret",key_added="leiden_Pret",resolution=leiden_res)
-    sc.pl.umap(adata,color=["leiden_trans"],neighbors_key="Pret",save=data_name+args.transfer+args.dimreduce+"_tsne_Pretrain_"+now,show=False)
+    sc.pl.umap(adata,color=[color_list[0],'sens_preds_pret','sens_label_pret'],neighbors_key="Pret",save=data_name+args.transfer+args.dimreduce+"_tsne_Pretrain_"+now,show=False)
 
     # Ari between two transfer learning embedding and sensitivity label
     ari_score_trans  = adjusted_rand_score(adata.obs['leiden_trans'],adata.obs['sens_label'])
