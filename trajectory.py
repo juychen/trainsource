@@ -52,7 +52,7 @@ def trajectory(adata,now):
     sc.pl.paga(adata2, color='leiden',save="Paga_1"+now, show=False)
     adata2.obs['leiden'].cat.categories
     sc.tl.paga(adata2, groups='leiden')
-    sc.pl.paga(adata2, threshold=0.03, show=False,save="Paga_3"+now, show=False)
+    sc.pl.paga(adata2, threshold=0.03, show=False,save="Paga_3"+now)
     sc.tl.draw_graph(adata2, init_pos='paga')
     sc.pl.draw_graph(adata2, color=['leiden'], legend_loc='on data',save="Drawgraph_3"+now, show=False)
     pl.figure(figsize=(8, 2))
