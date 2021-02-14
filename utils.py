@@ -221,6 +221,15 @@ def process_112274(adata,**kargs):
     adata.obs=df_annotation
     return adata
 
+def process_116237(adata,**kargs):
+    obs_names = adata.obs.index
+    annotation_dict = {}
+    for section in [0,1,2]:
+        svals = [re.split('_|\.',index)[section] for index in obs_names]
+        annotation_dict["name_section_"+str(section+1)] = svals  
+
+    return adata
+    
 def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test_value="expression",save_name="feature_gradients"):
         ig = IntegratedGradients(net)
         attr, delta = ig.attribute(input,target=target_class, return_convergence_delta=True)
