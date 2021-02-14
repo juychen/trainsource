@@ -651,7 +651,6 @@ def run_main(args):
     adata.write("saved/adata/"+data_name+now+".h5ad")
 
     # Save report
-
     report_df = report_df.T
     report_df.to_csv("saved/results/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
