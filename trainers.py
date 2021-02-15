@@ -624,9 +624,108 @@ def train_DaNN_model(net,source_loader,target_loader,
 
  
     
-    # Select best model wts
+        # Select best model wts
         torch.save(best_model_wts, save_path)
         
     net.load_state_dict(best_model_wts)           
     
     return net, loss_train
+
+
+
+def train_scDEAL_model(net,source_loader,target_loader,sc_embed_loader,
+                    optimizer,loss_function,n_epochs,scheduler,dist_loss,weights=[0.25,0.25],GAMMA=10^3,
+                    load=False,save_path="saved/model.pkl",return_grad=False):
+
+    if(load!=False):
+        if(os.path.exists(save_path)):
+            net.load_state_dict(torch.load(save_path))           
+            return net, 0
+        else:
+            logging.warning("Failed to load existing file, proceed to the trainning process.")
+    
+    loss_train = {}
+    
+    best_model_wts = copy.deepcopy(net.state_dict())
+    best_loss = np.inf
+
+
+    for epoch in range(n_epochs):
+        logging.info('Epoch {}/{}'.format(epoch, n_epochs - 1))
+        logging.info('-' * 10)
+
+
+        # Each epoch has a training and validation phase
+        for phase in ['train', 'val']:
+            if phase == 'train':
+                net.train()  # Set model to training mode
+            else:
+                net.eval()  # Set model to evaluate mode
+
+            running_loss = 0.0
+            batch_j = 0
+            list_src, list_tar,list_scemb = list(enumerate(source_loader[phase])), list(enumerate(target_loader[phase])),list(enumerate(sc_embed_loader[phase]))
+            n_iters = max(len(source_loader[phase]), len(target_loader[phase]))
+
+            for batchidx, (x_src, y_src) in enumerate(source_loader[phase]):
+                _, (x_tar, y_tar) = list_tar[batch_j]
+                _, (x_scemb, y_emb) = list_scemb[batch_j]
+
+                x_tar.requires_grad_(True)
+                x_src.requires_grad_(True)
+
+                min_size = min(x_src.shape[0],x_tar.shape[0])
+
+                if (x_src.shape[0]!=x_tar.shape[0]):
+                    x_src = x_src[:min_size,]
+                    y_src = y_src[:min_size,]
+                    x_tar = x_tar[:min_size,]
+                    x_scemb = x_scemb[:min_size,]
+
+                # encode and decode 
+                y_pre, x_src_mmd, x_tar_mmd = net(x_src, x_tar)
+                # compute loss
+                loss_c = loss_function(y_pre, y_src)      
+                loss_mmd = dist_loss(x_src_mmd, x_tar_mmd)
+                
+                loss_mmd_scemb = dist_loss(x_scemb, x_tar_mmd)
+
+                loss = loss_c + weights[0] * loss_mmd +  weights[1] * loss_mmd_scemb 
+
+
+                # zero the parameter (weight) gradients
+                optimizer.zero_grad()
+
+                # backward + optimize only if in training phase
+                if phase == 'train':
+                    loss.backward(retain_graph=True)
+                    # update the weights
+                    optimizer.step()
+
+                # print loss statistics
+                running_loss += loss.item()
+
+                batch_j += 1
+                if batch_j >= len(list_tar):
+                    batch_j = 0
+            
+            epoch_loss = running_loss / n_iters
+
+            if phase == 'train':
+                scheduler.step(epoch_loss)
+                
+            last_lr = scheduler.optimizer.param_groups[0]['lr']
+            loss_train[epoch,phase] = epoch_loss
+            logging.info('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
+            
+            if phase == 'val' and epoch_loss < best_loss:
+                best_loss = epoch_loss
+                best_model_wts = copy.deepcopy(net.state_dict())
+    
+        # Select best model wts
+        torch.save(best_model_wts, save_path)
+        
+    net.load_state_dict(best_model_wts)           
+    
+    return net, loss_train
+

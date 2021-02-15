@@ -404,7 +404,7 @@ def run_main(args):
                             # Should here be all optimizer d?
                             optimizer_d, loss_d,
                             epochs,exp_lr_scheduler_d,
-                            dist_loss=loss,
+                            dist_loss=loss_disrtibution,
                             load=load_model,
                             save_path=target_model_path+"_DaNN.pkl")
 
