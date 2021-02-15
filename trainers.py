@@ -633,7 +633,7 @@ def train_DaNN_model(net,source_loader,target_loader,
 
 
 
-def train_scDEAL_model(net,source_loader,target_loader,sc_embed_loader,
+def train_scDANN_model(net,source_loader,target_loader,sc_embed_loader,
                     optimizer,loss_function,n_epochs,scheduler,dist_loss,weights=[0.25,0.25],GAMMA=10^3,
                     load=False,save_path="saved/model.pkl",return_grad=False):
 
