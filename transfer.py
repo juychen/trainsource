@@ -31,7 +31,7 @@ import scanpypip.preprocessing as pp
 import trainers as t
 import utils as ut
 from models import (AEBase, DaNN, Predictor, PretrainedPredictor,
-                    PretrainedVAEPredictor, TargetModel, VAEBase)
+                    PretrainedVAEPredictor, TargetModel, VAEBase,CVAEBase)
 from scanpypip.utils import get_de_dataframe
 from trajectory import trajectory
 import DaNN.mmd as mmd
@@ -157,7 +157,15 @@ def run_main(args):
         adata =  ut.specific_process(adata,dataname=data_name)
         data=adata.X
     else:
-        data=adata.X 
+        data=adata.X
+
+    # PCA
+    sc.tl.pca(adata,  n_comps=max(50,2*dim_au_out),svd_solver='arpack')
+    # Generate neighbor graph
+    sc.pp.neighbors(adata, n_neighbors=10)
+    # Generate cluster labels
+    sc.tl.leiden(adata,resolution=leiden_res)
+    data_c = adata.obs['leiden'].astype("long").to_list()
 ################################################# END SECTION OF SINGLE CELL DATA REPROCESSING #################################################
 
 ################################################# START SECTION OF LOADING SC DATA TO THE TENSORS #################################################
@@ -175,7 +183,8 @@ def run_main(args):
         data = mmscaler.fit_transform(data)
 
     # Split data to train and valid set
-    Xtarget_train, Xtarget_valid = train_test_split(data, test_size=valid_size, random_state=42)
+    # Along with the leiden conditions for CVAE propose
+    Xtarget_train, Xtarget_valid, Ctarget_train, Ctarget_valid = train_test_split(data,data_c, test_size=valid_size, random_state=42)
 
 
     # Select the device of gpu
@@ -187,10 +196,15 @@ def run_main(args):
     # Construct datasets and data loaders
     Xtarget_trainTensor = torch.FloatTensor(Xtarget_train).to(device)
     Xtarget_validTensor = torch.FloatTensor(Xtarget_valid).to(device)
+
+    # Use leiden label if CVAE is applied 
+    Ctarget_trainTensor = torch.LongTensor(Ctarget_train).to(device)
+    Ctarget_validTensor = torch.LongTensor(Ctarget_valid).to(device)
+    
     X_allTensor = torch.FloatTensor(data).to(device)
 
-    train_dataset = TensorDataset(Xtarget_trainTensor, Xtarget_trainTensor)
-    valid_dataset = TensorDataset(Xtarget_validTensor, Xtarget_validTensor)
+    train_dataset = TensorDataset(Xtarget_trainTensor, Ctarget_trainTensor)
+    valid_dataset = TensorDataset(Xtarget_validTensor, Ctarget_validTensor)
 
     Xtarget_trainDataLoader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
     Xtarget_validDataLoader = DataLoader(dataset=valid_dataset, batch_size=batch_size, shuffle=True)
@@ -254,8 +268,11 @@ def run_main(args):
     if reduce_model == "AE":
         encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
         loss_function_e = nn.MSELoss()
-    else:
+    elif reduce_model == "VAE":
         encoder = VAEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+    elif reduce_model == "CVAE":
+        # Number of condition is equal to the number of clusters
+        encoder = CVAEBase(input_dim=data.shape[1],n_conditions=len(set(data_c)),latent_dim=dim_au_out,h_dims=encoder_hdims)
 
     if torch.cuda.is_available():
         encoder.cuda()
@@ -283,7 +300,7 @@ def run_main(args):
         source_model.load_state_dict(torch.load(source_model_path))
         source_encoder = source_model
     # Load VAE model
-    else:
+    elif reduce_model in ["VAE","CVAE"]:
         source_model = PretrainedVAEPredictor(input_dim=Xsource_train.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims, 
                 hidden_dims_predictor=predict_hdims,output_dim=dim_model_out,
                 pretrained_weights=None,freezed=freeze,z_reparam=bool(args.VAErepram))
@@ -328,12 +345,6 @@ def run_main(args):
         adata.obs["sens_label_pret"] = pretrain_prob_prediction.argmax(axis=1)
 
         # Use umap result to predict 
-
-        # PCA
-        sc.tl.pca(adata,  n_comps=max(50,2*dim_au_out),svd_solver='arpack')
-
-        # Generate neighbor graph
-        sc.pp.neighbors(adata, n_neighbors=10)
         sc.tl.umap(adata, n_components=dim_au_out)
         embeddings_umap = torch.FloatTensor(adata.obsm["X_umap"]).to(device)
         umap_prob_prediction = source_model.predict(embeddings_umap).detach().cpu().numpy()
@@ -455,7 +466,6 @@ def run_main(args):
 ################################################# END SECTION OF TRANSER LEARNING TRAINING #################################################
 
 ################################################# START SECTION OF ANALYSIS AND POST PROCESSING #################################################
-
     # Pipeline of scanpy 
     # Add embeddings to the adata package
     adata.obsm["X_Trans"] = embeddings
@@ -467,7 +477,7 @@ def run_main(args):
     sc.tl.tsne(adata,use_rep="X_Trans")
 
     # Leiden on the data
-    sc.tl.leiden(adata)
+    # sc.tl.leiden(adata)
 
     # Plot tsne
     sc.pl.tsne(adata,save=data_name+now,color=["leiden"],show=False)
@@ -475,7 +485,6 @@ def run_main(args):
     # Differenrial expression genes
     sc.tl.rank_genes_groups(adata, 'leiden', method='wilcoxon')
     sc.pl.rank_genes_groups(adata, n_genes=args.n_DE_genes, sharey=False,save=data_name+now,show=False)
-
 
     # Differenrial expression genes across 0-1 classes
     sc.tl.rank_genes_groups(adata, 'sens_label', method='wilcoxon')
@@ -594,12 +603,12 @@ def run_main(args):
         title_list = ['Cluster',"Prediction","Probability"]
 
     # Simple analysis do neighbors in adata using PCA embeddings
-    sc.pp.neighbors(adata)
+    #sc.pp.neighbors(adata)
 
     # Run UMAP dimension reduction
     sc.tl.umap(adata)
     # Run leiden clustering
-    sc.tl.leiden(adata,resolution=leiden_res)
+    # sc.tl.leiden(adata,resolution=leiden_res)
     # Plot uamp
     sc.pl.umap(adata,color=[color_list[0],'sens_label_umap','sens_preds_umap'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
 
@@ -680,15 +689,15 @@ if __name__ == '__main__':
 
     # train
     parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_AE32UF_AEDNNclassificationCisplatin.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_VAE_32UF_GSE117872_')
-    parser.add_argument('--pretrain', type=str, default='saved/models/GSE117872_encoder_ae32.pkl')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_CVAE_32UF_GSE117872_')
+    parser.add_argument('--pretrain', type=str, default='saved/models/GSE117872_encoder_cvae32.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=32)
-    parser.add_argument('--dimreduce', type=str, default="VAE")
+    parser.add_argument('--dimreduce', type=str, default="CVAE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=int, default=0)
     parser.add_argument('--source_h_dims', type=str, default="128,64")
