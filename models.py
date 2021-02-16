@@ -402,6 +402,152 @@ class VAEBase(nn.Module):
 
         return self.forward(x)[0]
 
+class CVAEBase(VAEBase):
+
+    def __init__(self,
+                 input_dim,
+                 n_conditions,
+                 latent_dim=128,
+                 h_dims=[512],
+                 drop_out=0.3):
+                 
+        super(CVAEBase, self).__init__()
+
+        self.latent_dim = latent_dim
+        self.n_condition = n_conditions
+
+        # There are conditions therefore input size is different
+        self.encoder_dim = input_dim + n_conditions
+
+        modules_e = []
+    
+        hidden_dims = deepcopy(h_dims)
+        
+        hidden_dims.insert(0,self.encoder_dim)
+        
+        # Build Encoder
+        for i in range(1,len(hidden_dims)):
+            i_dim = hidden_dims[i-1]
+            o_dim = hidden_dims[i]
+
+            modules_e.append(
+                nn.Sequential(
+                    nn.Linear(i_dim, o_dim),
+                    nn.BatchNorm1d(o_dim),
+                    nn.Dropout(drop_out),
+                    nn.LeakyReLU()
+                    )
+            )
+            #in_channels = h_dim
+
+        self.encoder = nn.Sequential(*modules_e)
+        self.fc_mu = nn.Linear(hidden_dims[-1], latent_dim)
+        self.fc_var = nn.Linear(hidden_dims[-1], latent_dim)
+
+
+        # Build Decoder
+        modules_d = []
+
+        # There are conditions therefore input size is different
+        self.decoder_input = nn.Linear(latent_dim+n_conditions, hidden_dims[-1])
+
+        hidden_dims.reverse()
+
+        for i in range(len(hidden_dims) - 2):
+            modules_d.append(
+                nn.Sequential(
+                    nn.Linear(hidden_dims[i],
+                                       hidden_dims[i + 1]),
+                    nn.BatchNorm1d(hidden_dims[i + 1]),
+                    nn.Dropout(drop_out),
+                    nn.LeakyReLU()
+                    )
+            )
+
+
+        self.decoder = nn.Sequential(*modules_d)
+
+        self.final_layer = nn.Sequential(
+                            nn.Linear(hidden_dims[-2],
+                                       hidden_dims[-1],
+                            nn.Sigmoid())
+                            ) 
+        # self.feature_extractor = nn.Sequential(
+        #     self.encoder,
+        #     self.fc_mu
+        # )
+    
+    def idx2onehot(idx, n):
+
+        assert torch.max(idx).item() < n
+
+        if idx.dim() == 1:
+            idx = idx.unsqueeze(1)
+        onehot = torch.zeros(idx.size(0), n).to(idx.device)
+        onehot.scatter_(1, idx, 1)
+        
+        return onehot
+    
+
+    def encode_(self, input: Tensor,c:Tensor):
+        """
+        Encodes the input by passing through the encoder network
+        and returns the latent codes.
+        :param input: (Tensor) Input tensor to encoder [N x C x H x W]
+        :return: (Tensor) List of latent codes
+        """
+
+        # One hot encoding of inputs 
+        c = self.idx2onehot(c, n=self.n_condition)
+        input_c = torch.cat((input, c), dim=-1)
+
+        result = self.encoder(input_c)
+        #result = torch.flatten(result, start_dim=1)
+
+        # Split the result into mu and var components
+        # of the latent Gaussian distribution
+        mu = self.fc_mu(result)
+        log_var = self.fc_var(result)
+
+        return [mu, log_var]
+    
+    def encode(self, input: Tensor,c:Tensor,repram=False):
+        """
+        Encodes the input by passing through the encoder network
+        and returns the latent codes.
+        :param input: (Tensor) Input tensor to encoder [N x C x H x W]
+        :return: (Tensor) List of latent codes
+        """
+
+        # One hot encoding of inputs 
+        c = self.idx2onehot(c, n=self.n_condition)
+        input_c = torch.cat((input, c), dim=-1)
+
+        mu, log_var = self.encode_(input_c)
+
+        if (repram==True):
+            z = self.reparameterize(mu, log_var)
+            return z
+        else:
+            return mu
+
+    def decode(self, z: Tensor,c:Tensor):
+        """
+        Maps the given latent codes
+        onto the image space.
+        :param z: (Tensor) [B x D]
+        :return: (Tensor) [B x C x H x W]
+        """
+        
+        # One hot encoding of inputs 
+        c = self.idx2onehot(c, n=self.n_condition)
+        z_c = torch.cat((z, c), dim=-1)
+
+        result = self.decoder_input(z_c)
+        #result = result.view(-1, 512, 2, 2)
+        result = self.decoder(result)
+        result = self.final_layer(result)
+        return result
 
 class PretrainedVAEPredictor(VAEBase):
     def __init__(self,
