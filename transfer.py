@@ -54,10 +54,7 @@ DATA_MAP={
 REMOVE_GENES=["mt","rps","rpl"]
 
 def run_main(args):
-
-
 ################################################# START SECTION OF LOADING PARAMETERS #################################################
-
     # Read parameters
     epochs = args.epochs
     dim_au_out = args.bottleneck #8, 16, 32, 64, 128, 256,512
@@ -111,11 +108,9 @@ def run_main(args):
     
     # Save arguments
     args_df = ut.save_arguments(args,now)
-
 ################################################# END SECTION OF LOADING PARAMETERS #################################################
 
 ################################################# START SECTION OF SINGLE CELL DATA REPROCESSING #################################################
-
     # Load data and preprocessing
     adata = pp.read_sc_file(data_path)
 
@@ -161,16 +156,11 @@ def run_main(args):
     elif data_name =='GSE116237':
         adata =  ut.specific_process(adata,dataname=data_name)
         data=adata.X
-
     else:
-        data=adata.X
- 
+        data=adata.X 
 ################################################# END SECTION OF SINGLE CELL DATA REPROCESSING #################################################
 
-
 ################################################# START SECTION OF LOADING SC DATA TO THE TENSORS #################################################
-
-
     #Prepare to normailize and split target data
     mmscaler = preprocessing.MinMaxScaler()
 
@@ -206,13 +196,9 @@ def run_main(args):
     Xtarget_validDataLoader = DataLoader(dataset=valid_dataset, batch_size=batch_size, shuffle=True)
 
     dataloaders_pretrain = {'train':Xtarget_trainDataLoader,'val':Xtarget_validDataLoader}
-
 ################################################# START SECTION OF LOADING SC DATA TO THE TENSORS #################################################
 
-
 ################################################# START SECTION OF LOADING BULK DATA  #################################################
-
-
     # Read source data
     data_r=pd.read_csv(source_data_path,index_col=0)
     label_r=pd.read_csv(label_path,index_col=0)
@@ -261,11 +247,9 @@ def run_main(args):
     Xsource_validDataLoader = DataLoader(dataset=sourcevalid_dataset, batch_size=batch_size, shuffle=True)
 
     dataloaders_source = {'train':Xsource_trainDataLoader,'val':Xsource_validDataLoader}
-
 ################################################# END SECTION OF LOADING BULK DATA  #################################################
 
 ################################################# START SECTION OF MODEL CUNSTRUCTION  #################################################
-
     # Construct target encoder
     if reduce_model == "AE":
         encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
@@ -308,12 +292,9 @@ def run_main(args):
     logging.info("Load pretrained source model from: "+source_model_path)
            
     source_encoder.to(device)
-
 ################################################# END SECTION OF MODEL CUNSTRUCTION  #################################################
 
-
 ################################################# START SECTION OF SC MODEL PRETRAININIG  #################################################
-
     # Pretrain target encoder
     # Pretain using autoencoder is pretrain is not False
     if(str(pretrain)!='0'):
@@ -376,14 +357,9 @@ def run_main(args):
         # Add embeddings to the adata object
         embeddings_pretrain = embeddings_pretrain.detach().cpu().numpy()
         adata.obsm["X_pre"] = embeddings_pretrain
-
 ################################################# END SECTION OF SC MODEL PRETRAININIG  #################################################
 
-
 ################################################# START SECTION OF TRANSFER LEARNING TRAINING #################################################
-
-    # Transfer learning
-
     # Using ADDA transfer learning
     if args.transfer =='ADDA':
 
@@ -476,7 +452,7 @@ def run_main(args):
         adata.obs["sens_label"] = predictions.argmax(axis=1)
         adata.obs["sens_label"] = adata.obs["sens_label"].astype('category')
         adata.obs["rest_preds"] = predictions[:,0]
-################################################# END SECTION OF TRAINING #################################################
+################################################# END SECTION OF TRANSER LEARNING TRAINING #################################################
 
 ################################################# START SECTION OF ANALYSIS AND POST PROCESSING #################################################
 
