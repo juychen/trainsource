@@ -202,6 +202,8 @@ def run_main(args):
     Ctarget_validTensor = torch.LongTensor(Ctarget_valid).to(device)
     
     X_allTensor = torch.FloatTensor(data).to(device)
+    C_allTensor = torch.LongTensor(data_c).to(device)
+
 
     train_dataset = TensorDataset(Xtarget_trainTensor, Ctarget_trainTensor)
     valid_dataset = TensorDataset(Xtarget_validTensor, Ctarget_validTensor)
@@ -324,11 +326,15 @@ def run_main(args):
                                             optimizer=optimizer_e,loss_function=loss_function_e,
                                             n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
                 logging.info("Pretrained finished")
-            else:
+            elif reduce_model == "VAE":
                 encoder,loss_report_en = t.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
                                 optimizer=optimizer_e,
                                 n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
-
+            
+            elif reduce_model == "CVAE":
+                encoder,loss_report_en = t.train_CVAE_model(net=encoder,data_loaders=dataloaders_pretrain,
+                                optimizer=optimizer_e,
+                                n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
         else:
             # Load pretrained target encoder if there are stored files in the harddisk
             pretrain = str(pretrain)
@@ -339,7 +345,11 @@ def run_main(args):
         # Before Transfer learning, we test the performance of using no transfer performance:
 
         # Use vae result to predict 
-        embeddings_pretrain = encoder.encode(X_allTensor)
+        if(args.dimreduce!="CVAE"):
+            embeddings_pretrain = encoder.encode(X_allTensor)
+        else:
+            embeddings_pretrain = encoder.encode(X_allTensor,C_allTensor)
+
         pretrain_prob_prediction = source_model.predict(embeddings_pretrain).detach().cpu().numpy()
         adata.obs["sens_preds_pret"] = pretrain_prob_prediction[:,1]
         adata.obs["sens_label_pret"] = pretrain_prob_prediction.argmax(axis=1)
@@ -450,7 +460,12 @@ def run_main(args):
 
     # Extract feature embeddings 
     # Extract prediction probabilities
-    embedding_tensors = encoder.encode(X_allTensor)
+
+    if(args.dimreduce!="CVAE"):
+        embedding_tensors = encoder.encode(X_allTensor)
+    else:
+        embedding_tensors = encoder.encode(X_allTensor,C_allTensor)
+
     prediction_tensors = source_model.predictor(embedding_tensors)
     embeddings = embedding_tensors.detach().cpu().numpy()
     predictions = prediction_tensors.detach().cpu().numpy()
@@ -688,20 +703,20 @@ if __name__ == '__main__':
     parser.add_argument('--remove_genes', type=int, default=0)
 
     # train
-    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_AE32UF_AEDNNclassificationCisplatin.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_CVAE_32UF_GSE117872_')
+    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAE64U_VAEDNNclassificationCisplatin.pkl')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_CVAE_64U_GSE117872_')
     parser.add_argument('--pretrain', type=str, default='saved/models/GSE117872_encoder_cvae32.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
-    parser.add_argument('--bottleneck', type=int, default=32)
+    parser.add_argument('--bottleneck', type=int, default=64)
     parser.add_argument('--dimreduce', type=str, default="CVAE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=int, default=0)
-    parser.add_argument('--source_h_dims', type=str, default="128,64")
-    parser.add_argument('--target_h_dims', type=str, default="128,64")
+    parser.add_argument('--source_h_dims', type=str, default="256,128")
+    parser.add_argument('--target_h_dims', type=str, default="256,128")
     parser.add_argument('--p_h_dims', type=str, default="16,8")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)

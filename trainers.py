@@ -184,6 +184,100 @@ def train_VAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=No
 
     return net, loss_train
 
+def train_CVAE_model(net,data_loaders={},optimizer=None,n_epochs=100,scheduler=None,load=False,save_path="model.pkl",best_model_cache = "drive"):
+    
+    if(load!=False):
+        if(os.path.exists(save_path)):
+            net.load_state_dict(torch.load(save_path))           
+            return net, 0
+        else:
+            logging.warning("Failed to load existing file, proceed to the trainning process.")
+    
+    dataset_sizes = {x: data_loaders[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
+    loss_train = {}
+    
+    if best_model_cache == "memory":
+        best_model_wts = copy.deepcopy(net.state_dict())
+    else:
+        torch.save(net.state_dict(), save_path+"_bestcahce.pkl")
+    
+    best_loss = np.inf
+
+    for epoch in range(n_epochs):
+        logging.info('Epoch {}/{}'.format(epoch, n_epochs - 1))
+        logging.info('-' * 10)
+
+        # Each epoch has a training and validation phase
+        for phase in ['train', 'val']:
+            if phase == 'train':
+                #optimizer = scheduler(optimizer, epoch)
+                net.train()  # Set model to training mode
+            else:
+                net.eval()  # Set model to evaluate mode
+
+            running_loss = 0.0
+
+            n_iters = len(data_loaders[phase])
+
+
+            # Iterate over data.
+            # for data in data_loaders[phase]:
+            for batchidx, (x, c) in enumerate(data_loaders[phase]):
+
+                x.requires_grad_(True)
+                # encode and decode 
+                output = net(x,c)
+                # compute loss
+
+                #losses = net.loss_function(*output, M_N=data_loaders[phase].batch_size/dataset_sizes[phase])      
+                #loss = losses["loss"]
+
+                recon_loss = nn.MSELoss(reduction="sum")
+
+                loss = vae_loss(output[0],output[1],output[2],output[3],recon_loss,data_loaders[phase].batch_size/dataset_sizes[phase])
+
+                # zero the parameter (weight) gradients
+                optimizer.zero_grad()
+
+                # backward + optimize only if in training phase
+                if phase == 'train':
+                    loss.backward()
+                    # update the weights
+                    optimizer.step()
+
+                # print loss statistics
+                running_loss += loss.item()
+            
+                
+            epoch_loss = running_loss / dataset_sizes[phase]
+            #epoch_loss = running_loss / n_iters
+
+            
+            if phase == 'train':
+                scheduler.step(epoch_loss)
+                
+            last_lr = scheduler.optimizer.param_groups[0]['lr']
+            loss_train[epoch,phase] = epoch_loss
+            logging.info('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
+            
+            if phase == 'val' and epoch_loss < best_loss:
+                best_loss = epoch_loss
+
+                if best_model_cache == "memory":
+                    best_model_wts = copy.deepcopy(net.state_dict())
+                else:
+                    torch.save(net.state_dict(), save_path+"_bestcahce.pkl")
+    
+    # Select best model wts if use memory to cahce models
+    if best_model_cache == "memory":
+        torch.save(best_model_wts, save_path)
+        net.load_state_dict(best_model_wts)  
+    else:
+        net.load_state_dict((torch.load(save_path+"_bestcahce.pkl")))
+        torch.save(net.state_dict(), save_path)
+
+    return net, loss_train
+
 def train_predictor_model(net,data_loaders,optimizer,loss_function,n_epochs,scheduler,load=False,save_path="model.pkl"):
 
     if(load!=False):
@@ -573,7 +667,11 @@ def train_DaNN_model(net,source_loader,target_loader,
 
                 #x.requires_grad_(True)
                 # encode and decode 
-                y_pre, x_src_mmd, x_tar_mmd = net(x_src, x_tar)
+                
+                if(net.target_model._get_name()=="CVAEBase"):
+                    y_pre, x_src_mmd, x_tar_mmd = net(x_src, x_tar,y_tar)
+                else:
+                    y_pre, x_src_mmd, x_tar_mmd = net(x_src, x_tar)
                 # compute loss
                 loss_c = loss_function(y_pre, y_src)      
                 loss_mmd = dist_loss(x_src_mmd, x_tar_mmd)

@@ -402,6 +402,16 @@ class VAEBase(nn.Module):
 
         return self.forward(x)[0]
 
+def idx2onehot(idx, n):
+
+    assert torch.max(idx).item() < n
+
+    if idx.dim() == 1:
+        idx = idx.unsqueeze(1)
+    onehot = torch.zeros(idx.size(0), n).to(idx.device)
+    onehot.scatter_(1, idx, 1)
+    
+    return onehot
 class CVAEBase(VAEBase):
 
     def __init__(self,
@@ -410,9 +420,10 @@ class CVAEBase(VAEBase):
                  latent_dim=128,
                  h_dims=[512],
                  drop_out=0.3):
-                 
-        super(CVAEBase, self).__init__()
 
+        super(VAEBase, self).__init__()
+
+        self.input_dim = input_dim
         self.latent_dim = latent_dim
         self.n_condition = n_conditions
 
@@ -451,7 +462,9 @@ class CVAEBase(VAEBase):
         # There are conditions therefore input size is different
         self.decoder_input = nn.Linear(latent_dim+n_conditions, hidden_dims[-1])
 
+        # Replace the output shape
         hidden_dims.reverse()
+        hidden_dims[-1]=self.input_dim
 
         for i in range(len(hidden_dims) - 2):
             modules_d.append(
@@ -477,17 +490,12 @@ class CVAEBase(VAEBase):
         #     self.fc_mu
         # )
     
-    def idx2onehot(idx, n):
 
-        assert torch.max(idx).item() < n
-
-        if idx.dim() == 1:
-            idx = idx.unsqueeze(1)
-        onehot = torch.zeros(idx.size(0), n).to(idx.device)
-        onehot.scatter_(1, idx, 1)
-        
-        return onehot
     
+    def forward(self, input: Tensor,c: Tensor, **kwargs):
+        mu, log_var = self.encode_(input,c)
+        z = self.reparameterize(mu, log_var)
+        return  [self.decode(z,c), input, mu, log_var]
 
     def encode_(self, input: Tensor,c:Tensor):
         """
@@ -498,7 +506,7 @@ class CVAEBase(VAEBase):
         """
 
         # One hot encoding of inputs 
-        c = self.idx2onehot(c, n=self.n_condition)
+        c = idx2onehot(c, n=self.n_condition)
         input_c = torch.cat((input, c), dim=-1)
 
         result = self.encoder(input_c)
@@ -520,10 +528,10 @@ class CVAEBase(VAEBase):
         """
 
         # One hot encoding of inputs 
-        c = self.idx2onehot(c, n=self.n_condition)
-        input_c = torch.cat((input, c), dim=-1)
+        #c = idx2onehot(c, n=self.n_condition)
+        #input_c = torch.cat((input, c), dim=-1)
 
-        mu, log_var = self.encode_(input_c)
+        mu, log_var = self.encode_(input,c)
 
         if (repram==True):
             z = self.reparameterize(mu, log_var)
@@ -540,7 +548,7 @@ class CVAEBase(VAEBase):
         """
         
         # One hot encoding of inputs 
-        c = self.idx2onehot(c, n=self.n_condition)
+        c = idx2onehot(c, n=self.n_condition)
         z_c = torch.cat((z, c), dim=-1)
 
         result = self.decoder_input(z_c)
@@ -744,13 +752,18 @@ class DaNN(nn.Module):
         self.source_model = source_model
         self.target_model = target_model
 
-    def forward(self, X_source, X_target):
+    def forward(self, X_source, X_target,C_target=None):
      
         x_src_mmd = self.source_model.encode(X_source)
-        x_tar_mmd = self.target_model.encode(X_target)
+
+        if(type(C_target)==type(None)):
+            x_tar_mmd = self.target_model.encode(X_target)
+        else:
+            x_tar_mmd = self.target_model.encode(X_target,C_target)
+
         y_src = self.source_model.predictor(x_src_mmd)
         return y_src, x_src_mmd, x_tar_mmd
-
+    
 
 class TargetModel(nn.Module):
     def __init__(self, source_predcitor,target_encoder):
