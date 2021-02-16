@@ -55,6 +55,9 @@ REMOVE_GENES=["mt","rps","rpl"]
 
 def run_main(args):
 
+
+################################################# START SECTION OF LOADING PARAMETERS #################################################
+
     # Read parameters
     epochs = args.epochs
     dim_au_out = args.bottleneck #8, 16, 32, 64, 128, 256,512
@@ -105,10 +108,13 @@ def run_main(args):
 
 
     logging.info(args)
+    
     # Save arguments
     args_df = ut.save_arguments(args,now)
 
-    #os.mkdir('figures/'+now)
+################################################# END SECTION OF LOADING PARAMETERS #################################################
+
+################################################# START SECTION OF SINGLE CELL DATA REPROCESSING #################################################
 
     # Load data and preprocessing
     adata = pp.read_sc_file(data_path)
@@ -159,6 +165,11 @@ def run_main(args):
     else:
         data=adata.X
  
+################################################# END SECTION OF SINGLE CELL DATA REPROCESSING #################################################
+
+
+################################################# START SECTION OF LOADING SC DATA TO THE TENSORS #################################################
+
 
     #Prepare to normailize and split target data
     mmscaler = preprocessing.MinMaxScaler()
@@ -196,24 +207,10 @@ def run_main(args):
 
     dataloaders_pretrain = {'train':Xtarget_trainDataLoader,'val':Xtarget_validDataLoader}
 
+################################################# START SECTION OF LOADING SC DATA TO THE TENSORS #################################################
 
-    # Construct target encoder
-    if reduce_model == "AE":
-        encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
-        loss_function_e = nn.MSELoss()
-    else:
-        encoder = VAEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
 
-    if torch.cuda.is_available():
-        encoder.cuda()
-
-    logging.info("Target encoder structure is: ")
-    logging.info(encoder)
-
-    encoder.to(device)
-    optimizer_e = optim.Adam(encoder.parameters(), lr=1e-2)
-    loss_function_e = nn.MSELoss()
-    exp_lr_scheduler_e = lr_scheduler.ReduceLROnPlateau(optimizer_e)
+################################################# START SECTION OF LOADING BULK DATA  #################################################
 
 
     # Read source data
@@ -265,6 +262,28 @@ def run_main(args):
 
     dataloaders_source = {'train':Xsource_trainDataLoader,'val':Xsource_validDataLoader}
 
+################################################# END SECTION OF LOADING BULK DATA  #################################################
+
+################################################# START SECTION OF MODEL CUNSTRUCTION  #################################################
+
+    # Construct target encoder
+    if reduce_model == "AE":
+        encoder = AEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+        loss_function_e = nn.MSELoss()
+    else:
+        encoder = VAEBase(input_dim=data.shape[1],latent_dim=dim_au_out,h_dims=encoder_hdims)
+
+    if torch.cuda.is_available():
+        encoder.cuda()
+
+    logging.info("Target encoder structure is: ")
+    logging.info(encoder)
+
+    encoder.to(device)
+    optimizer_e = optim.Adam(encoder.parameters(), lr=1e-2)
+    loss_function_e = nn.MSELoss()
+    exp_lr_scheduler_e = lr_scheduler.ReduceLROnPlateau(optimizer_e)
+
 
     # Load source model before transfer
     if prediction == "regression":
@@ -289,6 +308,11 @@ def run_main(args):
     logging.info("Load pretrained source model from: "+source_model_path)
            
     source_encoder.to(device)
+
+################################################# END SECTION OF MODEL CUNSTRUCTION  #################################################
+
+
+################################################# START SECTION OF SC MODEL PRETRAININIG  #################################################
 
     # Pretrain target encoder
     # Pretain using autoencoder is pretrain is not False
@@ -353,7 +377,10 @@ def run_main(args):
         embeddings_pretrain = embeddings_pretrain.detach().cpu().numpy()
         adata.obsm["X_pre"] = embeddings_pretrain
 
+################################################# END SECTION OF SC MODEL PRETRAININIG  #################################################
 
+
+################################################# START SECTION OF TRANSFER LEARNING TRAINING #################################################
 
     # Transfer learning
 
@@ -449,7 +476,9 @@ def run_main(args):
         adata.obs["sens_label"] = predictions.argmax(axis=1)
         adata.obs["sens_label"] = adata.obs["sens_label"].astype('category')
         adata.obs["rest_preds"] = predictions[:,0]
+################################################# END SECTION OF TRAINING #################################################
 
+################################################# START SECTION OF ANALYSIS AND POST PROCESSING #################################################
 
     # Pipeline of scanpy 
     # Add embeddings to the adata package
