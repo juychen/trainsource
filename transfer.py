@@ -443,18 +443,20 @@ def run_main(args):
 
         # Allow require gradients and process label
         Xtarget_validTensor.requires_grad_()
-        ytarget_validPred = target_model(Xtarget_validTensor).detach().cpu().numpy()
+        ytarget_validPred = target_model(Xtarget_validTensor,Ctarget_validTensor).detach().cpu().numpy()
         ytarget_validPred = ytarget_validPred.argmax(axis=1)
         
         # Run integrated gradient check
         # Return adata and feature integrated gradient
-        adata,attr = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred
-                                    ,adata=adata,n_genes=args.n_DL_genes
-                                    ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
 
-        adata,attr0 = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred,
-                                    target_class=0,adata=adata,n_genes=args.n_DL_genes
-                                    ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
+        if(args.dimreduce!='CVAE'):
+            adata,attr = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred
+                                        ,adata=adata,n_genes=args.n_DL_genes
+                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
+
+            adata,attr0 = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred,
+                                        target_class=0,adata=adata,n_genes=args.n_DL_genes
+                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
 
 
 
