@@ -664,6 +664,7 @@ def train_DaNN_model(net,source_loader,target_loader,
                     x_src = x_src[:min_size,]
                     y_src = y_src[:min_size,]
                     x_tar = x_tar[:min_size,]
+                    y_tar = y_tar[:min_size,]
 
                 #x.requires_grad_(True)
                 # encode and decode 
