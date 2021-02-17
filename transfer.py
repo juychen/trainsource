@@ -436,20 +436,22 @@ def run_main(args):
         source_model = DaNN_model.source_model        
         logging.info("Transfer DaNN finished")
 
-        # Attribute test using integrated gradient
-
-        # Generate a target model including encoder and predictor
-        target_model = TargetModel(source_model,encoder)
-
-        # Allow require gradients and process label
-        Xtarget_validTensor.requires_grad_()
-        ytarget_validPred = target_model(Xtarget_validTensor,Ctarget_validTensor).detach().cpu().numpy()
-        ytarget_validPred = ytarget_validPred.argmax(axis=1)
-        
-        # Run integrated gradient check
-        # Return adata and feature integrated gradient
 
         if(args.dimreduce!='CVAE'):
+            # Attribute test using integrated gradient
+
+            # Generate a target model including encoder and predictor
+            target_model = TargetModel(source_model,encoder)
+
+            # Allow require gradients and process label
+            Xtarget_validTensor.requires_grad_()
+            
+            # Run integrated gradient check
+            # Return adata and feature integrated gradient
+
+            ytarget_validPred = target_model(Xtarget_validTensor).detach().cpu().numpy()
+            ytarget_validPred = ytarget_validPred.argmax(axis=1)
+
             adata,attr = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred
                                         ,adata=adata,n_genes=args.n_DL_genes
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
@@ -457,6 +459,11 @@ def run_main(args):
             adata,attr0 = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred,
                                         target_class=0,adata=adata,n_genes=args.n_DL_genes
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
+
+        
+        else:
+            print()
+
 
 
 

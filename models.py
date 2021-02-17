@@ -771,9 +771,12 @@ class TargetModel(nn.Module):
         self.source_predcitor = source_predcitor
         self.target_encoder = target_encoder
 
-    def forward(self, X_target):
-     
-        x_tar = self.target_encoder.encode(X_target)
+    def forward(self, X_target,C_target=None):
+
+        if(type(C_target)==type(None)):
+            x_tar = self.target_encoder.encode(X_target)
+        else:
+            x_tar = self.target_encoder.encode(X_target,C_target)
         y_src = self.source_predcitor.predictor(x_tar)
         return y_src
 
