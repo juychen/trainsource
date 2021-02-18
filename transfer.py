@@ -15,6 +15,7 @@ import torch
 from captum.attr import IntegratedGradients
 from numpy.lib.function_base import gradient
 from sklearn import preprocessing
+from sklearn.manifold import TSNE
 from sklearn.metrics import (auc, average_precision_score,
                              classification_report, mean_squared_error,
                              precision_recall_curve, r2_score, roc_auc_score)
@@ -24,18 +25,15 @@ from sklearn.preprocessing import LabelEncoder
 from torch import nn, optim
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, TensorDataset
-from sklearn.metrics import classification_report
 
-
+import DaNN.mmd as mmd
 import scanpypip.preprocessing as pp
 import trainers as t
 import utils as ut
-from models import (AEBase, DaNN, Predictor, PretrainedPredictor,
-                    PretrainedVAEPredictor, TargetModel, VAEBase,CVAEBase)
+from models import (AEBase, CVAEBase, DaNN, Predictor, PretrainedPredictor,
+                    PretrainedVAEPredictor, TargetModel, VAEBase)
 from scanpypip.utils import get_de_dataframe
 from trajectory import trajectory
-import DaNN.mmd as mmd
-
 
 DATA_MAP={
 "GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt",
@@ -160,11 +158,15 @@ def run_main(args):
         data=adata.X
 
     # PCA
-    sc.tl.pca(adata,  n_comps=max(50,2*dim_au_out),svd_solver='arpack')
     # Generate neighbor graph
+    sc.tl.pca(adata,svd_solver='arpack')
     sc.pp.neighbors(adata, n_neighbors=10)
     # Generate cluster labels
     sc.tl.leiden(adata,resolution=leiden_res)
+    sc.tl.umap(adata)
+    sc.pl.umap(adata,color=['leiden'],save=data_name+'umap'+now,show=False)
+    adata.obs['leiden_origin']= adata.obs['leiden']
+    adata.obsm['X_umap_origin']= adata.obsm['X_umap']
     data_c = adata.obs['leiden'].astype("long").to_list()
 ################################################# END SECTION OF SINGLE CELL DATA REPROCESSING #################################################
 
@@ -355,6 +357,8 @@ def run_main(args):
         adata.obs["sens_label_pret"] = pretrain_prob_prediction.argmax(axis=1)
 
         # Use umap result to predict 
+
+        sc.tl.pca(adata,  n_comps=max(50,2*dim_au_out),svd_solver='arpack')
         sc.tl.umap(adata, n_components=dim_au_out)
         embeddings_umap = torch.FloatTensor(adata.obsm["X_umap"]).to(device)
         umap_prob_prediction = source_model.predict(embeddings_umap).detach().cpu().numpy()
@@ -365,7 +369,6 @@ def run_main(args):
         # Use tsne result to predict 
         #sc.tl.tsne(adata, n_pcs=dim_au_out)
 
-        from sklearn.manifold import TSNE
         X_pca = adata.obsm["X_pca"]
         X_tsne = TSNE(n_components=dim_au_out,method='exact').fit_transform(X_pca)
         embeddings_tsne = torch.FloatTensor(X_tsne).to(device)
@@ -493,16 +496,12 @@ def run_main(args):
     # Pipeline of scanpy 
     # Add embeddings to the adata package
     adata.obsm["X_Trans"] = embeddings
-
     #sc.tl.umap(adata)
     sc.pp.neighbors(adata, n_neighbors=10,use_rep="X_Trans")
-
     # Use t-sne on transfer learning features
     sc.tl.tsne(adata,use_rep="X_Trans")
-
     # Leiden on the data
     # sc.tl.leiden(adata)
-
     # Plot tsne
     sc.pl.tsne(adata,save=data_name+now,color=["leiden"],show=False)
 
@@ -630,6 +629,7 @@ def run_main(args):
     #sc.pp.neighbors(adata)
 
     # Run UMAP dimension reduction
+    sc.pp.neighbors(adata)
     sc.tl.umap(adata)
     # Run leiden clustering
     # sc.tl.leiden(adata,resolution=leiden_res)
@@ -655,15 +655,22 @@ def run_main(args):
     sc.pp.neighbors(adata,use_rep='X_pre',key_added="Pret")
     sc.tl.umap(adata,neighbors_key="Pret")
     sc.tl.leiden(adata,neighbors_key="Pret",key_added="leiden_Pret",resolution=leiden_res)
-    sc.pl.umap(adata,color=[color_list[0],'sens_label_pret','sens_preds_pret'],neighbors_key="Pret",save=data_name+args.transfer+args.dimreduce+"_tsne_Pretrain_"+now,show=False)
+    sc.pl.umap(adata,color=[color_list[0],'sens_label_pret','sens_preds_pret'],neighbors_key="Pret",save=data_name+args.transfer+args.dimreduce+"_umap_Pretrain_"+now,show=False)
 
     # Ari between two transfer learning embedding and sensitivity label
     ari_score_trans  = adjusted_rand_score(adata.obs['leiden_trans'],adata.obs['sens_label'])
     ari_score = adjusted_rand_score(adata.obs['leiden'],adata.obs['sens_label'])
 
+    pret_ari_score = adjusted_rand_score(adata.obs['leiden_origin'],adata.obs['leiden_Pret'])
+    transfer_ari_score = adjusted_rand_score(adata.obs['leiden_origin'],adata.obs['leiden_trans'])
+
+    sc.pl.umap(adata,color=['leiden_origin','leiden_trans','leiden_Pret'],save=data_name+args.transfer+args.dimreduce+"_comp_Pretrain_"+now,show=False)
     #report_df = args_df
     report_df['ari_score'] = ari_score
     report_df['ari_trans_score'] = ari_score_trans
+
+    report_df['ari_pre_umap'] = pret_ari_score
+    report_df['ari_trans_umap'] = transfer_ari_score
 
     cluster_ids = set(adata.obs['leiden'])
 
@@ -714,7 +721,7 @@ if __name__ == '__main__':
     # train
     parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAE64U_VAEDNNclassificationCisplatin.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_CVAE_64U_GSE117872_')
-    parser.add_argument('--pretrain', type=str, default='saved/models/GSE117872_encoder_cvae32.pkl')
+    parser.add_argument('--pretrain', type=str, default='saved/models/GSE117872_encoder_cvae64_HN120.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
@@ -729,7 +736,7 @@ if __name__ == '__main__':
     parser.add_argument('--p_h_dims', type=str, default="16,8")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
-    parser.add_argument('--batch_id', type=str, default="all")
+    parser.add_argument('--batch_id', type=str, default="HN120")
     parser.add_argument('--load_target_model', type=int, default=0)
     parser.add_argument('--GAMMA_mmd', type=int, default=10^3)
 
