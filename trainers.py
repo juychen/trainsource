@@ -626,6 +626,7 @@ def train_DaNN_model(net,source_loader,target_loader,
     
     dataset_sizes = {x: source_loader[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
     loss_train = {}
+    mmd_train = {}
     
     best_model_wts = copy.deepcopy(net.state_dict())
     best_loss = np.inf
@@ -648,6 +649,8 @@ def train_DaNN_model(net,source_loader,target_loader,
                 net.eval()  # Set model to evaluate mode
 
             running_loss = 0.0
+            running_mmd = 0.0
+
             batch_j = 0
             list_src, list_tar = list(enumerate(source_loader[phase])), list(enumerate(target_loader[phase]))
             n_iters = max(len(source_loader[phase]), len(target_loader[phase]))
@@ -699,6 +702,7 @@ def train_DaNN_model(net,source_loader,target_loader,
 
                 # print loss statistics
                 running_loss += loss.item()
+                running_mmd += loss_mmd.item()
 
 
                 batch_j += 1
@@ -709,12 +713,15 @@ def train_DaNN_model(net,source_loader,target_loader,
             # g_tar = torch.cat(g_tar_outputs, dim=1)
             
             epoch_loss = running_loss / n_iters
+            epoch_mmd = running_mmd/n_iters
 
             if phase == 'train':
                 scheduler.step(epoch_loss)
                 
             last_lr = scheduler.optimizer.param_groups[0]['lr']
             loss_train[epoch,phase] = epoch_loss
+            mmd_train[epoch,phase] = epoch_mmd
+
             logging.info('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
             
             if phase == 'val' and epoch_loss < best_loss:
@@ -728,7 +735,7 @@ def train_DaNN_model(net,source_loader,target_loader,
         
     net.load_state_dict(best_model_wts)           
     
-    return net, loss_train
+    return net, [loss_train,mmd_train]
 
 
 
