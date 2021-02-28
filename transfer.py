@@ -436,7 +436,7 @@ def run_main(args):
                             save_path=target_model_path+"_DaNN.pkl")
 
         encoder = DaNN_model.target_model
-        source_model = DaNN_model.source_model        
+        source_model = DaNN_model.source_model
         logging.info("Transfer DaNN finished")
 
 
