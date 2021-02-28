@@ -279,3 +279,26 @@ def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test
         df_tail_genes.to_csv("saved/results/top_genes_class" +str(target_class)+ save_name + '.csv')
 
         return adata,attr
+
+def plot_loss(report,path="figures/loss.pdf"):
+
+    train_loss = []
+    val_loss = []
+
+
+    epochs = len(report)/2
+    print(epochs)
+
+    score_dict = {'train':train_loss,'val':val_loss}
+
+    for phrase in ['train','val']:
+        for i in range(0,epochs):
+            score_dict[phrase].append(report[(i,phrase)])
+
+    x = np.linspace(0, epochs, epochs)
+    plt.plot(x,val_loss, '-g', label='validation loss')
+    plt.plot(x,train_loss,':b', label='trainiing loss')
+
+    plt.savefig(path)
+
+    return score_dict
