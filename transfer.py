@@ -438,7 +438,8 @@ def run_main(args):
         encoder = DaNN_model.target_model
         source_model = DaNN_model.source_model
         logging.info("Transfer DaNN finished")
-
+        ut.plot_loss(report_[0],path="figures/train_loss_"+now+".pdf")
+        ut.plot_loss(report_[1],path="figures/mmd_loss_"+now+".pdf")
 
         if(args.dimreduce!='CVAE'):
             # Attribute test using integrated gradient
