@@ -433,6 +433,7 @@ def run_main(args):
                             epochs,exp_lr_scheduler_d,
                             dist_loss=loss_disrtibution,
                             load=load_model,
+                            weight = args.mmd_weight,
                             save_path=target_model_path+"_DaNN.pkl")
 
         encoder = DaNN_model.target_model
@@ -718,6 +719,7 @@ if __name__ == '__main__':
     parser.add_argument('--min_c', type=int, default=3)
     parser.add_argument('--cluster_res', type=float, default=0.3)
     parser.add_argument('--remove_genes', type=int, default=0)
+    parser.add_argument('--mmd_weight', type=float, default=0.25)
 
     # train
     parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAE64U_VAEDNNclassificationCisplatin.pkl')
