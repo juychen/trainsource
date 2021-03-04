@@ -295,6 +295,7 @@ def plot_loss(report,path="figures/loss.pdf"):
         for i in range(0,epochs):
             score_dict[phrase].append(report[(i,phrase)])
     plt.close()
+    plt.clf()
     x = np.linspace(0, epochs, epochs)
     plt.plot(x,val_loss, '-g', label='validation loss')
     plt.plot(x,train_loss,':b', label='trainiing loss')

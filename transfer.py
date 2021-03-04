@@ -724,7 +724,7 @@ if __name__ == '__main__':
     # train
     parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAE64U_VAEDNNclassificationCisplatin.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_CVAE_64U_GSE117872_')
-    parser.add_argument('--pretrain', type=str, default='saved/models/GSE117872_encoder_cvae64_HN120.pkl')
+    parser.add_argument('--pretrain', type=str, default='saved/models/GSE117872_encoder_cvae64_HN137.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
@@ -739,7 +739,7 @@ if __name__ == '__main__':
     parser.add_argument('--p_h_dims', type=str, default="16,8")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
-    parser.add_argument('--batch_id', type=str, default="HN120")
+    parser.add_argument('--batch_id', type=str, default="HN137")
     parser.add_argument('--load_target_model', type=int, default=0)
     parser.add_argument('--GAMMA_mmd', type=int, default=10^3)
 
