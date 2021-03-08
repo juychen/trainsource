@@ -155,12 +155,11 @@ def process_117872(adata,**kargs):
 
     if "select_origin" in kargs:
         origin = kargs['select_origin']
-        if origin=="all":
-            return adata
+        if origin!="all":
+            selected=adata.obs['origin']==origin
+            selected=selected.to_numpy('bool')
+            adata = adata[selected, :]
             
-        selected=adata.obs['origin']==origin
-        selected=selected.to_numpy('bool')
-        return adata[selected, :]
     sc.tl.rank_genes_groups(adata, 'cluster', method='t-test')
 
     # Cluster de score
