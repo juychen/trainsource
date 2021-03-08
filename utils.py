@@ -23,7 +23,7 @@ import graph_function as g
 from gae.model import GCNModelAE, GCNModelVAE, g_loss_function
 from gae.utils import get_roc_score, mask_test_edges, preprocess_graph
 from models import vae_loss
-
+import scanpypip.utils as ut
 
 def highly_variable_genes(data, 
     layer=None, n_top_genes=None, 
@@ -161,6 +161,18 @@ def process_117872(adata,**kargs):
         selected=adata.obs['origin']==origin
         selected=selected.to_numpy('bool')
         return adata[selected, :]
+    sc.tl.rank_genes_groups(adata, 'cluster', method='t-test')
+
+    # Cluster de score
+    for cluster in set(adata.obs['cluster']):
+        df = ut.get_de_dataframe(adata,cluster)
+        if "pval_thres" in kargs:
+            select_df = df.loc[df.pvals_adj] < kargs['select_origin']
+        elif "num_de_thres" in kargs:
+            select_df = df.head(kargs['num_de_thres'])
+        else:
+            select_df = df.head(50)
+        sc.tl.score_genes(adata, select_df.names,score_name=cluster+"_score" )
 
     return adata
 
@@ -299,7 +311,9 @@ def plot_loss(report,path="figures/loss.pdf"):
     x = np.linspace(0, epochs, epochs)
     plt.plot(x,val_loss, '-g', label='validation loss')
     plt.plot(x,train_loss,':b', label='trainiing loss')
-    plt.legend([val_loss, train_loss], ["validation loss", "trainiing loss"], loc='upper left')
+    plt.legend(["validation loss", "trainiing loss"], loc='upper left')
+    plt.ylim([0, 1])
+
     plt.savefig(path)
     plt.close()
 
