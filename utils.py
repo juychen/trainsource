@@ -160,19 +160,14 @@ def process_117872(adata,**kargs):
             selected=selected.to_numpy('bool')
             adata = adata[selected, :]
             
-    sc.tl.rank_genes_groups(adata, 'cluster', method='t-test')
-
     # Cluster de score
-    for cluster in set(adata.obs['cluster']):
-        df = ut.get_de_dataframe(adata,cluster)
-        if "pval_thres" in kargs:
-            select_df = df.loc[df.pvals_adj] < kargs['select_origin']
-        elif "num_de_thres" in kargs:
-            select_df = df.head(kargs['num_de_thres'])
-        else:
-            select_df = df.head(50)
-        sc.tl.score_genes(adata, select_df.names,score_name=cluster+"_score" )
-
+    pval = 0.05
+    n_genes = 50
+    if "pval_thres" in kargs:
+        pval=kargs['pval_thres']
+    if "num_de" in kargs:
+        n_genes = kargs['num_de']
+    adata = de_score(adata=adata,clustername="cluster",pval=pval,n_genes=n_genes)
     return adata
 
 def process_122843(adata,**kargs):
@@ -219,6 +214,14 @@ def process_110894(adata,**kargs):
     adata.obs = obs_merge
     sensitive = [int(row.find("RESISTANT")==-1) for row in obs_merge.loc[:,"Sample name"]]
     adata.obs['sensitive'] = sensitive
+
+    pval = 0.05
+    n_genes = 50
+    if "pval_thres" in kargs:
+        pval=kargs['pval_thres']
+    if "num_de" in kargs:
+        n_genes = kargs['num_de']
+    adata = de_score(adata=adata,clustername="sensitive",pval=pval,n_genes=n_genes)    
     return adata
 
 
@@ -290,6 +293,17 @@ def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test
         df_tail_genes.to_csv("saved/results/top_genes_class" +str(target_class)+ save_name + '.csv')
 
         return adata,attr
+
+def de_score(adata,clustername,pval=0.05,n=50):
+    sc.tl.rank_genes_groups(adata, clustername, method='t-test')
+    # Cluster de score
+    for cluster in set(adata.obs[clustername]):
+        df = ut.get_de_dataframe(adata,cluster)
+        select_df = df.head(n)
+        if pval!=None:
+            select_df = df.loc[df.pvals_adj] < pval
+        sc.tl.score_genes(adata, select_df.names,score_name=cluster+"_score" )
+    return adata
 
 def plot_loss(report,path="figures/loss.pdf"):
 
