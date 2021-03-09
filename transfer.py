@@ -320,14 +320,23 @@ def run_main(args):
     # Pretain using autoencoder is pretrain is not False
     if(str(pretrain)!='0'):
         # Pretrained target encoder if there are not stored files in the harddisk
-        if(os.path.exists(pretrain)==False):
-            pretrain = str(pretrain)
+        train_flag = True
+        pretrain = str(pretrain)
+        if(os.path.exists(pretrain)==True):
+            try:
+                encoder.load_state_dict(torch.load(pretrain))
+                logging.info("Load pretrained target encoder from "+pretrain)
+                train_flag = False
+
+            except:
+                logging.warning("Loading failed, procceed to re-train model")
+
+        if train_flag == True:
 
             if reduce_model == "AE":
                 encoder,loss_report_en = t.train_AE_model(net=encoder,data_loaders=dataloaders_pretrain,
                                             optimizer=optimizer_e,loss_function=loss_function_e,
                                             n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
-                logging.info("Pretrained finished")
             elif reduce_model == "VAE":
                 encoder,loss_report_en = t.train_VAE_model(net=encoder,data_loaders=dataloaders_pretrain,
                                 optimizer=optimizer_e,
@@ -337,15 +346,9 @@ def run_main(args):
                 encoder,loss_report_en = t.train_CVAE_model(net=encoder,data_loaders=dataloaders_pretrain,
                                 optimizer=optimizer_e,
                                 n_epochs=epochs,scheduler=exp_lr_scheduler_e,save_path=pretrain)
-        else:
-            # Load pretrained target encoder if there are stored files in the harddisk
-            pretrain = str(pretrain)
-            encoder.load_state_dict(torch.load(pretrain))
-            logging.info("Load pretrained target encoder from "+pretrain)
-
+            logging.info("Pretrained finished")
 
         # Before Transfer learning, we test the performance of using no transfer performance:
-
         # Use vae result to predict 
         if(args.dimreduce!="CVAE"):
             embeddings_pretrain = encoder.encode(X_allTensor)
@@ -731,7 +734,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
     parser.add_argument('--bottleneck', type=int, default=128)
-    parser.add_argument('--dimreduce', type=str, default="CVAE")
+    parser.add_argument('--dimreduce', type=str, default="VAE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=int, default=0)
     parser.add_argument('--source_h_dims', type=str, default="512,256")

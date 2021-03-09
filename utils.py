@@ -167,7 +167,7 @@ def process_117872(adata,**kargs):
         pval=kargs['pval_thres']
     if "num_de" in kargs:
         n_genes = kargs['num_de']
-    adata = de_score(adata=adata,clustername="cluster",pval=pval,n_genes=n_genes)
+    adata = de_score(adata=adata,clustername="cluster",pval=pval,n=n_genes)
     return adata
 
 def process_122843(adata,**kargs):
@@ -221,7 +221,7 @@ def process_110894(adata,**kargs):
         pval=kargs['pval_thres']
     if "num_de" in kargs:
         n_genes = kargs['num_de']
-    adata = de_score(adata=adata,clustername="sensitive",pval=pval,n_genes=n_genes)    
+    adata = de_score(adata=adata,clustername="sensitive",pval=pval,n=n_genes)    
     return adata
 
 
@@ -301,7 +301,7 @@ def de_score(adata,clustername,pval=0.05,n=50):
         df = ut.get_de_dataframe(adata,cluster)
         select_df = df.head(n)
         if pval!=None:
-            select_df = df.loc[df.pvals_adj] < pval
+            select_df = df.loc[df.pvals_adj < pval]
         sc.tl.score_genes(adata, select_df.names,score_name=cluster+"_score" )
     return adata
 
