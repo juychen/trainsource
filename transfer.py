@@ -25,7 +25,7 @@ from sklearn.preprocessing import LabelEncoder
 from torch import nn, optim
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, TensorDataset
-
+from scipy.stats import pearsonr
 import DaNN.mmd as mmd
 import scanpypip.preprocessing as pp
 import trainers as t
@@ -557,7 +557,13 @@ def run_main(args):
         Y_test = le_sc.transform(label_no_ho)
         lb_results = adata.obs['sens_label']
         color_list = ["sens_truth","sens_label",'sens_preds']
-    
+
+        sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["Sensitive_score"])
+        resistant_score = pearsonr(adata.obs["sens_preds"],adata.obs["Resistant_score"])
+
+        report_df['sens_pearson'] = sens_score
+        report_df['resist_pearson'] = resistant_score
+
     elif (data_name=='GSE110894'):
 
         report_df = report_df.T
@@ -573,6 +579,11 @@ def run_main(args):
 
         color_list = ["sens_truth","sens_label",'sens_preds']
 
+        sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["Sensitive_score"])
+        resistant_score = pearsonr(adata.obs["sens_preds"],adata.obs["Resistant_score"])
+
+        report_df['sens_pearson'] = sens_score
+        report_df['resist_pearson'] = resistant_score
     
     if (data_name in ['GSE110894','GSE117872']):
         ap_score = average_precision_score(Y_test, sens_pb_results)
@@ -596,7 +607,6 @@ def run_main(args):
         report_dict_tsne = classification_report(Y_test, lb_tsne, output_dict=True)
         classification_report_tsne_df = pd.DataFrame(report_dict_tsne).T
         classification_report_tsne_df.to_csv("saved/results/clf_tsne_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
-
 
         try:
             auroc_score = roc_auc_score(Y_test, sens_pb_results)
@@ -743,7 +753,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="HN137")
-    parser.add_argument('--load_target_model', type=int, default=0)
+    parser.add_argument('--load_target_model', type=int, default=1)
     parser.add_argument('--GAMMA_mmd', type=int, default=10^3)
 
     parser.add_argument('--runs', type=int, default=1)
