@@ -215,13 +215,17 @@ def process_110894(adata,**kargs):
     sensitive = [int(row.find("RESISTANT")==-1) for row in obs_merge.loc[:,"Sample name"]]
     adata.obs['sensitive'] = sensitive
 
+    sens_ = ['resistant' if (row.find("RESISTANT")==-1) else 'sensitive' for row in obs_merge.loc[:,"Sample name"]]
+    adata.obs['sensitivity'] = sens_
+
+
     pval = 0.05
     n_genes = 50
     if "pval_thres" in kargs:
         pval=kargs['pval_thres']
     if "num_de" in kargs:
         n_genes = kargs['num_de']
-    adata = de_score(adata=adata,clustername="sensitive",pval=pval,n=n_genes)    
+    adata = de_score(adata=adata,clustername="sensitivity",pval=pval,n=n_genes)    
     return adata
 
 

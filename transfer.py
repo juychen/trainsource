@@ -720,8 +720,8 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
-    parser.add_argument('--target_data', type=str, default="GSE117872")
-    parser.add_argument('--drug', type=str, default='Cisplatin')
+    parser.add_argument('--target_data', type=str, default="GSE110894")
+    parser.add_argument('--drug', type=str, default='I-BET-762')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
@@ -735,9 +735,9 @@ if __name__ == '__main__':
     parser.add_argument('--mmd_weight', type=float, default=0.25)
 
     # train
-    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAE128U_VAEDNNclassificationCisplatin.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_VAE_128U_GSE117872_')
-    parser.add_argument('--pretrain', type=str, default='saved/models/GSE117872_encoder_vae128_HN137_RMG.pkl')
+    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAE128U_VAEDNNclassificationI-BET-762.pkl')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_VAE_128U_GSE110894_')
+    parser.add_argument('--pretrain', type=str, default='saved/models/GSE110894_encoder_vae128_RMG.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
