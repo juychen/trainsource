@@ -442,8 +442,9 @@ def run_main(args):
         encoder = DaNN_model.target_model
         source_model = DaNN_model.source_model
         logging.info("Transfer DaNN finished")
-        ut.plot_loss(report_[0],path="figures/train_loss_"+now+".pdf")
-        ut.plot_loss(report_[1],path="figures/mmd_loss_"+now+".pdf")
+        if(load_model==0):
+            ut.plot_loss(report_[0],path="figures/train_loss_"+now+".pdf")
+            ut.plot_loss(report_[1],path="figures/mmd_loss_"+now+".pdf")
 
         if(args.dimreduce!='CVAE'):
             # Attribute test using integrated gradient
@@ -471,10 +472,10 @@ def run_main(args):
         
         else:
             print()
+################################################# END SECTION OF TRANSER LEARNING TRAINING #################################################
 
 
-
-
+################################################# START SECTION OF PREPROCESSING FEATURES #################################################
     # Extract feature embeddings 
     # Extract prediction probabilities
 
@@ -495,7 +496,7 @@ def run_main(args):
         adata.obs["sens_label"] = predictions.argmax(axis=1)
         adata.obs["sens_label"] = adata.obs["sens_label"].astype('category')
         adata.obs["rest_preds"] = predictions[:,0]
-################################################# END SECTION OF TRANSER LEARNING TRAINING #################################################
+################################################# END SECTION OF PREPROCESSING FEATURES #################################################
 
 ################################################# START SECTION OF ANALYSIS AND POST PROCESSING #################################################
     # Pipeline of scanpy 
@@ -516,7 +517,7 @@ def run_main(args):
 
     # Differenrial expression genes across 0-1 classes
     sc.tl.rank_genes_groups(adata, 'sens_label', method='wilcoxon')
-
+    adata = ut.de_score(adata,clustername='sens_label')
     # save DE genes between 0-1 class
     for label in [0,1]:
 
@@ -558,8 +559,8 @@ def run_main(args):
         lb_results = adata.obs['sens_label']
         color_list = ["sens_truth","sens_label",'sens_preds']
 
-        sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["Sensitive_score"])
-        resistant_score = pearsonr(adata.obs["sens_preds"],adata.obs["Resistant_score"])
+        sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["Sensitive_score"])[0]
+        resistant_score = pearsonr(adata.obs["sens_preds"],adata.obs["Resistant_score"])[0]
 
         report_df['sens_pearson'] = sens_score
         report_df['resist_pearson'] = resistant_score
