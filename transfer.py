@@ -442,7 +442,7 @@ def run_main(args):
         encoder = DaNN_model.target_model
         source_model = DaNN_model.source_model
         logging.info("Transfer DaNN finished")
-        if(load_model==0):
+        if(load_model==False):
             ut.plot_loss(report_[0],path="figures/train_loss_"+now+".pdf")
             ut.plot_loss(report_[1],path="figures/mmd_loss_"+now+".pdf")
 
@@ -766,7 +766,7 @@ if __name__ == '__main__':
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="HN137")
     parser.add_argument('--load_target_model', type=int, default=1)
-    parser.add_argument('--GAMMA_mmd', type=int, default=10^3)
+    parser.add_argument('--GAMMA_mmd', type=int, default=1000)
 
     parser.add_argument('--runs', type=int, default=1)
 
