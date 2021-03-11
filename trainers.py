@@ -724,7 +724,7 @@ def train_DaNN_model(net,source_loader,target_loader,
 
             logging.info('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
             
-            if phase == 'val' and epoch_loss < best_loss:
+            if phase == 'val' and epoch_loss < best_loss and epoch >1 :
                 best_loss = epoch_loss
                 best_model_wts = copy.deepcopy(net.state_dict())
 
