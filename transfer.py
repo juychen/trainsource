@@ -561,9 +561,14 @@ def run_main(args):
 
         sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["Sensitive_score"])[0]
         resistant_score = pearsonr(adata.obs["sens_preds"],adata.obs["Resistant_score"])[0]
+        
+        cluster_score_sens = pearsonr(adata.obs["1_score"],adata.obs["Sensitive_score"])[0]
+        cluster_score_resist = pearsonr(adata.obs["0_score"],adata.obs["Resistant_score"])[0]
 
         report_df['sens_pearson'] = sens_score
         report_df['resist_pearson'] = resistant_score
+        report_df['1_pearson'] = cluster_score_sens
+        report_df['0_pearson'] = cluster_score_resist
 
     elif (data_name=='GSE110894'):
 
@@ -585,6 +590,12 @@ def run_main(args):
 
         report_df['sens_pearson'] = sens_score
         report_df['resist_pearson'] = resistant_score
+
+        cluster_score_sens = pearsonr(adata.obs["1_score"],adata.obs["sensitive_score"])[0]
+        cluster_score_resist = pearsonr(adata.obs["0_score"],adata.obs["resistant_score"])[0]
+
+        report_df['1_pearson'] = cluster_score_sens
+        report_df['0_pearson'] = cluster_score_resist
     
     if (data_name in ['GSE110894','GSE117872']):
         ap_score = average_precision_score(Y_test, sens_pb_results)
