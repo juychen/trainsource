@@ -558,6 +558,7 @@ def run_main(args):
         Y_test = le_sc.transform(label_no_ho)
         lb_results = adata.obs['sens_label']
         color_list = ["sens_truth","sens_label",'sens_preds']
+        color_score_list = ["Sensitive_score","Resistant_score","1_score","0_score"]
 
         sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["Sensitive_score"])[0]
         resistant_score = pearsonr(adata.obs["sens_preds"],adata.obs["Resistant_score"])[0]
@@ -584,6 +585,7 @@ def run_main(args):
 
 
         color_list = ["sens_truth","sens_label",'sens_preds']
+        color_score_list = ["sensitive_score","resistant_score","1_score","0_score"]
 
         sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["sensitive_score"])[0]
         resistant_score = pearsonr(adata.obs["sens_preds"],adata.obs["resistant_score"])[0]
@@ -651,6 +653,7 @@ def run_main(args):
         
         color_list = ["leiden","sens_label",'sens_preds']
         title_list = ['Cluster',"Prediction","Probability"]
+        color_score_list = color_list
 
     # Simple analysis do neighbors in adata using PCA embeddings
     #sc.pp.neighbors(adata)
@@ -669,6 +672,7 @@ def run_main(args):
     sc.tl.leiden(adata,neighbors_key="Trans",key_added="leiden_trans",resolution=leiden_res)
     sc.pl.umap(adata,color=color_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_TL"+now,show=False,title=title_list)
     # Plot tsne
+    sc.pl.umap(adata,color=color_score_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_score_TL"+now,show=False,title=title_list)
 
     # This tsne is based on transfer learning feature
     sc.pl.tsne(adata,color=color_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_TL"+now,show=False,title=title_list)
