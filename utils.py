@@ -306,7 +306,7 @@ def de_score(adata,clustername,pval=0.05,n=50,method="wilcoxon",score_prefix=Non
         select_df = df.head(n)
         if pval!=None:
             select_df = df.loc[df.pvals_adj < pval]
-        sc.tl.score_genes(adata, select_df.names,score_name=cluster+"_score" )
+        sc.tl.score_genes(adata, select_df.names,score_name=str(cluster)+"_score" )
     return adata
 
 def plot_loss(report,path="figures/loss.pdf"):

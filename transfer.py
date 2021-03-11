@@ -585,8 +585,8 @@ def run_main(args):
 
         color_list = ["sens_truth","sens_label",'sens_preds']
 
-        sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["sensitive_score"])
-        resistant_score = pearsonr(adata.obs["sens_preds"],adata.obs["resistant_score"])
+        sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["sensitive_score"])[0]
+        resistant_score = pearsonr(adata.obs["sens_preds"],adata.obs["resistant_score"])[0]
 
         report_df['sens_pearson'] = sens_score
         report_df['resist_pearson'] = resistant_score
