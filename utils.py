@@ -298,7 +298,7 @@ def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test
 
         return adata,attr
 
-def de_score(adata,clustername,pval=0.05,n=50,method="wilcoxon"):
+def de_score(adata,clustername,pval=0.05,n=50,method="wilcoxon",score_prefix=None):
     sc.tl.rank_genes_groups(adata, clustername, method=method)
     # Cluster de score
     for cluster in set(adata.obs[clustername]):
