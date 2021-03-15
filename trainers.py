@@ -614,7 +614,7 @@ def train_GCNpreditor_model(model, z,y, adj,optimizer,loss_function,n_epochs,sch
     return model,0
 
 def train_DaNN_model(net,source_loader,target_loader,
-                    optimizer,loss_function,n_epochs,scheduler,dist_loss,weight=0.25,GAMMA=10^3,
+                    optimizer,loss_function,n_epochs,scheduler,dist_loss,weight=0.25,GAMMA=1000,epoch_tail=0.75,
                     load=False,save_path="saved/model.pkl",return_grad=False):
 
     if(load!=False):
@@ -724,7 +724,7 @@ def train_DaNN_model(net,source_loader,target_loader,
 
             logging.info('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
             
-            if (phase == 'val') and (epoch_loss < best_loss) and (epoch >n_epochs/10) :
+            if (phase == 'val') and (epoch_loss < best_loss) and (epoch >(n_epochs*(1-epoch_tail))) :
                 best_loss = epoch_loss
                 best_model_wts = copy.deepcopy(net.state_dict())
 
