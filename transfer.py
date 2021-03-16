@@ -373,7 +373,10 @@ def run_main(args):
         #sc.tl.tsne(adata, n_pcs=dim_au_out)
 
         X_pca = adata.obsm["X_pca"]
-        X_tsne = TSNE(n_components=dim_au_out,method='exact').fit_transform(X_pca)
+
+        # Replace tsne by pac beacause TSNE is very slow
+        X_tsne =  adata.obsm["X_umap"]
+        #X_tsne = TSNE(n_components=dim_au_out,method='exact').fit_transform(X_pca)
         embeddings_tsne = torch.FloatTensor(X_tsne).to(device)
         tsne_prob_prediction = source_model.predict(embeddings_tsne).detach().cpu().numpy()
         adata.obs["sens_preds_tsne"] = tsne_prob_prediction[:,1]
