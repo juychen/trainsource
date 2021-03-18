@@ -313,13 +313,13 @@ def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test
         return adata,attr
 
 def de_score(adata,clustername,pval=0.05,n=50,method="wilcoxon",score_prefix=None):
-    sc.tl.rank_genes_groups(adata, clustername, method=method)
+    sc.tl.rank_genes_groups(adata, clustername, method=method,use_raw=True)
     # Cluster de score
     for cluster in set(adata.obs[clustername]):
         df = ut.get_de_dataframe(adata,cluster)
         select_df = df.iloc[:n,:]
         if pval!=None:
-            select_df = df.loc[df.pvals_adj < pval]
+            select_df = select_df.loc[df.pvals_adj < pval]
         sc.tl.score_genes(adata, select_df.names,score_name=str(cluster)+"_score" )
     return adata
 
