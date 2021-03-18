@@ -229,7 +229,7 @@ def process_110894(adata,**kargs):
     sensitive = [int(row.find("RESISTANT")==-1) for row in obs_merge.loc[:,"Sample name"]]
     adata.obs['sensitive'] = sensitive
 
-    sens_ = ['resistant' if (row.find("RESISTANT")==-1) else 'sensitive' for row in obs_merge.loc[:,"Sample name"]]
+    sens_ = ['Resistant' if (row.find("RESISTANT")==-1) else 'Sensitive' for row in obs_merge.loc[:,"Sample name"]]
     adata.obs['sensitivity'] = sens_
 
 
@@ -317,7 +317,7 @@ def de_score(adata,clustername,pval=0.05,n=50,method="wilcoxon",score_prefix=Non
     # Cluster de score
     for cluster in set(adata.obs[clustername]):
         df = ut.get_de_dataframe(adata,cluster)
-        select_df = df.head(n)
+        select_df = df.iloc[:n,:]
         if pval!=None:
             select_df = df.loc[df.pvals_adj < pval]
         sc.tl.score_genes(adata, select_df.names,score_name=str(cluster)+"_score" )
