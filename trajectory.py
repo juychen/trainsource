@@ -6,14 +6,8 @@ import scanpy as sc
 
 
 def trajectory(adata,now):
-    #sc.settings.verbosity = 0  # verbosity: errors (0), warnings (1), info (2), hints (3)
-    #sc.logging.print_versions()
-    #sc.settings.set_figure_params(dpi=80, frameon=False, figsize=(3, 3), facecolor='white')  # low dpi (dots per inch) yields small inline figures
-    #adata=sc.read_h5ad("./GSE112274_Gef2020-12-27-17-56-31.h5ad")
-    #adata=adata
-    #adata.X=adata.X.astype('float64')
-    
     ##draw
+    #sc.pp.neighbors(adata, n_neighbors=10)
     sc.tl.draw_graph(adata)
     ##sc.pl.draw_graph(adata, color='sens_preds')
     #sc.pl.draw_graph(adata, color='leiden')
@@ -40,7 +34,6 @@ def trajectory(adata,now):
     # for i in range(8):
     #     pl.scatter(i, 1, c=sc.pl.palettes.zeileis_28[i], s=200)
     # pl.show()
-    zeileis_colors = np.array(sc.pl.palettes.zeileis_28)
     sc.pl.paga_compare(
         adata, threshold=0.03, title='', right_margin=0.2, size=10,
         edge_width_scale=0.5,legend_fontsize=12, fontsize=12, frameon=False,

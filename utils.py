@@ -143,7 +143,21 @@ def specific_process(adata,dataname="",**kargs):
         adata = process_110894(adata)
     elif dataname == "GSE112274":
         adata = process_112274(adata)
-
+    elif dataname == "GSE108383":
+        adata = process_108383(adata)
+    return adata
+    
+def process_108383(adata,**kargs):
+    obs_names = adata.obs.index
+    annotation_dict = {}
+    for section in [0,1,2,3,4]:
+        svals = [index.split("_")[section] for index in obs_names]
+        annotation_dict["name_section_"+str(section+1)] = svals
+    df_annotation=pd.DataFrame(annotation_dict,index=obs_names)
+    adata.obs=df_annotation
+    adata.obs['name_section_3'].replace("par", "sensitive", inplace=True)
+    adata.obs['name_section_3'].replace("br", "resistant", inplace=True)
+    adata.obs['sensitive']=adata.obs['name_section_3']
     return adata
 
 def process_117872(adata,**kargs):

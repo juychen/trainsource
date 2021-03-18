@@ -46,7 +46,9 @@ DATA_MAP={
 "GSE110894":"data/GSE110894/GSE110894.csv",
 "GSE122843":"data/GSE122843/GSE122843.txt",
 "GSE112274":"data/GSE112274/GSE112274_cell_gene_FPKM.csv",
-"GSE116237":"data/GSE116237/GSE116237_bulkRNAseq_expressionMatrix.txt"
+"GSE116237":"data/GSE116237/GSE116237_bulkRNAseq_expressionMatrix.txt",
+"GSE108383":"data/GSE108383/GSE108383_Melanoma_fluidigm.txt"
+
 }
 
 REMOVE_GENES=["mt","rps","rpl"]
@@ -152,6 +154,9 @@ def run_main(args):
         adata =  ut.specific_process(adata,dataname=data_name)
         data=adata.X
     elif data_name =='GSE116237':
+        adata =  ut.specific_process(adata,dataname=data_name)
+        data=adata.X
+    elif data_name =='GSE108383':
         adata =  ut.specific_process(adata,dataname=data_name)
         data=adata.X
     else:
