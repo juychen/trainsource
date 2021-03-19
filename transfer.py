@@ -675,6 +675,8 @@ def run_main(args):
     sc.pl.umap(adata,color=[color_list[0],'sens_label_umap','sens_preds_umap'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
     # Plot transfer learning on umap
     sc.pl.umap(adata,color=color_list+color_score_list,save=data_name+args.transfer+args.dimreduce+"umap_all"+now,show=False)
+    sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class0").head().index,save=data_name+args.transfer+args.dimreduce+"_cgenes0_"+now,show=False)
+    sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class1").head().index,save=data_name+args.transfer+args.dimreduce+"_cgenes1_"+now,show=False)
 
     # Run embeddings using transfered embeddings
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
@@ -683,6 +685,11 @@ def run_main(args):
     sc.pl.umap(adata,color=color_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_TL"+now,show=False,title=title_list)
     # Plot cell score on umap
     sc.pl.umap(adata,color=color_score_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_score_TL"+now,show=False,title=color_score_list)
+
+    sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class0").head().index,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes0_TL"+now,show=False)
+    sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class1").head().index ,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes1_TL"+now,show=False)
+     
+    
 
     # This tsne is based on transfer learning feature
     sc.pl.tsne(adata,color=color_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_TL"+now,show=False,title=title_list)
@@ -697,7 +704,6 @@ def run_main(args):
     sc.tl.umap(adata,neighbors_key="Pret")
     sc.tl.leiden(adata,neighbors_key="Pret",key_added="leiden_Pret",resolution=leiden_res)
     sc.pl.umap(adata,color=[color_list[0],'sens_label_pret','sens_preds_pret'],neighbors_key="Pret",save=data_name+args.transfer+args.dimreduce+"_umap_Pretrain_"+now,show=False)
-
     # Ari between two transfer learning embedding and sensitivity label
     ari_score_trans  = adjusted_rand_score(adata.obs['leiden_trans'],adata.obs['sens_label'])
     ari_score = adjusted_rand_score(adata.obs['leiden'],adata.obs['sens_label'])
