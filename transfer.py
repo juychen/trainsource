@@ -673,13 +673,15 @@ def run_main(args):
     # sc.tl.leiden(adata,resolution=leiden_res)
     # Plot uamp
     sc.pl.umap(adata,color=[color_list[0],'sens_label_umap','sens_preds_umap'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
+    # Plot transfer learning on umap
+    sc.pl.umap(adata,color=color_list+color_score_list,save=data_name+args.transfer+args.dimreduce+"umap_all"+now,show=False)
 
     # Run embeddings using transfered embeddings
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
     sc.tl.umap(adata,neighbors_key="Trans")
     sc.tl.leiden(adata,neighbors_key="Trans",key_added="leiden_trans",resolution=leiden_res)
     sc.pl.umap(adata,color=color_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_TL"+now,show=False,title=title_list)
-    # Plot tsne
+    # Plot cell score on umap
     sc.pl.umap(adata,color=color_score_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_score_TL"+now,show=False,title=color_score_list)
 
     # This tsne is based on transfer learning feature
@@ -714,15 +716,15 @@ def run_main(args):
     cluster_ids = set(adata.obs['leiden'])
 
     # Two class: sens and resistant between clustering label
-    for class_key in ['rest_preds','sens_preds']:
-        p =  adata.obs[class_key]
-        # One vs all metric
-        for c in cluster_ids:
-            binary_labels = adata.obs['leiden'] == c
-            cluster_auroc_score = roc_auc_score(binary_labels, p )
-            cluster_auprc_score = average_precision_score(binary_labels, p )
-            report_df[class_key+'_auroc_c_'+str(c)] = cluster_auroc_score
-            report_df[class_key+'_auroc_c_'+str(c)] = cluster_auprc_score
+    # for class_key in ['rest_preds','sens_preds']:
+    #     p =  adata.obs[class_key]
+    #     # One vs all metric
+    #     for c in cluster_ids:
+    #         binary_labels = adata.obs['leiden'] == c
+    #         cluster_auroc_score = roc_auc_score(binary_labels, p )
+    #         cluster_auprc_score = average_precision_score(binary_labels, p )
+    #         report_df[class_key+'_auroc_c_'+str(c)] = cluster_auroc_score
+    #         report_df[class_key+'_auroc_c_'+str(c)] = cluster_auprc_score
 
     # Trajectory of adata
     adata = trajectory(adata,now=now)
