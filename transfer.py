@@ -469,11 +469,11 @@ def run_main(args):
             ytarget_validPred = target_model(Xtarget_validTensor).detach().cpu().numpy()
             ytarget_validPred = ytarget_validPred.argmax(axis=1)
 
-            adata,attr = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred
+            adata,attr1,df_top1_genes,df_tail1_genes = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred
                                         ,adata=adata,n_genes=args.n_DL_genes
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
 
-            adata,attr0 = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred,
+            adata,attr0,df_top0_genes,df_tail0_genes = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred,
                                         target_class=0,adata=adata,n_genes=args.n_DL_genes
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
 
@@ -551,19 +551,18 @@ def run_main(args):
     lb_tsne = adata.obs['sens_label_tsne']
         
     if(data_name=='GSE117872'):
-        
-        label = adata.obs['cluster']
-        label_no_ho =  label
 
-        if len(label[label != "Sensitive"] )>0:
-            # label[label != "Sensitive"] = 'Resistant'
-            label_no_ho[label_no_ho != "Resistant"] = 'Sensitive'
-            adata.obs['sens_truth'] = label_no_ho
+        report_df = report_df.T
+        Y_test = adata.obs['sensitive']
+        sens_pb_results = adata.obs['sens_preds']
+        lb_results = adata.obs['sens_label']
 
         le_sc = LabelEncoder()
         le_sc.fit(['Resistant','Sensitive'])
         sens_pb_results = adata.obs['sens_preds']
-        Y_test = le_sc.transform(label_no_ho)
+        label_descrbie = le_sc.inverse_transform(Y_test)
+        adata.obs['sens_truth'] = label_descrbie
+
         lb_results = adata.obs['sens_label']
         color_list = ["sens_truth","sens_label",'sens_preds']
         color_score_list = ["Sensitive_score","Resistant_score","1_score","0_score"]
@@ -686,8 +685,11 @@ def run_main(args):
     # Plot cell score on umap
     sc.pl.umap(adata,color=color_score_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_score_TL"+now,show=False,title=color_score_list)
 
-    sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class0").head().index,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes0_TL"+now,show=False)
-    sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class1").head().index ,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes1_TL"+now,show=False)
+    c0_genes = df_top0_genes.loc[df_top0_genes.pval<0.05].head().index
+    c1_genes = df_top1_genes.loc[df_top1_genes.pval<0.05].head().index
+
+    sc.pl.umap(adata,color=c0_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes0_TL"+now,show=False)
+    sc.pl.umap(adata,color=c1_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes1_TL"+now,show=False)
      
     
 
@@ -752,8 +754,8 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
-    parser.add_argument('--target_data', type=str, default="GSE110894")
-    parser.add_argument('--drug', type=str, default='I-BET-762')
+    parser.add_argument('--target_data', type=str, default="GSE117872")
+    parser.add_argument('--drug', type=str, default='Cisplatin')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
@@ -767,9 +769,9 @@ if __name__ == '__main__':
     parser.add_argument('--mmd_weight', type=float, default=0.25)
 
     # train
-    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAE128U_VAEDNNclassificationI-BET-762.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_VAE_128U_GSE110894_')
-    parser.add_argument('--pretrain', type=str, default='saved/models/GSE110894_encoder_vae128_RMG.pkl')
+    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAE128U_VAEDNNclassificationCisplatin.pkl')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_VAE_128U_GSE117872_')
+    parser.add_argument('--pretrain', type=str, default='saved/models/GSE117872_encoder_vae128_RMG.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)

@@ -173,7 +173,13 @@ def process_117872(adata,**kargs):
             selected=adata.obs['origin']==origin
             selected=selected.to_numpy('bool')
             adata = adata[selected, :]
-            
+    
+    sensitive = [int(row.find("Resistant")==-1) for row in adata.obs.loc[:,"cluster"]]
+    #sens_ = ['Resistant' if (row.find("Resistant")!=-1) else 'Sensitive' for row in adata.obs.loc[:,"cluster"]]
+    adata.obs.loc[adata.obs.cluster=="Holiday","cluster"] = "Sensitive"
+    adata.obs['sensitive'] = sensitive
+    adata.obs['sensitivity'] = adata.obs.loc[:,"cluster"]
+
     # Cluster de score
     pval = 0.05
     n_genes = 50
@@ -181,7 +187,7 @@ def process_117872(adata,**kargs):
         pval=kargs['pval_thres']
     if "num_de" in kargs:
         n_genes = kargs['num_de']
-    adata = de_score(adata=adata,clustername="cluster",pval=pval,n=n_genes)
+    adata = de_score(adata=adata,clustername="sensitivity",pval=pval,n=n_genes)
     return adata
 
 def process_122843(adata,**kargs):
@@ -229,7 +235,7 @@ def process_110894(adata,**kargs):
     sensitive = [int(row.find("RESISTANT")==-1) for row in obs_merge.loc[:,"Sample name"]]
     adata.obs['sensitive'] = sensitive
 
-    sens_ = ['Resistant' if (row.find("RESISTANT")==-1) else 'Sensitive' for row in obs_merge.loc[:,"Sample name"]]
+    sens_ = ['Resistant' if (row.find("RESISTANT")!=-1) else 'Sensitive' for row in obs_merge.loc[:,"Sample name"]]
     adata.obs['sensitivity'] = sens_
 
 
@@ -310,7 +316,7 @@ def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test
         df_top_genes.to_csv("saved/results/top_genes_class" +str(target_class)+ save_name + '.csv')
         df_tail_genes.to_csv("saved/results/top_genes_class" +str(target_class)+ save_name + '.csv')
 
-        return adata,attr
+        return adata,attr,df_top_genes,df_tail_genes
 
 def de_score(adata,clustername,pval=0.05,n=50,method="wilcoxon",score_prefix=None):
     sc.tl.rank_genes_groups(adata, clustername, method=method,use_raw=True)
