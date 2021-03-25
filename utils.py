@@ -175,10 +175,10 @@ def process_117872(adata,**kargs):
             adata = adata[selected, :]
     
     sensitive = [int(row.find("Resistant")==-1) for row in adata.obs.loc[:,"cluster"]]
-    #sens_ = ['Resistant' if (row.find("Resistant")!=-1) else 'Sensitive' for row in adata.obs.loc[:,"cluster"]]
-    adata.obs.loc[adata.obs.cluster=="Holiday","cluster"] = "Sensitive"
+    sens_ = ['Resistant' if (row.find("Resistant")!=-1) else 'Sensitive' for row in adata.obs.loc[:,"cluster"]]
+    #adata.obs.loc[adata.obs.cluster=="Holiday","cluster"] = "Sensitive"
     adata.obs['sensitive'] = sensitive
-    adata.obs['sensitivity'] = adata.obs.loc[:,"cluster"]
+    adata.obs['sensitivity'] = sens_
 
     # Cluster de score
     pval = 0.05
