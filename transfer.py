@@ -568,25 +568,25 @@ def run_main(args):
         color_score_list = ["Sensitive_score","Resistant_score","1_score","0_score"]
 
         sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["Sensitive_score"])[0]
-        resistant_score = pearsonr(adata.obs["sens_preds"],adata.obs["Resistant_score"])[0]
+        resistant_score = pearsonr(adata.obs["rest_preds"],adata.obs["Resistant_score"])[0]
         
         try:
             cluster_score_sens = pearsonr(adata.obs["1_score"],adata.obs["Sensitive_score"])[0]
-            report_df['1_pearson'] = cluster_score_sens
+            report_df['sens_pearson'] = cluster_score_sens
         except:
             logging.warning("Prediction score 1 not exist, fill adata with 0 values")
             adata.obs["1_score"] = np.zeros(len(adata))
 
         try:
             cluster_score_resist = pearsonr(adata.obs["0_score"],adata.obs["Resistant_score"])[0]
-            report_df['0_pearson'] = cluster_score_resist
+            report_df['rest_pearson'] = cluster_score_resist
 
         except:
             logging.warning("Prediction score 0 not exist, fill adata with 0 values")
             adata.obs["0_score"] = np.zeros(len(adata))
 
-        report_df['sens_pearson'] = sens_score
-        report_df['resist_pearson'] = resistant_score
+        report_df['prob_sens_pearson'] = sens_score
+        report_df['prob_rest_pearson'] = resistant_score
 
     elif (data_name=='GSE110894'):
 
@@ -605,21 +605,21 @@ def run_main(args):
         color_score_list = ["Sensitive_score","Resistant_score","1_score","0_score"]
 
         sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["Sensitive_score"])[0]
-        resistant_score = pearsonr(adata.obs["sens_preds"],adata.obs["Resistant_score"])[0]
+        resistant_score = pearsonr(adata.obs["rest_preds"],adata.obs["Resistant_score"])[0]
 
-        report_df['sens_pearson'] = sens_score
-        report_df['resist_pearson'] = resistant_score
+        report_df['prob_sens_pearson'] = sens_score
+        report_df['prob_rest_pearson'] = resistant_score
 
         try:
             cluster_score_sens = pearsonr(adata.obs["1_score"],adata.obs["Sensitive_score"])[0]
-            report_df['1_pearson'] = cluster_score_sens
+            report_df['sens_pearson'] = cluster_score_sens
         except:
             logging.warning("Prediction score 1 not exist, fill adata with 0 values")
             adata.obs["1_score"] = np.zeros(len(adata))
 
         try:
             cluster_score_resist = pearsonr(adata.obs["0_score"],adata.obs["Resistant_score"])[0]
-            report_df['0_pearson'] = cluster_score_resist
+            report_df['rest_pearson'] = cluster_score_resist
 
         except:
             logging.warning("Prediction score 0 not exist, fill adata with 0 values")
@@ -634,6 +634,8 @@ def run_main(args):
 
         
         report_dict = classification_report(Y_test, lb_results, output_dict=True)
+        f1score = report_dict['weighted avg']['f1-score']
+        report_df['f1_score'] = f1score
         classification_report_df = pd.DataFrame(report_dict).T
         classification_report_df.to_csv("saved/results/clf_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
@@ -768,6 +770,28 @@ def run_main(args):
     report_df = report_df.T
     report_df.to_csv("saved/results/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 ################################################# END SECTION OF ANALYSIS AND POST PROCESSING #################################################
+
+################################################# START SECTION OF ANALYSIS FOR BULK #################################################
+    bdata = sc.AnnData(data_r)
+    bdata.obs = label_r
+    sc.tl.rank_genes_groups(bdata, select_drug, method='wilcoxon')
+    bdata = ut.de_score(bdata,select_drug)
+    for label in set(label_r.loc[:,select_drug]):
+        try:
+            df_degs = get_de_dataframe(bdata,label)
+            df_degs.to_csv("saved/results/DEGs_bulk_" +str(label)+ args.predictor+ prediction + select_drug+now + '.csv')
+        except:
+            logging.warning("Only one class, no two calsses critical genes")
+    
+    Xsource_allTensor = torch.FloatTensor(data_r.values).to(device)
+    Ysource_preTensor = source_model(Xsource_allTensor)
+    Ysource_prediction = Ysource_preTensor.detach().cpu().numpy()
+    bdata.obs["sens_preds"] = Ysource_prediction[:,1]
+    bdata.obs["sens_label"] = Ysource_prediction.argmax(axis=1)
+    bdata.obs["sens_label"] = bdata.obs["sens_label"].astype('category')
+    bdata.obs["rest_preds"] = Ysource_prediction[:,0]
+
+################################################# END SECTION OF ANALYSIS FOR BULK #################################################
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
