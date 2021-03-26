@@ -696,9 +696,12 @@ def run_main(args):
     sc.pl.umap(adata,color=[color_list[0],'sens_label_umap','sens_preds_umap'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
     # Plot transfer learning on umap
     sc.pl.umap(adata,color=color_list+color_score_list,save=data_name+args.transfer+args.dimreduce+"umap_all"+now,show=False)
-    sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class0").head().index,save=data_name+args.transfer+args.dimreduce+"_cgenes0_"+now,show=False)
-    sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class1").head().index,save=data_name+args.transfer+args.dimreduce+"_cgenes1_"+now,show=False)
 
+    try:
+        sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class0").head().index,save=data_name+args.transfer+args.dimreduce+"_cgenes0_"+now,show=False)
+        sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class1").head().index,save=data_name+args.transfer+args.dimreduce+"_cgenes1_"+now,show=False)
+    except:
+        logging.warning("IG results not found")
     # Run embeddings using transfered embeddings
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
     sc.tl.umap(adata,neighbors_key="Trans")
