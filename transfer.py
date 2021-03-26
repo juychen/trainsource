@@ -764,11 +764,6 @@ def run_main(args):
     # sc.pl.draw_graph(adata, color=['sens_preds', 'dpt_pseudotime_leiden_trans','leiden_trans'],save=data_name+args.dimreduce+"sens_preds+trajectory")
 
     # Save adata
-    adata.write("saved/adata/"+data_name+now+".h5ad")
-
-    # Save report
-    report_df = report_df.T
-    report_df.to_csv("saved/results/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 ################################################# END SECTION OF ANALYSIS AND POST PROCESSING #################################################
 
 ################################################# START SECTION OF ANALYSIS FOR BULK DATA #################################################
@@ -780,7 +775,7 @@ def run_main(args):
     for label in set(label_r.loc[:,select_drug]):
         try:
             df_degs = get_de_dataframe(bdata,label)
-            bulk_degs[label] = df_degs
+            bulk_degs[label] = df_degs.iloc[:50,:].names
             df_degs.to_csv("saved/results/DEGs_bulk_" +str(label)+ args.predictor+ prediction + select_drug+now + '.csv')
         except:
             logging.warning("Only one class, no two calsses critical genes")
@@ -792,24 +787,27 @@ def run_main(args):
     bdata.obs["sens_label"] = Ysource_prediction.argmax(axis=1)
     bdata.obs["sens_label"] = bdata.obs["sens_label"].astype('category')
     bdata.obs["rest_preds"] = Ysource_prediction[:,0]
-
-    # sens_score = pearsonr(bdata.obs["sens_preds"],bdata.obs["Sensitive_score"])[0]
-    # resistant_score = pearsonr(bdata.obs["rest_preds"],bdata.obs["Resistant_score"])[0]
+    sc.tl.score_genes(adata, bulk_degs['sensitive'],score_name="bulk_sens_score" )
+    sc.tl.score_genes(adata, bulk_degs['resistant'],score_name="bulk_rest_score" )
+    sc.pl.umap(adata,color=['bulk_sens_score','bulk_rest_score'],save=data_name+args.transfer+args.dimreduce+"umap_bg_all"+now,show=False)
     
-    # try:
-    #     cluster_score_sens = pearsonr(bdata.obs["1_score"],bdata.obs["Sensitive_score"])[0]
-    #     report_df['sens_pearson'] = cluster_score_sens
-    # except:
-    #     logging.warning("Prediction score 1 not exist, fill adata with 0 values")
-    #     bdata.obs["1_score"] = np.zeros(len(bdata))
+    try:
+        bulk_score_sens = pearsonr(adata.obs["1_score"],bdata.obs["bulk_sens_score"])[0]
+        report_df['bulk_sens_pearson'] = bulk_score_sens
+        cluster_score_resist = pearsonr(adata.obs["0_score"],bdata.obs["bulk_rest_score"])[0]
+        report_df['bulk_rest_pearson'] = cluster_score_resist
 
-    # try:
-    #     cluster_score_resist = pearsonr(bdata.obs["0_score"],bdata.obs["Resistant_score"])[0]
-    #     report_df['rest_pearson'] = cluster_score_resist
+    except:
+        logging.warning("Bulk level gene score not exist")    
+    
+    # Save adata
+    adata.write("saved/adata/"+data_name+now+".h5ad")
 
-    # except:
-    #     logging.warning("Prediction score 0 not exist, fill adata with 0 values")
-    #     bdata.obs["0_score"] = np.zeros(len(bdata))
+    # Save report
+    report_df = report_df.T
+    report_df.to_csv("saved/results/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+    
+
 
 ################################################# END SECTION OF ANALYSIS FOR BULK DATA #################################################
 
