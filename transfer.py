@@ -771,14 +771,16 @@ def run_main(args):
     report_df.to_csv("saved/results/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 ################################################# END SECTION OF ANALYSIS AND POST PROCESSING #################################################
 
-################################################# START SECTION OF ANALYSIS FOR BULK #################################################
+################################################# START SECTION OF ANALYSIS FOR BULK DATA #################################################
     bdata = sc.AnnData(data_r)
     bdata.obs = label_r
+    bulk_degs={}
     sc.tl.rank_genes_groups(bdata, select_drug, method='wilcoxon')
     bdata = ut.de_score(bdata,select_drug)
     for label in set(label_r.loc[:,select_drug]):
         try:
             df_degs = get_de_dataframe(bdata,label)
+            bulk_degs[label] = df_degs
             df_degs.to_csv("saved/results/DEGs_bulk_" +str(label)+ args.predictor+ prediction + select_drug+now + '.csv')
         except:
             logging.warning("Only one class, no two calsses critical genes")
@@ -791,7 +793,25 @@ def run_main(args):
     bdata.obs["sens_label"] = bdata.obs["sens_label"].astype('category')
     bdata.obs["rest_preds"] = Ysource_prediction[:,0]
 
-################################################# END SECTION OF ANALYSIS FOR BULK #################################################
+    # sens_score = pearsonr(bdata.obs["sens_preds"],bdata.obs["Sensitive_score"])[0]
+    # resistant_score = pearsonr(bdata.obs["rest_preds"],bdata.obs["Resistant_score"])[0]
+    
+    # try:
+    #     cluster_score_sens = pearsonr(bdata.obs["1_score"],bdata.obs["Sensitive_score"])[0]
+    #     report_df['sens_pearson'] = cluster_score_sens
+    # except:
+    #     logging.warning("Prediction score 1 not exist, fill adata with 0 values")
+    #     bdata.obs["1_score"] = np.zeros(len(bdata))
+
+    # try:
+    #     cluster_score_resist = pearsonr(bdata.obs["0_score"],bdata.obs["Resistant_score"])[0]
+    #     report_df['rest_pearson'] = cluster_score_resist
+
+    # except:
+    #     logging.warning("Prediction score 0 not exist, fill adata with 0 values")
+    #     bdata.obs["0_score"] = np.zeros(len(bdata))
+
+################################################# END SECTION OF ANALYSIS FOR BULK DATA #################################################
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
