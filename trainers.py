@@ -480,56 +480,6 @@ def train_ADDA_model(
     
     return discriminator,target_encoder, loss_train, loss_d_train
 
-
-def train_adversarial_model(
-    source_encoder, target_encoder, discriminator,
-    source_loader, target_loader,
-    dis_loss, target_loss,
-    optimizer, d_optimizer,
-    args=None):
-    source_encoder.eval()
-    target_encoder.encoder.train()
-    discriminator.train()
-
-    #losses, d_losses = AverageMeter(), AverageMeter()
-    n_iters = min(len(source_loader), len(target_loader))
-    source_iter, target_iter = iter(source_loader), iter(target_loader)
-    for iter_i in range(n_iters):
-        source_data, source_target = source_iter.next()
-        target_data, target_target = target_iter.next()
-        source_data = source_data.to(args.device)
-        target_data = target_data.to(args.device)
-        bs = source_data.size(0)
-
-        D_input_source = source_encoder.encoder(source_data)
-        D_input_target = target_encoder.encoder(target_data)
-        D_target_source = torch.tensor(
-            [0] * bs, dtype=torch.long).to(args.device)
-        D_target_target = torch.tensor(
-            [1] * bs, dtype=torch.long).to(args.device)
-
-        # train Discriminator
-        D_output_source = discriminator(D_input_source)
-        D_output_target = discriminator(D_input_target)
-        D_output = torch.cat([D_output_source, D_output_target], dim=0)
-        D_target = torch.cat([D_target_source, D_target_target], dim=0)
-        d_loss = dis_loss(D_output, D_target)
-        d_optimizer.zero_grad()
-        d_loss.backward()
-        d_optimizer.step()
-        #d_losses.update(d_loss.item(), bs)
-
-        # train Target
-        D_input_target = target_encoder.encoder(target_data)
-        D_output_target = discriminator(D_input_target)
-        loss = target_loss(D_output_target, D_target_source)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        #losses.update(loss.item(), bs)
-    return {'d/loss': d_losses.avg, 'target/loss': losses.avg}
-
-
 def train_GCNpreditor_model(model, z,y, adj,optimizer,loss_function,n_epochs,scheduler,load=False,precisionModel='Float',save_path="model.pkl"):
     '''
     GAE embedding for clustering
@@ -615,7 +565,7 @@ def train_GCNpreditor_model(model, z,y, adj,optimizer,loss_function,n_epochs,sch
 
 def train_DaNN_model(net,source_loader,target_loader,
                     optimizer,loss_function,n_epochs,scheduler,dist_loss,weight=0.25,GAMMA=1000,epoch_tail=0.90,
-                    load=False,save_path="saved/model.pkl",return_grad=False):
+                    load=False,save_path="saved/model.pkl",best_model_cache = "drive",top_models=5):
 
     if(load!=False):
         if(os.path.exists(save_path)):
@@ -696,32 +646,24 @@ def train_DaNN_model(net,source_loader,target_loader,
                     # update the weights
                     optimizer.step()
 
-                    # if return_grad == True:
-                    #     g_tar = torch.autograd.grad(outputs=loss,inputs=x_tar,retain_graph=True)[0]
-                    #     g_src = torch.autograd.grad(outputs=loss,inputs=x_src,retain_graph=True)[0]
-
-                    #     g_src_outputs.append(g_src)
-                    #     g_tar_outputs.append(g_tar)
-
-
                 # print loss statistics
                 running_loss += loss.item()
                 running_mmd += loss_mmd.item()
 
-
+                # Iterate over batch
                 batch_j += 1
                 if batch_j >= len(list_tar):
                     batch_j = 0
 
-            # g_src = torch.cat(g_src_outputs, dim=1)
-            # g_tar = torch.cat(g_tar_outputs, dim=1)
-            
+            # Average epoch loss
             epoch_loss = running_loss / n_iters
             epoch_mmd = running_mmd/n_iters
 
+            # Step schedular
             if phase == 'train':
                 scheduler.step(epoch_loss)
-                
+            
+            # Savle loss
             last_lr = scheduler.optimizer.param_groups[0]['lr']
             loss_train[epoch,phase] = epoch_loss
             mmd_train[epoch,phase] = epoch_mmd
@@ -730,15 +672,25 @@ def train_DaNN_model(net,source_loader,target_loader,
             
             if (phase == 'val') and (epoch_loss < best_loss) and (epoch >(n_epochs*(1-epoch_tail))) :
                 best_loss = epoch_loss
-                best_model_wts = copy.deepcopy(net.state_dict())
-
+                #best_model_wts = copy.deepcopy(net.state_dict())
+                # Save model if acheive better validation score
+                if best_model_cache == "memory":
+                    best_model_wts = copy.deepcopy(net.state_dict())
+                else:
+                    torch.save(net.state_dict(), save_path+"_bestcahce.pkl")
  
-    
-        # Select best model wts
-        torch.save(best_model_wts, save_path)
+    #     # Select best model wts
+    #     torch.save(best_model_wts, save_path)
         
-    net.load_state_dict(best_model_wts)           
-    
+    # net.load_state_dict(best_model_wts)           
+        # Select best model wts if use memory to cahce models
+    if best_model_cache == "memory":
+        torch.save(best_model_wts, save_path)
+        net.load_state_dict(best_model_wts)  
+    else:
+        net.load_state_dict((torch.load(save_path+"_bestcahce.pkl")))
+        torch.save(net.state_dict(), save_path)
+
     return net, [loss_train,mmd_train]
 
 
