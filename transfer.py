@@ -795,9 +795,9 @@ def run_main(args):
     sc.pl.umap(adata,color=['bulk_sens_score','bulk_rest_score'],save=data_name+args.transfer+args.dimreduce+"umap_bg_all"+now,show=False)
     
     try:
-        bulk_score_sens = pearsonr(adata.obs["1_score"],bdata.obs["bulk_sens_score"])[0]
+        bulk_score_sens = pearsonr(adata.obs["1_score"],adata.obs["bulk_sens_score"])[0]
         report_df['bulk_sens_pearson'] = bulk_score_sens
-        cluster_score_resist = pearsonr(adata.obs["0_score"],bdata.obs["bulk_rest_score"])[0]
+        cluster_score_resist = pearsonr(adata.obs["0_score"],adata.obs["bulk_rest_score"])[0]
         report_df['bulk_rest_pearson'] = cluster_score_resist
 
     except:
