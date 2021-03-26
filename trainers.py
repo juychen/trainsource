@@ -619,8 +619,12 @@ def train_DaNN_model(net,source_loader,target_loader,
 
     if(load!=False):
         if(os.path.exists(save_path)):
-            net.load_state_dict(torch.load(save_path))           
-            return net, 0
+            try:
+                net.load_state_dict(torch.load(save_path))           
+                return net, 0
+            except:
+                logging.warning("Failed to load existing file, proceed to the trainning process.")
+
         else:
             logging.warning("Failed to load existing file, proceed to the trainning process.")
     
