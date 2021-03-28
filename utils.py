@@ -261,7 +261,7 @@ def process_112274(adata,**kargs):
     sensitive = [int(row.find("parental")!=-1) for row in df_annotation.loc[:,"name_section_2"]]
     adata.obs['sensitive'] = sensitive
 
-    sens_ = ['Resistant' if (row.find("parental")!=-1) else 'Sensitive' for row in df_annotation.loc[:,"name_section_2"]]
+    sens_ = ['Resistant' if (row.find("parental")==-1) else 'Sensitive' for row in df_annotation.loc[:,"name_section_2"]]
     adata.obs['sensitivity'] = sens_
 
 
