@@ -51,7 +51,7 @@ DATA_MAP={
 
 }
 
-REMOVE_GENES=["mt","rps","rpl"]
+REMOVE_GENES=["mt-","rps","rpl"]
 
 def run_main(args):
 ################################################# START SECTION OF LOADING PARAMETERS #################################################
@@ -120,9 +120,9 @@ def run_main(args):
     adata = pp.cal_ncount_ngenes(adata)
 
     # Show statisctic after QX
-    sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt'],
+    sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt-'],
                 jitter=0.4, multi_panel=True,save=data_name,show=False)
-    sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt',show=False)
+    sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt-',show=False)
     sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts',show=False)
 
     if args.remove_genes == 0:
@@ -130,8 +130,12 @@ def run_main(args):
     else:
         r_genes = REMOVE_GENES
     #Preprocess data by filtering
-    adata = pp.receipe_my(adata,l_n_genes=min_n_genes,r_n_genes=max_n_genes,filter_mincells=args.min_c,
-                        filter_mingenes=args.min_g,normalize=True,log=True,remove_genes=r_genes)
+    if data_name !='GSE112274':
+        adata = pp.receipe_my(adata,l_n_genes=min_n_genes,r_n_genes=max_n_genes,filter_mincells=args.min_c,
+                            filter_mingenes=args.min_g,normalize=True,log=True,remove_genes=r_genes)
+    else:
+        adata = pp.receipe_my(adata,l_n_genes=min_n_genes,r_n_genes=max_n_genes,filter_mincells=args.min_c,percent_mito = 100,
+                            filter_mingenes=args.min_g,normalize=True,log=True,remove_genes=r_genes)
 
 
     # Select highly variable genes
@@ -819,7 +823,7 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
-    parser.add_argument('--target_data', type=str, default="GSE117872")
+    parser.add_argument('--target_data', type=str, default="GSE112274")
     parser.add_argument('--drug', type=str, default='Cisplatin')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)

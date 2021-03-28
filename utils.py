@@ -257,6 +257,22 @@ def process_112274(adata,**kargs):
         annotation_dict["name_section_"+str(section+1)] = svals
     df_annotation=pd.DataFrame(annotation_dict,index=obs_names)
     adata.obs=df_annotation
+
+    sensitive = [int(row.find("parental")!=-1) for row in df_annotation.loc[:,"name_section_2"]]
+    adata.obs['sensitive'] = sensitive
+
+    sens_ = ['Resistant' if (row.find("parental")!=-1) else 'Sensitive' for row in df_annotation.loc[:,"name_section_2"]]
+    adata.obs['sensitivity'] = sens_
+
+
+    pval = 0.05
+    n_genes = 50
+    if "pval_thres" in kargs:
+        pval=kargs['pval_thres']
+    if "num_de" in kargs:
+        n_genes = kargs['num_de']
+    adata = de_score(adata=adata,clustername="sensitivity",pval=pval,n=n_genes)    
+
     return adata
 
 def process_116237(adata,**kargs):
