@@ -147,6 +147,8 @@ def specific_process(adata,dataname="",**kargs):
         adata = process_108383(adata)
     elif dataname == "GSE140440":
         adata = process_140440(adata)
+    elif dataname == "GSE129730":
+        adata = process_129730(adata)
     return adata
     
 def process_108383(adata,**kargs):
@@ -304,6 +306,24 @@ def process_140440(adata,**kargs):
     if "num_de" in kargs:
         n_genes = kargs['num_de']
     adata = de_score(adata=adata,clustername="sensitivity",pval=pval,n=n_genes)    
+    return adata
+
+def process_129730(adata,**kargs):
+    # Data specific preprocessing of cell info
+    # sensitive = [int(row.find("MB")==-1) for row in adata.obs['file']]
+    # adata.obs['sensitive'] = sensitive
+
+    # sens_ = ['Resistant' if (row.find("Res")!=-1) else 'Sensitive' for row in df_cellinfo.iloc[:,0]]
+    # adata.obs['sensitivity'] = sens_
+
+
+    # pval = 0.05
+    # n_genes = 50
+    # if "pval_thres" in kargs:
+    #     pval=kargs['pval_thres']
+    # if "num_de" in kargs:
+    #     n_genes = kargs['num_de']
+    # adata = de_score(adata=adata,clustername="sensitivity",pval=pval,n=n_genes)    
     return adata
 
 def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test_value="expression",save_name="feature_gradients"):
