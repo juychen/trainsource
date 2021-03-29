@@ -145,6 +145,8 @@ def specific_process(adata,dataname="",**kargs):
         adata = process_112274(adata)
     elif dataname == "GSE108383":
         adata = process_108383(adata)
+    elif dataname == "GSE140440":
+        adata = process_140440(adata)
     return adata
     
 def process_108383(adata,**kargs):
@@ -283,7 +285,27 @@ def process_116237(adata,**kargs):
         annotation_dict["name_section_"+str(section+1)] = svals  
 
     return adata
-    
+
+def process_140440(adata,**kargs):
+    # Data specific preprocessing of cell info
+    file_name = 'data/GSE140440/Annotation.txt' # change it to the name of your excel file
+    df_cellinfo = pd.read_csv(file_name,header=None,index_col=0,sep="\t")
+    sensitive = [int(row.find("Res")==-1) for row in df_cellinfo.iloc[:,0]]
+    adata.obs['sensitive'] = sensitive
+
+    sens_ = ['Resistant' if (row.find("Res")!=-1) else 'Sensitive' for row in df_cellinfo.iloc[:,0]]
+    adata.obs['sensitivity'] = sens_
+
+
+    pval = 0.05
+    n_genes = 50
+    if "pval_thres" in kargs:
+        pval=kargs['pval_thres']
+    if "num_de" in kargs:
+        n_genes = kargs['num_de']
+    adata = de_score(adata=adata,clustername="sensitivity",pval=pval,n=n_genes)    
+    return adata
+
 def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test_value="expression",save_name="feature_gradients"):
         ig = IntegratedGradients(net)
         attr, delta = ig.attribute(input,target=target_class, return_convergence_delta=True)
