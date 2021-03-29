@@ -47,7 +47,9 @@ DATA_MAP={
 "GSE122843":"data/GSE122843/GSE122843.txt",
 "GSE112274":"data/GSE112274/GSE112274_cell_gene_FPKM.csv",
 "GSE116237":"data/GSE116237/GSE116237_bulkRNAseq_expressionMatrix.txt",
-"GSE108383":"data/GSE108383/GSE108383_Melanoma_fluidigm.txt"
+"GSE108383":"data/GSE108383/GSE108383_Melanoma_fluidigm.txt",
+"GSE140440":"data/GSE140440/GSE140440.csv"
+
 
 }
 
@@ -130,7 +132,7 @@ def run_main(args):
     else:
         r_genes = REMOVE_GENES
     #Preprocess data by filtering
-    if data_name !='GSE112274':
+    if data_name not in ['GSE112274','GSE140440']:
         adata = pp.receipe_my(adata,l_n_genes=min_n_genes,r_n_genes=max_n_genes,filter_mincells=args.min_c,
                             filter_mingenes=args.min_g,normalize=True,log=True,remove_genes=r_genes)
     else:
@@ -161,6 +163,9 @@ def run_main(args):
         adata =  ut.specific_process(adata,dataname=data_name)
         data=adata.X
     elif data_name =='GSE108383':
+        adata =  ut.specific_process(adata,dataname=data_name)
+        data=adata.X
+    elif data_name =='GSE140440':
         adata =  ut.specific_process(adata,dataname=data_name)
         data=adata.X
     else:
@@ -823,7 +828,7 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
-    parser.add_argument('--target_data', type=str, default="GSE112274")
+    parser.add_argument('--target_data', type=str, default="GSE140440")
     parser.add_argument('--drug', type=str, default='Cisplatin')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
