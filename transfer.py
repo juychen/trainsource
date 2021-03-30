@@ -168,6 +168,9 @@ def run_main(args):
     elif data_name =='GSE140440':
         adata =  ut.specific_process(adata,dataname=data_name)
         data=adata.X
+    elif data_name =='GSE129730':
+        adata =  ut.specific_process(adata,dataname=data_name)
+        data=adata.X
     else:
         data=adata.X
 
@@ -828,7 +831,7 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
-    parser.add_argument('--target_data', type=str, default="GSE140440")
+    parser.add_argument('--target_data', type=str, default="GSE129730")
     parser.add_argument('--drug', type=str, default='Cisplatin')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
