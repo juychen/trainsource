@@ -159,9 +159,24 @@ def process_108383(adata,**kargs):
         annotation_dict["name_section_"+str(section+1)] = svals
     df_annotation=pd.DataFrame(annotation_dict,index=obs_names)
     adata.obs=df_annotation
-    adata.obs['name_section_3'].replace("par", "sensitive", inplace=True)
-    adata.obs['name_section_3'].replace("br", "resistant", inplace=True)
-    adata.obs['sensitive']=adata.obs['name_section_3']
+    # adata.obs['name_section_3'].replace("par", "sensitive", inplace=True)
+    # adata.obs['name_section_3'].replace("br", "resistant", inplace=True)
+    # adata.obs['sensitive']=adata.obs['name_section_3']
+
+    sensitive = [int(row.find("br")==-1) for row in adata.obs.loc[:,"name_section_3"]]
+    sens_ = ['Resistant' if (row.find("br")!=-1) else 'Sensitive' for row in adata.obs.loc[:,"name_section_3"]]
+    #adata.obs.loc[adata.obs.cluster=="Holiday","cluster"] = "Sensitive"
+    adata.obs['sensitive'] = sensitive
+    adata.obs['sensitivity'] = sens_
+
+    # Cluster de score
+    pval = 0.05
+    n_genes = 50
+    if "pval_thres" in kargs:
+        pval=kargs['pval_thres']
+    if "num_de" in kargs:
+        n_genes = kargs['num_de']
+    adata = de_score(adata=adata,clustername="sensitivity",pval=pval,n=n_genes)
     return adata
 
 def process_117872(adata,**kargs):
