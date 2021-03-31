@@ -149,6 +149,8 @@ def specific_process(adata,dataname="",**kargs):
         adata = process_140440(adata)
     elif dataname == "GSE129730":
         adata = process_129730(adata)
+    elif dataname == "GSE149383":
+        adata = process_149383(adata)
     return adata
     
 def process_108383(adata,**kargs):
@@ -330,6 +332,26 @@ def process_129730(adata,**kargs):
     sensitive = [ 1 if (row <=9) else 0 for row in adata.obs['sample'].astype(int)]
     adata.obs['sensitive'] = sensitive
     sens_ = ['Resistant' if (row >9) else 'Sensitive' for row in adata.obs['sample'].astype(int)]
+    adata.obs['sensitivity'] = sens_
+
+
+    pval = 0.05
+    n_genes = 50
+    if "pval_thres" in kargs:
+        pval=kargs['pval_thres']
+    if "num_de" in kargs:
+        n_genes = kargs['num_de']
+    adata = de_score(adata=adata,clustername="sensitivity",pval=pval,n=n_genes)    
+    return adata
+    
+def process_149383(adata,**kargs):
+    # Data specific preprocessing of cell info
+    file_name = '../data/GSE149383/erl_total_2K_meta.csv' # change it to the name of your excel file
+    df_cellinfo = pd.read_csv(file_name,header=None,index_col=0)
+    sensitive = [int(row.find("res")==-1) for row in df_cellinfo.iloc[:,0]]
+    adata.obs['sensitive'] = sensitive
+
+    sens_ = ['Resistant' if (row.find("res")!=-1) else 'Sensitive' for row in df_cellinfo.iloc[:,0]]
     adata.obs['sensitivity'] = sens_
 
 

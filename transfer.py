@@ -49,7 +49,8 @@ DATA_MAP={
 "GSE116237":"data/GSE116237/GSE116237_bulkRNAseq_expressionMatrix.txt",
 "GSE108383":"data/GSE108383/GSE108383_Melanoma_fluidigm.txt",
 "GSE140440":"data/GSE140440/GSE140440.csv",
-"GSE129730":"data/GSE129730/GSE129730.h5ad"
+"GSE129730":"data/GSE129730/GSE129730.h5ad",
+"GSE149383":"../data/GSE149383/erl_total_data_2K.csv"
 
 }
 
@@ -115,6 +116,27 @@ def run_main(args):
 ################################################# START SECTION OF SINGLE CELL DATA REPROCESSING #################################################
     # Load data and preprocessing
     adata = pp.read_sc_file(data_path)
+    
+    if data_name == 'GSE117872':
+        adata =  ut.specific_process(adata,dataname=data_name,select_origin=args.batch_id)
+    elif data_name =='GSE122843':
+        adata =  ut.specific_process(adata,dataname=data_name)
+    elif data_name =='GSE110894':
+        adata =  ut.specific_process(adata,dataname=data_name)
+    elif data_name =='GSE112274':
+        adata =  ut.specific_process(adata,dataname=data_name)
+    elif data_name =='GSE116237':
+        adata =  ut.specific_process(adata,dataname=data_name)
+    elif data_name =='GSE108383':
+        adata =  ut.specific_process(adata,dataname=data_name)
+    elif data_name =='GSE140440':
+        adata =  ut.specific_process(adata,dataname=data_name)
+    elif data_name =='GSE129730':
+        adata =  ut.specific_process(adata,dataname=data_name)
+    elif data_name =='GSE149383':
+        adata =  ut.specific_process(adata,dataname=data_name)
+    else:
+        adata=adata
 
     sc.pp.filter_cells(adata, min_genes=200)
     sc.pp.filter_genes(adata, min_cells=3)
@@ -147,33 +169,7 @@ def run_main(args):
     adata = adata[:, adata.var.highly_variable]
 
     # Preprocess data if spcific process is required
-    if data_name == 'GSE117872':
-        adata =  ut.specific_process(adata,dataname=data_name,select_origin=args.batch_id)
-        data=adata.X
-    elif data_name =='GSE122843':
-        adata =  ut.specific_process(adata,dataname=data_name)
-        data=adata.X
-    elif data_name =='GSE110894':
-        adata =  ut.specific_process(adata,dataname=data_name)
-        data=adata.X
-    elif data_name =='GSE112274':
-        adata =  ut.specific_process(adata,dataname=data_name)
-        data=adata.X
-    elif data_name =='GSE116237':
-        adata =  ut.specific_process(adata,dataname=data_name)
-        data=adata.X
-    elif data_name =='GSE108383':
-        adata =  ut.specific_process(adata,dataname=data_name)
-        data=adata.X
-    elif data_name =='GSE140440':
-        adata =  ut.specific_process(adata,dataname=data_name)
-        data=adata.X
-    elif data_name =='GSE129730':
-        adata =  ut.specific_process(adata,dataname=data_name)
-        data=adata.X
-    else:
-        data=adata.X
-
+    data=adata.X
     # PCA
     # Generate neighbor graph
     sc.tl.pca(adata,svd_solver='arpack')
@@ -831,7 +827,7 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
-    parser.add_argument('--target_data', type=str, default="GSE108383")
+    parser.add_argument('--target_data', type=str, default="GSE112274")
     parser.add_argument('--drug', type=str, default='Cisplatin')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
