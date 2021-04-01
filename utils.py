@@ -425,7 +425,7 @@ def de_score(adata,clustername,pval=0.05,n=50,method="wilcoxon",score_prefix=Non
         sc.tl.score_genes(adata, select_df.names,score_name=str(cluster)+"_score" )
     return adata
 
-def plot_loss(report,path="figures/loss.pdf"):
+def plot_loss(report,path="figures/loss.pdf",set_ylim=False):
 
     train_loss = []
     val_loss = []
@@ -445,8 +445,8 @@ def plot_loss(report,path="figures/loss.pdf"):
     plt.plot(x,val_loss, '-g', label='validation loss')
     plt.plot(x,train_loss,':b', label='trainiing loss')
     plt.legend(["validation loss", "trainiing loss"], loc='upper left')
-    plt.ylim([0, 1])
-
+    if set_ylim!=False:
+        plt.ylim(set_ylim)
     plt.savefig(path)
     plt.close()
 

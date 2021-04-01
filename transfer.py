@@ -460,7 +460,7 @@ def run_main(args):
         logging.info("Transfer DaNN finished")
         if(load_model==False):
             ut.plot_loss(report_[0],path="figures/train_loss_"+now+".pdf")
-            ut.plot_loss(report_[1],path="figures/mmd_loss_"+now+".pdf")
+            ut.plot_loss(report_[1],path="figures/mmd_loss_"+now+".pdf",set_ylim=False)
 
         if(args.dimreduce!='CVAE'):
             # Attribute test using integrated gradient
@@ -558,45 +558,45 @@ def run_main(args):
     sens_pb_tsne = adata.obs['sens_preds_tsne']
     lb_tsne = adata.obs['sens_label_tsne']
         
-    if(data_name=='GSE117872'):
+    # if(data_name=='GSE117872'):
 
-        report_df = report_df.T
-        Y_test = adata.obs['sensitive']
-        sens_pb_results = adata.obs['sens_preds']
-        lb_results = adata.obs['sens_label']
+    #     report_df = report_df.T
+    #     Y_test = adata.obs['sensitive']
+    #     sens_pb_results = adata.obs['sens_preds']
+    #     lb_results = adata.obs['sens_label']
 
-        le_sc = LabelEncoder()
-        le_sc.fit(['Resistant','Sensitive'])
-        sens_pb_results = adata.obs['sens_preds']
-        label_descrbie = le_sc.inverse_transform(Y_test)
-        adata.obs['sens_truth'] = label_descrbie
+    #     le_sc = LabelEncoder()
+    #     le_sc.fit(['Resistant','Sensitive'])
+    #     sens_pb_results = adata.obs['sens_preds']
+    #     label_descrbie = le_sc.inverse_transform(Y_test)
+    #     adata.obs['sens_truth'] = label_descrbie
 
-        lb_results = adata.obs['sens_label']
-        color_list = ["sens_truth","sens_label",'sens_preds']
-        color_score_list = ["Sensitive_score","Resistant_score","1_score","0_score"]
+    #     lb_results = adata.obs['sens_label']
+    #     color_list = ["sens_truth","sens_label",'sens_preds']
+    #     color_score_list = ["Sensitive_score","Resistant_score","1_score","0_score"]
 
-        sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["Sensitive_score"])[0]
-        resistant_score = pearsonr(adata.obs["rest_preds"],adata.obs["Resistant_score"])[0]
+    #     sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["Sensitive_score"])[0]
+    #     resistant_score = pearsonr(adata.obs["rest_preds"],adata.obs["Resistant_score"])[0]
         
-        try:
-            cluster_score_sens = pearsonr(adata.obs["1_score"],adata.obs["Sensitive_score"])[0]
-            report_df['sens_pearson'] = cluster_score_sens
-        except:
-            logging.warning("Prediction score 1 not exist, fill adata with 0 values")
-            adata.obs["1_score"] = np.zeros(len(adata))
+    #     try:
+    #         cluster_score_sens = pearsonr(adata.obs["1_score"],adata.obs["Sensitive_score"])[0]
+    #         report_df['sens_pearson'] = cluster_score_sens
+    #     except:
+    #         logging.warning("Prediction score 1 not exist, fill adata with 0 values")
+    #         adata.obs["1_score"] = np.zeros(len(adata))
 
-        try:
-            cluster_score_resist = pearsonr(adata.obs["0_score"],adata.obs["Resistant_score"])[0]
-            report_df['rest_pearson'] = cluster_score_resist
+    #     try:
+    #         cluster_score_resist = pearsonr(adata.obs["0_score"],adata.obs["Resistant_score"])[0]
+    #         report_df['rest_pearson'] = cluster_score_resist
 
-        except:
-            logging.warning("Prediction score 0 not exist, fill adata with 0 values")
-            adata.obs["0_score"] = np.zeros(len(adata))
+    #     except:
+    #         logging.warning("Prediction score 0 not exist, fill adata with 0 values")
+    #         adata.obs["0_score"] = np.zeros(len(adata))
 
-        report_df['prob_sens_pearson'] = sens_score
-        report_df['prob_rest_pearson'] = resistant_score
+    #     report_df['prob_sens_pearson'] = sens_score
+    #     report_df['prob_rest_pearson'] = resistant_score
 
-    elif (data_name=='GSE110894'):
+    if ('sensitive' in adata.obs.keys() ):
 
         report_df = report_df.T
         Y_test = adata.obs['sensitive']
@@ -634,7 +634,7 @@ def run_main(args):
             adata.obs["0_score"] = np.zeros(len(adata))
 
     
-    if (data_name in ['GSE110894','GSE117872']):
+    #if (data_name in ['GSE110894','GSE117872']):
         ap_score = average_precision_score(Y_test, sens_pb_results)
         ap_pret = average_precision_score(Y_test, sens_pb_pret)
         ap_umap = average_precision_score(Y_test, sens_pb_umap)
@@ -828,7 +828,7 @@ if __name__ == '__main__':
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
     parser.add_argument('--target_data', type=str, default="GSE112274")
-    parser.add_argument('--drug', type=str, default='Cisplatin')
+    parser.add_argument('--drug', type=str, default='Gefitinib')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
@@ -842,9 +842,9 @@ if __name__ == '__main__':
     parser.add_argument('--mmd_weight', type=float, default=0.25)
 
     # train
-    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAE128U_VAEDNNclassificationCisplatin.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_VAE_128U_GSE117872_')
-    parser.add_argument('--pretrain', type=str, default='saved/models/GSE117872_encoder_vae128_RMG.pkl')
+    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAE128U_VAEDNNclassificationGefitinib.pkl')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_VAE_128U_GSE112274_')
+    parser.add_argument('--pretrain', type=str, default='saved/models/GSE112274_encoder_vae128_RMG.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
