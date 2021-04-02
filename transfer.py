@@ -372,29 +372,31 @@ def run_main(args):
         adata.obs["sens_preds_pret"] = pretrain_prob_prediction[:,1]
         adata.obs["sens_label_pret"] = pretrain_prob_prediction.argmax(axis=1)
 
-        # Use umap result to predict 
-
-        sc.tl.pca(adata,  n_comps=max(50,2*dim_au_out),svd_solver='arpack')
-        sc.tl.umap(adata, n_components=dim_au_out)
-        embeddings_umap = torch.FloatTensor(adata.obsm["X_umap"]).to(device)
-        umap_prob_prediction = source_model.predict(embeddings_umap).detach().cpu().numpy()
-        adata.obs["sens_preds_umap"] = umap_prob_prediction[:,1]
-        adata.obs["sens_label_umap"] = umap_prob_prediction.argmax(axis=1)
+        # # Use umap result to predict 
+        ## This section is removed because the dim problem and the performance problem 
 
 
-        # Use tsne result to predict 
-        #sc.tl.tsne(adata, n_pcs=dim_au_out)
+        # sc.tl.pca(adata,  n_comps=max(50,2*dim_au_out),svd_solver='arpack')
+        # sc.tl.umap(adata, n_components=dim_au_out)
+        # embeddings_umap = torch.FloatTensor(adata.obsm["X_umap"]).to(device)
+        # umap_prob_prediction = source_model.predict(embeddings_umap).detach().cpu().numpy()
+        # adata.obs["sens_preds_umap"] = umap_prob_prediction[:,1]
+        # adata.obs["sens_label_umap"] = umap_prob_prediction.argmax(axis=1)
 
-        X_pca = adata.obsm["X_pca"]
 
-        # Replace tsne by pac beacause TSNE is very slow
-        X_tsne =  adata.obsm["X_umap"]
-        #X_tsne = TSNE(n_components=dim_au_out,method='exact').fit_transform(X_pca)
-        embeddings_tsne = torch.FloatTensor(X_tsne).to(device)
-        tsne_prob_prediction = source_model.predict(embeddings_tsne).detach().cpu().numpy()
-        adata.obs["sens_preds_tsne"] = tsne_prob_prediction[:,1]
-        adata.obs["sens_label_tsne"] = tsne_prob_prediction.argmax(axis=1)
-        adata.obsm["X_tsne_pret"] = X_tsne
+        # # Use tsne result to predict 
+        # #sc.tl.tsne(adata, n_pcs=dim_au_out)
+
+        # X_pca = adata.obsm["X_pca"]
+
+        # # Replace tsne by pac beacause TSNE is very slow
+        # X_tsne =  adata.obsm["X_umap"]
+        # #X_tsne = TSNE(n_components=dim_au_out,method='exact').fit_transform(X_pca)
+        # embeddings_tsne = torch.FloatTensor(X_tsne).to(device)
+        # tsne_prob_prediction = source_model.predict(embeddings_tsne).detach().cpu().numpy()
+        # adata.obs["sens_preds_tsne"] = tsne_prob_prediction[:,1]
+        # adata.obs["sens_label_tsne"] = tsne_prob_prediction.argmax(axis=1)
+        # adata.obsm["X_tsne_pret"] = X_tsne
 
 
         # Add embeddings to the adata object
@@ -552,11 +554,11 @@ def run_main(args):
     sens_pb_pret = adata.obs['sens_preds_pret']
     lb_pret = adata.obs['sens_label_pret']
     
-    sens_pb_umap = adata.obs['sens_preds_umap']
-    lb_umap = adata.obs['sens_label_umap']
+    # sens_pb_umap = adata.obs['sens_preds_umap']
+    # lb_umap = adata.obs['sens_label_umap']
     
-    sens_pb_tsne = adata.obs['sens_preds_tsne']
-    lb_tsne = adata.obs['sens_label_tsne']
+    # sens_pb_tsne = adata.obs['sens_preds_tsne']
+    # lb_tsne = adata.obs['sens_label_tsne']
 
     if ('sensitive' in adata.obs.keys() ):
 
@@ -599,8 +601,8 @@ def run_main(args):
     #if (data_name in ['GSE110894','GSE117872']):
         ap_score = average_precision_score(Y_test, sens_pb_results)
         ap_pret = average_precision_score(Y_test, sens_pb_pret)
-        ap_umap = average_precision_score(Y_test, sens_pb_umap)
-        ap_tsne = average_precision_score(Y_test, sens_pb_tsne)
+        # ap_umap = average_precision_score(Y_test, sens_pb_umap)
+        # ap_tsne = average_precision_score(Y_test, sens_pb_tsne)
 
         
         report_dict = classification_report(Y_test, lb_results, output_dict=True)
@@ -609,24 +611,24 @@ def run_main(args):
         classification_report_df = pd.DataFrame(report_dict).T
         classification_report_df.to_csv("saved/results/clf_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
-        report_dict_umap = classification_report(Y_test, lb_umap, output_dict=True)
-        classification_report_umap_df = pd.DataFrame(report_dict_umap).T
-        classification_report_umap_df.to_csv("saved/results/clf_umap_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+        # report_dict_umap = classification_report(Y_test, lb_umap, output_dict=True)
+        # classification_report_umap_df = pd.DataFrame(report_dict_umap).T
+        # classification_report_umap_df.to_csv("saved/results/clf_umap_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
         report_dict_pret = classification_report(Y_test, lb_pret, output_dict=True)
         classification_report_pret_df = pd.DataFrame(report_dict_pret).T
         classification_report_pret_df.to_csv("saved/results/clf_pret_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
-        report_dict_tsne = classification_report(Y_test, lb_tsne, output_dict=True)
-        classification_report_tsne_df = pd.DataFrame(report_dict_tsne).T
-        classification_report_tsne_df.to_csv("saved/results/clf_tsne_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+        # report_dict_tsne = classification_report(Y_test, lb_tsne, output_dict=True)
+        # classification_report_tsne_df = pd.DataFrame(report_dict_tsne).T
+        # classification_report_tsne_df.to_csv("saved/results/clf_tsne_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
         try:
             auroc_score = roc_auc_score(Y_test, sens_pb_results)
                         
             auroc_pret = average_precision_score(Y_test, sens_pb_pret)
-            auroc_umap = average_precision_score(Y_test, sens_pb_umap)
-            auroc_tsne = average_precision_score(Y_test, sens_pb_tsne)
+            # auroc_umap = average_precision_score(Y_test, sens_pb_umap)
+            # auroc_tsne = average_precision_score(Y_test, sens_pb_tsne)
         except:
             logging.warning("Only one class, no ROC")
             auroc_pret=auroc_umap=auroc_tsne=auroc_score = 0
@@ -638,11 +640,11 @@ def run_main(args):
         report_df['auroc_pret'] = auroc_pret
         report_df['ap_pret'] = ap_pret
 
-        report_df['auroc_umap'] = auroc_umap
-        report_df['ap_umap'] = ap_umap
+        # report_df['auroc_umap'] = auroc_umap
+        # report_df['ap_umap'] = ap_umap
 
-        report_df['auroc_tsne'] = auroc_tsne
-        report_df['ap_tsne'] = ap_tsne
+        # report_df['auroc_tsne'] = auroc_tsne
+        # report_df['ap_tsne'] = ap_tsne
 
         ap_title = "ap: "+str(Decimal(ap_score).quantize(Decimal('0.0000')))
         auroc_title = "roc: "+str(Decimal(auroc_score).quantize(Decimal('0.0000')))
@@ -663,7 +665,7 @@ def run_main(args):
     # Run leiden clustering
     # sc.tl.leiden(adata,resolution=leiden_res)
     # Plot uamp
-    sc.pl.umap(adata,color=[color_list[0],'sens_label_umap','sens_preds_umap'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
+    # sc.pl.umap(adata,color=[color_list[0],'sens_label_umap','sens_preds_umap'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
     # Plot transfer learning on umap
     sc.pl.umap(adata,color=color_list+color_score_list,save=data_name+args.transfer+args.dimreduce+"umap_all"+now,show=False)
 
@@ -685,8 +687,6 @@ def run_main(args):
 
     sc.pl.umap(adata,color=c0_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes0_TL"+now,show=False)
     sc.pl.umap(adata,color=c1_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes1_TL"+now,show=False)
-     
-    
 
     # This tsne is based on transfer learning feature
     sc.pl.tsne(adata,color=color_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_TL"+now,show=False,title=title_list)
@@ -694,7 +694,7 @@ def run_main(args):
 
     sc.tl.tsne(adata)
     # This tsne is based on transfer learning feature
-    sc.pl.tsne(adata,color=[color_list[0],'sens_label_tsne','sens_preds_tsne'],save=data_name+args.transfer+args.dimreduce+"_original_tsne"+now,show=False,title=title_list)
+    # sc.pl.tsne(adata,color=[color_list[0],'sens_label_tsne','sens_preds_tsne'],save=data_name+args.transfer+args.dimreduce+"_original_tsne"+now,show=False,title=title_list)
 
     # Plot tsne of the pretrained (autoencoder) embeddings
     sc.pp.neighbors(adata,use_rep='X_pre',key_added="Pret")
@@ -716,27 +716,8 @@ def run_main(args):
     report_df['ari_pre_umap'] = pret_ari_score
     report_df['ari_trans_umap'] = transfer_ari_score
 
-    cluster_ids = set(adata.obs['leiden'])
-
-    # Two class: sens and resistant between clustering label
-    # for class_key in ['rest_preds','sens_preds']:
-    #     p =  adata.obs[class_key]
-    #     # One vs all metric
-    #     for c in cluster_ids:
-    #         binary_labels = adata.obs['leiden'] == c
-    #         cluster_auroc_score = roc_auc_score(binary_labels, p )
-    #         cluster_auprc_score = average_precision_score(binary_labels, p )
-    #         report_df[class_key+'_auroc_c_'+str(c)] = cluster_auroc_score
-    #         report_df[class_key+'_auroc_c_'+str(c)] = cluster_auprc_score
-
     # Trajectory of adata
     adata = trajectory(adata,now=now)
-
-    # Draw PDF
-    # sc.pl.draw_graph(adata, color=['leiden', 'dpt_pseudotime'],save=data_name+args.dimreduce+"leiden+trajectory")
-    # sc.pl.draw_graph(adata, color=['sens_preds', 'dpt_pseudotime_leiden_trans','leiden_trans'],save=data_name+args.dimreduce+"sens_preds+trajectory")
-
-    # Save adata
 ################################################# END SECTION OF ANALYSIS AND POST PROCESSING #################################################
 
 ################################################# START SECTION OF ANALYSIS FOR BULK DATA #################################################
