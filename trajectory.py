@@ -23,7 +23,7 @@ def trajectory(adata,now,color="leiden",neigbhor_keys=None):
 
     ## trajectory1
     sc.tl.paga(adata, groups='leiden')
-    sc.pl.paga(adata, color=['leiden'],save="Paga_initial"+now, show=False) 
+    sc.pl.paga(adata, color='leiden',save="Paga_initial"+now, show=False) 
 
     #Recomputing the embedding using PAGA-initialization
     sc.tl.draw_graph(adata, init_pos='paga')
@@ -36,7 +36,7 @@ def trajectory(adata,now,color="leiden",neigbhor_keys=None):
         adata, threshold=0.03, title='', right_margin=0.2, size=10,
         edge_width_scale=0.5,legend_fontsize=12, fontsize=12, frameon=False,
         edges=True,save="Paga_cp1"+now, show=False)
-    adata.uns['iroot'] = np.flatnonzero(adata.obs['leiden']  == '0')[0]
+    adata.uns['iroot'] = np.flatnonzero(adata.obs['sensitive']  == 1)[0]
     sc.tl.dpt(adata)
     adata_raw = adata
     sc.pp.log1p(adata_raw)
