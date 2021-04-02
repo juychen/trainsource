@@ -514,6 +514,9 @@ def run_main(args):
         adata.obs["sens_label"] = predictions.argmax(axis=1)
         adata.obs["sens_label"] = adata.obs["sens_label"].astype('category')
         adata.obs["rest_preds"] = predictions[:,0]
+
+    adata.write("saved/adata/before_ann"+data_name+now+".h5ad")
+
 ################################################# END SECTION OF PREPROCESSING FEATURES #################################################
 
 ################################################# START SECTION OF ANALYSIS AND POST PROCESSING #################################################
@@ -717,7 +720,7 @@ def run_main(args):
     report_df['ari_trans_umap'] = transfer_ari_score
 
     # Trajectory of adata
-    adata = trajectory(adata,now=now)
+    #adata = trajectory(adata,now=now)
 ################################################# END SECTION OF ANALYSIS AND POST PROCESSING #################################################
 
 ################################################# START SECTION OF ANALYSIS FOR BULK DATA #################################################
@@ -770,8 +773,8 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
-    parser.add_argument('--target_data', type=str, default="GSE112274")
-    parser.add_argument('--drug', type=str, default='Gefitinib')
+    parser.add_argument('--target_data', type=str, default="GSE110894")
+    parser.add_argument('--drug', type=str, default='I-BET-762')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
@@ -785,21 +788,21 @@ if __name__ == '__main__':
     parser.add_argument('--mmd_weight', type=float, default=0.25)
 
     # train
-    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_VAE128U_VAEDNNclassificationGefitinib.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/DaNN_VAE_128U_GSE112274_')
-    parser.add_argument('--pretrain', type=str, default='saved/models/GSE112274_encoder_vae128_RMG.pkl')
+    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_I-BET-7620noPCA512AEdownsampling.pkl')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/GSE110894_I-BET-762512AE')
+    parser.add_argument('--pretrain', type=str, default='saved/models/GSE110894_I-BET-762_512_ae.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
-    parser.add_argument('--bottleneck', type=int, default=128)
-    parser.add_argument('--dimreduce', type=str, default="VAE")
+    parser.add_argument('--bottleneck', type=int, default=256)
+    parser.add_argument('--dimreduce', type=str, default="AE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=int, default=0)
-    parser.add_argument('--source_h_dims', type=str, default="512,256")
-    parser.add_argument('--target_h_dims', type=str, default="512,256")
-    parser.add_argument('--p_h_dims', type=str, default="64,32")
+    parser.add_argument('--source_h_dims', type=str, default="2048,1024")
+    parser.add_argument('--target_h_dims', type=str, default="2048,1024")
+    parser.add_argument('--p_h_dims', type=str, default="128,64")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="HN137")
