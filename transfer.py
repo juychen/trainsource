@@ -557,44 +557,6 @@ def run_main(args):
     
     sens_pb_tsne = adata.obs['sens_preds_tsne']
     lb_tsne = adata.obs['sens_label_tsne']
-        
-    # if(data_name=='GSE117872'):
-
-    #     report_df = report_df.T
-    #     Y_test = adata.obs['sensitive']
-    #     sens_pb_results = adata.obs['sens_preds']
-    #     lb_results = adata.obs['sens_label']
-
-    #     le_sc = LabelEncoder()
-    #     le_sc.fit(['Resistant','Sensitive'])
-    #     sens_pb_results = adata.obs['sens_preds']
-    #     label_descrbie = le_sc.inverse_transform(Y_test)
-    #     adata.obs['sens_truth'] = label_descrbie
-
-    #     lb_results = adata.obs['sens_label']
-    #     color_list = ["sens_truth","sens_label",'sens_preds']
-    #     color_score_list = ["Sensitive_score","Resistant_score","1_score","0_score"]
-
-    #     sens_score = pearsonr(adata.obs["sens_preds"],adata.obs["Sensitive_score"])[0]
-    #     resistant_score = pearsonr(adata.obs["rest_preds"],adata.obs["Resistant_score"])[0]
-        
-    #     try:
-    #         cluster_score_sens = pearsonr(adata.obs["1_score"],adata.obs["Sensitive_score"])[0]
-    #         report_df['sens_pearson'] = cluster_score_sens
-    #     except:
-    #         logging.warning("Prediction score 1 not exist, fill adata with 0 values")
-    #         adata.obs["1_score"] = np.zeros(len(adata))
-
-    #     try:
-    #         cluster_score_resist = pearsonr(adata.obs["0_score"],adata.obs["Resistant_score"])[0]
-    #         report_df['rest_pearson'] = cluster_score_resist
-
-    #     except:
-    #         logging.warning("Prediction score 0 not exist, fill adata with 0 values")
-    #         adata.obs["0_score"] = np.zeros(len(adata))
-
-    #     report_df['prob_sens_pearson'] = sens_score
-    #     report_df['prob_rest_pearson'] = resistant_score
 
     if ('sensitive' in adata.obs.keys() ):
 
