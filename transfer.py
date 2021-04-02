@@ -647,11 +647,11 @@ def run_main(args):
         classification_report_df = pd.DataFrame(report_dict).T
         classification_report_df.to_csv("saved/results/clf_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
-        report_dict_umap = classification_report(Y_test, lb_pret, output_dict=True)
+        report_dict_umap = classification_report(Y_test, lb_umap, output_dict=True)
         classification_report_umap_df = pd.DataFrame(report_dict_umap).T
         classification_report_umap_df.to_csv("saved/results/clf_umap_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
-        report_dict_pret = classification_report(Y_test, lb_umap, output_dict=True)
+        report_dict_pret = classification_report(Y_test, lb_pret, output_dict=True)
         classification_report_pret_df = pd.DataFrame(report_dict_pret).T
         classification_report_pret_df.to_csv("saved/results/clf_pret_report_" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
 
