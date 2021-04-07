@@ -671,7 +671,21 @@ def run_main(args):
     # sc.pl.umap(adata,color=[color_list[0],'sens_label_umap','sens_preds_umap'],save=data_name+args.transfer+args.dimreduce+now,show=False,title=title_list)
     # Plot transfer learning on umap
     sc.pl.umap(adata,color=color_list+color_score_list,save=data_name+args.transfer+args.dimreduce+"umap_all"+now,show=False)
+    sc.settings.set_figure_params(dpi=100, frameon=False, figsize=(4, 3), facecolor='white') 
+    sc.pl.umap(adata,color=['sensitivity','leiden','sens_label','sens_preds'],
+        title= ['Cell sensitivity','Cell clusters','Transfer learning prediction','Prediction probability'],
+           
+        save=data_name+args.transfer+args.dimreduce+"umap_pred"+now,show=False,ncols=4)
 
+
+    sc.pl.umap(adata,color=color_score_list,
+        title= ['Sensitive gene score','Resistant gene score','Sensitive gene score (prediction)','Resistant gene score (prediction)'],
+           
+        save=data_name+args.transfer+args.dimreduce+"umap_scores"+now,show=False,ncols=2)
+
+    sc.pl.umap(adata,color=['Sample name'],
+           
+        save=data_name+args.transfer+args.dimreduce+"umap_sm"+now,show=False,ncols=4)
     try:
         sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class0").head().index,save=data_name+args.transfer+args.dimreduce+"_cgenes0_"+now,show=False)
         sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class1").head().index,save=data_name+args.transfer+args.dimreduce+"_cgenes1_"+now,show=False)
@@ -720,42 +734,42 @@ def run_main(args):
     report_df['ari_trans_umap'] = transfer_ari_score
 
     # Trajectory of adata
-    #adata = trajectory(adata,now=now)
+    adata = trajectory(adata,now=now)
 ################################################# END SECTION OF ANALYSIS AND POST PROCESSING #################################################
 
 ################################################# START SECTION OF ANALYSIS FOR BULK DATA #################################################
-    bdata = sc.AnnData(data_r)
-    bdata.obs = label_r
-    bulk_degs={}
-    sc.tl.rank_genes_groups(bdata, select_drug, method='wilcoxon')
-    bdata = ut.de_score(bdata,select_drug)
-    for label in set(label_r.loc[:,select_drug]):
-        try:
-            df_degs = get_de_dataframe(bdata,label)
-            bulk_degs[label] = df_degs.iloc[:50,:].names
-            df_degs.to_csv("saved/results/DEGs_bulk_" +str(label)+ args.predictor+ prediction + select_drug+now + '.csv')
-        except:
-            logging.warning("Only one class, no two calsses critical genes")
+    # bdata = sc.AnnData(data_r)
+    # bdata.obs = label_r
+    # bulk_degs={}
+    # sc.tl.rank_genes_groups(bdata, select_drug, method='wilcoxon')
+    # bdata = ut.de_score(bdata,select_drug)
+    # for label in set(label_r.loc[:,select_drug]):
+    #     try:
+    #         df_degs = get_de_dataframe(bdata,label)
+    #         bulk_degs[label] = df_degs.iloc[:50,:].names
+    #         df_degs.to_csv("saved/results/DEGs_bulk_" +str(label)+ args.predictor+ prediction + select_drug+now + '.csv')
+    #     except:
+    #         logging.warning("Only one class, no two calsses critical genes")
     
-    Xsource_allTensor = torch.FloatTensor(data_r.values).to(device)
-    Ysource_preTensor = source_model(Xsource_allTensor)
-    Ysource_prediction = Ysource_preTensor.detach().cpu().numpy()
-    bdata.obs["sens_preds"] = Ysource_prediction[:,1]
-    bdata.obs["sens_label"] = Ysource_prediction.argmax(axis=1)
-    bdata.obs["sens_label"] = bdata.obs["sens_label"].astype('category')
-    bdata.obs["rest_preds"] = Ysource_prediction[:,0]
-    sc.tl.score_genes(adata, bulk_degs['sensitive'],score_name="bulk_sens_score" )
-    sc.tl.score_genes(adata, bulk_degs['resistant'],score_name="bulk_rest_score" )
-    sc.pl.umap(adata,color=['bulk_sens_score','bulk_rest_score'],save=data_name+args.transfer+args.dimreduce+"umap_bg_all"+now,show=False)
+    # Xsource_allTensor = torch.FloatTensor(data_r.values).to(device)
+    # Ysource_preTensor = source_model(Xsource_allTensor)
+    # Ysource_prediction = Ysource_preTensor.detach().cpu().numpy()
+    # bdata.obs["sens_preds"] = Ysource_prediction[:,1]
+    # bdata.obs["sens_label"] = Ysource_prediction.argmax(axis=1)
+    # bdata.obs["sens_label"] = bdata.obs["sens_label"].astype('category')
+    # bdata.obs["rest_preds"] = Ysource_prediction[:,0]
+    # sc.tl.score_genes(adata, bulk_degs['sensitive'],score_name="bulk_sens_score" )
+    # sc.tl.score_genes(adata, bulk_degs['resistant'],score_name="bulk_rest_score" )
+    # sc.pl.umap(adata,color=['bulk_sens_score','bulk_rest_score'],save=data_name+args.transfer+args.dimreduce+"umap_bg_all"+now,show=False)
     
-    try:
-        bulk_score_sens = pearsonr(adata.obs["1_score"],adata.obs["bulk_sens_score"])[0]
-        report_df['bulk_sens_pearson'] = bulk_score_sens
-        cluster_score_resist = pearsonr(adata.obs["0_score"],adata.obs["bulk_rest_score"])[0]
-        report_df['bulk_rest_pearson'] = cluster_score_resist
+    # try:
+    #     bulk_score_sens = pearsonr(adata.obs["1_score"],adata.obs["bulk_sens_score"])[0]
+    #     report_df['bulk_sens_pearson'] = bulk_score_sens
+    #     cluster_score_resist = pearsonr(adata.obs["0_score"],adata.obs["bulk_rest_score"])[0]
+    #     report_df['bulk_rest_pearson'] = cluster_score_resist
 
-    except:
-        logging.warning("Bulk level gene score not exist")    
+    # except:
+    #     logging.warning("Bulk level gene score not exist")    
     
     # Save adata
     adata.write("saved/adata/"+data_name+now+".h5ad")
@@ -788,7 +802,7 @@ if __name__ == '__main__':
     parser.add_argument('--mmd_weight', type=float, default=0.25)
 
     # train
-    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/source_model_I-BET-7620noPCA512AEdownsampling.pkl')
+    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/BET_dw_512_AE.pkl')
     parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/GSE110894_I-BET-762512AE')
     parser.add_argument('--pretrain', type=str, default='saved/models/GSE110894_I-BET-762_512_ae.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
@@ -796,7 +810,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
-    parser.add_argument('--bottleneck', type=int, default=256)
+    parser.add_argument('--bottleneck', type=int, default=512)
     parser.add_argument('--dimreduce', type=str, default="AE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=int, default=0)
