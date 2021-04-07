@@ -21,8 +21,8 @@ def trajectory(adata,now,color="leiden",neigbhor_keys=None,plot=False):
 
     ## trajectory1
     sc.tl.paga(adata, groups='leiden')
-    if (plot==True):
-        sc.pl.paga(adata, color='leiden',save="Paga_initial"+now, show=False) 
+    #if (plot==True):
+    sc.pl.paga(adata, color='leiden',save="Paga_initial"+now, show=False) 
 
     #Recomputing the embedding using PAGA-initialization
     sc.tl.draw_graph(adata, init_pos='paga')

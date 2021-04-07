@@ -364,9 +364,9 @@ def process_149383(adata,**kargs):
     adata = de_score(adata=adata,clustername="sensitivity",pval=pval,n=n_genes)    
     return adata
 
-def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test_value="expression",save_name="feature_gradients"):
+def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test_value="expression",save_name="feature_gradients",batch_size=100):
         ig = IntegratedGradients(net)
-        attr, delta = ig.attribute(input,target=target_class, return_convergence_delta=True)
+        attr, delta = ig.attribute(input,target=target_class, return_convergence_delta=True,internal_batch_size=batch_size)
         attr = attr.detach().cpu().numpy()
         adata.var['integrated_gradient_sens_class'+str(target_class)] = attr.mean(axis=0)
 

@@ -472,18 +472,19 @@ def run_main(args):
 
             # Allow require gradients and process label
             Xtarget_validTensor.requires_grad_()
-            
+            Xtarget_trainTensor.requires_grad_()
+
             # Run integrated gradient check
             # Return adata and feature integrated gradient
 
-            ytarget_validPred = target_model(Xtarget_validTensor).detach().cpu().numpy()
+            ytarget_validPred = target_model(Xtarget_trainTensor).detach().cpu().numpy()
             ytarget_validPred = ytarget_validPred.argmax(axis=1)
 
-            adata,attr1,df_top1_genes,df_tail1_genes = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred
+            adata,attr1,df_top1_genes,df_tail1_genes = ut.integrated_gradient_check(net=target_model,input=Xtarget_trainTensor,target=ytarget_validPred
                                         ,adata=adata,n_genes=args.n_DL_genes
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
 
-            adata,attr0,df_top0_genes,df_tail0_genes = ut.integrated_gradient_check(net=target_model,input=Xtarget_validTensor,target=ytarget_validPred,
+            adata,attr0,df_top0_genes,df_tail0_genes = ut.integrated_gradient_check(net=target_model,input=Xtarget_trainTensor,target=ytarget_validPred,
                                         target_class=0,adata=adata,n_genes=args.n_DL_genes
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
 
@@ -683,9 +684,9 @@ def run_main(args):
            
         save=data_name+args.transfer+args.dimreduce+"umap_scores"+now,show=False,ncols=2)
 
-    sc.pl.umap(adata,color=['Sample name'],
+    # sc.pl.umap(adata,color=['Sample name'],
            
-        save=data_name+args.transfer+args.dimreduce+"umap_sm"+now,show=False,ncols=4)
+    #     save=data_name+args.transfer+args.dimreduce+"umap_sm"+now,show=False,ncols=4)
     try:
         sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class0").head().index,save=data_name+args.transfer+args.dimreduce+"_cgenes0_"+now,show=False)
         sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class1").head().index,save=data_name+args.transfer+args.dimreduce+"_cgenes1_"+now,show=False)
