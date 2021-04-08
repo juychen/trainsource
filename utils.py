@@ -414,6 +414,37 @@ def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test
 
         return adata,attr,df_top_genes,df_tail_genes
 
+def integrated_gradient_differential(net,input,target,adata,n_genes=50,target_class=1,test_value="expression",save_name="feature_gradients",method="wilcoxon",batch_size=100):
+        
+        # Caculate integrated gradient
+        ig = IntegratedGradients(net)
+
+        df_results = {}
+
+        attr, delta = ig.attribute(input,target=target_class, return_convergence_delta=True,internal_batch_size=batch_size)
+        attr = attr.detach().cpu().numpy()
+        attr = abs(attr)
+        igadata= sc.AnnData(attr)
+        igadata.var.index = adata.var.index
+        igadata.obs.index = adata.obs.index
+
+        igadata.obs['sensitive'] = target
+        igadata.obs['sensitive'] = igadata.obs['sensitive'].astype('category')
+
+        sc.tl.rank_genes_groups(igadata, 'sensitive', method=method,n_genes=n_genes)
+
+        for label in [0,1]:
+
+            try:
+                df_degs = ut.get_de_dataframe(igadata,label)
+                df_degs.to_csv("saved/results/DIG_class_" +str(target_class)+"_"+str(label)+ save_name + '.csv')
+
+                df_results[label]= df_degs
+            except:
+                logging.warning("Only one class, no two calsses critical genes")
+
+        return adata,igadata,df_results[0],df_results[1]
+
 def de_score(adata,clustername,pval=0.05,n=50,method="wilcoxon",score_prefix=None):
     sc.tl.rank_genes_groups(adata, clustername, method=method,use_raw=True)
     # Cluster de score

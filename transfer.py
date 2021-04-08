@@ -471,19 +471,18 @@ def run_main(args):
             target_model = TargetModel(source_model,encoder)
 
             # Allow require gradients and process label
-            Xtarget_trainTensor.requires_grad_()
-
+            X_allTensor.requires_grad_()
             # Run integrated gradient check
             # Return adata and feature integrated gradient
 
-            ytarget_trainPred = target_model(Xtarget_trainTensor).detach().cpu().numpy()
-            ytarget_trainPred = ytarget_trainPred.argmax(axis=1)
+            ytarget_allPred = target_model(X_allTensor).detach().cpu().numpy()
+            ytarget_allPred = ytarget_allPred.argmax(axis=1)
 
-            adata,attr1,df_top1_genes,df_tail1_genes = ut.integrated_gradient_check(net=target_model,input=Xtarget_trainTensor,target=ytarget_trainPred
+            adata,attr1,df_10_genes,df_11_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,target=ytarget_allPred
                                         ,adata=adata,n_genes=args.n_DL_genes
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
 
-            adata,attr0,df_top0_genes,df_tail0_genes = ut.integrated_gradient_check(net=target_model,input=Xtarget_trainTensor,target=ytarget_trainPred,
+            adata,attr0,df_00_genes,df_01_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,target=ytarget_allPred,
                                         target_class=0,adata=adata,n_genes=args.n_DL_genes
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
 
@@ -689,8 +688,16 @@ def run_main(args):
     try:
         sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class0").head().index,save=data_name+args.transfer+args.dimreduce+"_cgenes0_"+now,show=False)
         sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class1").head().index,save=data_name+args.transfer+args.dimreduce+"_cgenes1_"+now,show=False)
+        
+            
+        c0_genes = df_11_genes.loc[df_11_genes.pval<0.05].head().index
+        c1_genes = df_00_genes.loc[df_00_genes.pval<0.05].head().index
+
+        sc.pl.umap(adata,color=c0_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes0_TL"+now,show=False)
+        sc.pl.umap(adata,color=c1_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes1_TL"+now,show=False)
     except:
-        logging.warning("IG results not found")
+        logging.warning("IG results not avaliable")
+
     # Run embeddings using transfered embeddings
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
     sc.tl.umap(adata,neighbors_key="Trans")
@@ -699,11 +706,6 @@ def run_main(args):
     # Plot cell score on umap
     sc.pl.umap(adata,color=color_score_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_score_TL"+now,show=False,title=color_score_list)
 
-    c0_genes = df_top0_genes.loc[df_top0_genes.pval<0.05].head().index
-    c1_genes = df_top1_genes.loc[df_top1_genes.pval<0.05].head().index
-
-    sc.pl.umap(adata,color=c0_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes0_TL"+now,show=False)
-    sc.pl.umap(adata,color=c1_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes1_TL"+now,show=False)
 
     # This tsne is based on transfer learning feature
     sc.pl.tsne(adata,color=color_list,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_TL"+now,show=False,title=title_list)
