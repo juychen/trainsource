@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
 import scanpy as sc
+from scipy import stats
+
 
 
 def trajectory(adata,now,color="leiden",neigbhor_keys=None,plot=False):
@@ -58,5 +60,11 @@ def trajectory(adata,now,color="leiden",neigbhor_keys=None,plot=False):
     if (plot==True):
         sc.pl.draw_graph(adata, color=['leiden_trans'], legend_loc='on data',save="Paga_trans_graph"+now, show=False)
 
-    return adata
+    corelations={}
+
+    keys = ['sens_preds','rest_preds','1_score','0_score']
+
+    for k in keys:
+        corelations[k] = stats.spearmanr(adata.obs[k],adata.obs['dpt_pseudotime'])
+    return adata,corelations
     

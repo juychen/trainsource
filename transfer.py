@@ -736,7 +736,11 @@ def run_main(args):
     report_df['ari_trans_umap'] = transfer_ari_score
 
     # Trajectory of adata
-    adata = trajectory(adata,now=now)
+    adata,corelations = trajectory(adata,now=now)
+
+    for k in corelations.keys():
+        report_df['cor_dpt_'+k] = corelations[k][0]
+        report_df['cor_pvl_'+k] = corelations[k][1]
 ################################################# END SECTION OF ANALYSIS AND POST PROCESSING #################################################
 
 ################################################# START SECTION OF ANALYSIS FOR BULK DATA #################################################
