@@ -736,7 +736,7 @@ def run_main(args):
     report_df['ari_trans_umap'] = transfer_ari_score
 
     # Trajectory of adata
-    adata,corelations = trajectory(adata,now=now)
+    adata,corelations = trajectory(adata,root_key='sensitive',root=1,now=now)
 
     for k in corelations.keys():
         report_df['cor_dpt_'+k] = corelations[k][0]

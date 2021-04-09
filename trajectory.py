@@ -7,7 +7,7 @@ from scipy import stats
 
 
 
-def trajectory(adata,now,color="leiden",neigbhor_keys=None,plot=False):
+def trajectory(adata,now,color="leiden",neigbhor_keys=None,root_key='sensitive',root=1,plot=False):
     ##draw
     sc.tl.draw_graph(adata)
     
@@ -34,7 +34,7 @@ def trajectory(adata,now,color="leiden",neigbhor_keys=None,plot=False):
             adata, threshold=0.03, title='', right_margin=0.2, size=10,
             edge_width_scale=0.5,legend_fontsize=12, fontsize=12, frameon=False,
             edges=True,save="Paga_cp1"+now, show=False)
-    adata.uns['iroot'] = np.flatnonzero(adata.obs['sensitive']  == 1)[0]
+    adata.uns['iroot'] = np.flatnonzero(adata.obs[root_key]  == root)[0]
     sc.tl.dpt(adata)
     adata_raw = adata
     sc.pp.log1p(adata_raw)
