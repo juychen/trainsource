@@ -738,9 +738,12 @@ def run_main(args):
     # Trajectory of adata
     adata,corelations = trajectory(adata,root_key='sensitive',root=1,now=now)
 
-    for k in corelations.keys():
-        report_df['cor_dpt_'+k] = corelations[k][0]
-        report_df['cor_pvl_'+k] = corelations[k][1]
+    try:
+        for k in corelations.keys():
+            report_df['cor_dpt_'+k] = corelations[k][0]
+            report_df['cor_pvl_'+k] = corelations[k][1]
+    except:
+        logging.warning("Some of the coorelation cannot be reterived from the dictional")
 ################################################# END SECTION OF ANALYSIS AND POST PROCESSING #################################################
 
 ################################################# START SECTION OF ANALYSIS FOR BULK DATA #################################################
