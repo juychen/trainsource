@@ -42,7 +42,7 @@ def trajectory(adata,now,color="leiden",neigbhor_keys=None,root_key='sensitive',
     adata.raw = adata_raw
 
     if (plot==True):
-        sc.pl.draw_graph(adata, color=['sens_preds', 'dpt_pseudotime'], legend_loc='on data',save="Pseudotime_graph"+now, show=False)
+        sc.pl.draw_graph(adata, color=['sens_preds','1_score','0_score', 'dpt_pseudotime'], legend_loc='on data',save="Pseudotime_graph"+now, show=False)
     
     # Using Trans features
     sc.tl.diffmap(adata,neighbors_key="Trans")
