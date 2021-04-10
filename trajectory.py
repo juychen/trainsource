@@ -62,9 +62,12 @@ def trajectory(adata,now,color="leiden",neigbhor_keys=None,root_key='sensitive',
 
     corelations={}
 
-    keys = ['sens_preds','rest_preds','1_score','0_score']
+    keys = ['sens_preds','rest_preds','Sensitive_score','Resistant_score','1_score','0_score']
 
     for k in keys:
-        corelations[k] = stats.spearmanr(adata.obs[k],adata.obs['dpt_pseudotime'])
+        try:
+            corelations[k] = stats.spearmanr(adata.obs[k],adata.obs['dpt_pseudotime'])
+        except:
+            print("Key not exist:"+k)
     return adata,corelations
     
