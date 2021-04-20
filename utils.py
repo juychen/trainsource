@@ -414,7 +414,7 @@ def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test
 
         return adata,attr,df_top_genes,df_tail_genes
 
-def integrated_gradient_differential(net,input,target,adata,n_genes=50,target_class=1,test_value="expression",save_name="feature_gradients",method="wilcoxon",batch_size=100):
+def integrated_gradient_differential(net,input,target,adata,n_genes=50,target_class=1,clip="abs",save_name="feature_gradients",method="wilcoxon",batch_size=100):
         
         # Caculate integrated gradient
         ig = IntegratedGradients(net)
@@ -423,7 +423,14 @@ def integrated_gradient_differential(net,input,target,adata,n_genes=50,target_cl
 
         attr, delta = ig.attribute(input,target=target_class, return_convergence_delta=True,internal_batch_size=batch_size)
         attr = attr.detach().cpu().numpy()
-        attr = abs(attr)
+
+        if clip == 'positive':
+            attr = np.clip(attr,a_min=0,a_max=None)
+        elif clip == 'negative':
+            attr = abs(np.clip(attr,a_min=None,a_max=0))
+        else:
+            attr = abs(attr)
+
         igadata= sc.AnnData(attr)
         igadata.var.index = adata.var.index
         igadata.obs.index = adata.obs.index
