@@ -480,19 +480,19 @@ def run_main(args):
 
             adata,attr1,df_p10_genes,df_p11_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="positive",target=ytarget_allPred
                                         ,adata=adata,n_genes=args.n_DL_genes
-                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
+                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+"1positive"+now)
 
             adata,attr0,df_p00_genes,df_p01_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="positive",target=ytarget_allPred,
                                         target_class=0,adata=adata,n_genes=args.n_DL_genes
-                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
+                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+"0positive"+now)
 
             adata,attr1,df_n10_genes,df_n11_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="negative",target=ytarget_allPred
                                         ,adata=adata,n_genes=args.n_DL_genes
-                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
+                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+"1negative"+now)
 
             adata,attr0,df_n00_genes,df_n01_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="negative",target=ytarget_allPred,
                                         target_class=0,adata=adata,n_genes=args.n_DL_genes
-                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+now)
+                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+"0negative"+now)
         
         else:
             print()
@@ -697,11 +697,11 @@ def run_main(args):
         sc.pl.umap(adata,color=adata.var.sort_values("integrated_gradient_sens_class1").head().index,save=data_name+args.transfer+args.dimreduce+"_cgenes1_"+now,show=False)
         
             
-        c0_genes = df_11_genes.loc[df_11_genes.pval<0.05].head().index
-        c1_genes = df_00_genes.loc[df_00_genes.pval<0.05].head().index
+        # c0_genes = df_11_genes.loc[df_11_genes.pval<0.05].head().index
+        # c1_genes = df_00_genes.loc[df_00_genes.pval<0.05].head().index
 
-        sc.pl.umap(adata,color=c0_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes0_TL"+now,show=False)
-        sc.pl.umap(adata,color=c1_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes1_TL"+now,show=False)
+        # sc.pl.umap(adata,color=c0_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes0_TL"+now,show=False)
+        # sc.pl.umap(adata,color=c1_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes1_TL"+now,show=False)
     except:
         logging.warning("IG results not avaliable")
 
