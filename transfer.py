@@ -482,17 +482,9 @@ def run_main(args):
                                         ,adata=adata,n_genes=args.n_DL_genes
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+"1positive"+now)
 
-            adata,attrp0,df_p00_genes,df_p01_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="positive",target=ytarget_allPred,
-                                        target_class=0,adata=adata,n_genes=args.n_DL_genes
-                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+"0positive"+now)
-
             adata,attrp1,df_n10_genes,df_n11_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="negative",target=ytarget_allPred
                                         ,adata=adata,n_genes=args.n_DL_genes
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+"1negative"+now)
-
-            adata,attrp0,df_n00_genes,df_n01_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="negative",target=ytarget_allPred,
-                                        target_class=0,adata=adata,n_genes=args.n_DL_genes
-                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+"0negative"+now)
         
         else:
             print()
