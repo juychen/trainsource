@@ -34,6 +34,10 @@ from models import (AEBase, CVAEBase, DaNN, Predictor, PretrainedPredictor,
                     PretrainedVAEPredictor, TargetModel, VAEBase)
 from scanpypip.utils import get_de_dataframe
 from trajectory import trajectory
+from sklearn.feature_selection import SelectKBest,SelectFdr
+from sklearn.feature_selection import chi2
+
+
 
 DATA_MAP={
 "GSE117872":"data/GSE117872/GSE117872_good_Data_TPM.txt",
@@ -482,10 +486,19 @@ def run_main(args):
                                         ,adata=adata,n_genes=args.n_DL_genes
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+"1positive"+now)
 
-            adata,attrp1,df_n10_genes,df_n11_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="negative",target=ytarget_allPred
+            adata,attrn1,df_n10_genes,df_n11_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="negative",target=ytarget_allPred
                                         ,adata=adata,n_genes=args.n_DL_genes
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+"1negative"+now)
-        
+            
+            # CHI2 Test on predictive features
+            SFD = SelectFdr(chi2)
+            SFD.fit(adata.raw.X, ytarget_allPred)
+            adata.raw.var['chi2_pval'] = SFD.pvalues_
+            adata.raw.var['chi2_score'] = SFD.scores_
+            df_chi2_genes = adata.raw.var[(SFD.pvalues_<0.05) & (adata.raw.var.highly_variable==True) & (adata.raw.var.n_cells >args.min_c)]
+            df_chi2_genes.sort_values(by="chi2_pval",ascending=True,inplace=True)
+            df_chi2_genes.to_csv("saved/results/chi2_pval_genes" + args.predictor+ prediction + select_drug+now + '.csv')
+
         else:
             print()
 ################################################# END SECTION OF TRANSER LEARNING TRAINING #################################################
