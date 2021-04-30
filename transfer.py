@@ -54,7 +54,8 @@ DATA_MAP={
 "GSE108383":"data/GSE108383/GSE108383_Melanoma_fluidigm.txt",
 "GSE140440":"data/GSE140440/GSE140440.csv",
 "GSE129730":"data/GSE129730/GSE129730.h5ad",
-"GSE149383":"../data/GSE149383/erl_total_data_2K.csv"
+"GSE149383":"../data/GSE149383/erl_total_data_2K.csv",
+"GSE110894_small":"data/GSE110894/GSE110894_small.h5ad"
 
 }
 
@@ -748,7 +749,17 @@ def run_main(args):
     report_df['ari_trans_umap'] = transfer_ari_score
 
     # Trajectory of adata
-    adata,corelations = trajectory(adata,root_key='sensitive',root=1,now=now,plot=True)
+    adata,corelations = trajectory(adata,root_key='sensitive',genes_vis=df_p10_genes.head().names,root=1,now=now,plot=True)
+    
+    gene_cor = {}
+    # Trajectory
+    for g in np.array(df_p10_genes.head().names):
+        gene = g
+        express_vec = adata[:,gene].X
+        corr = pearsonr(np.array(express_vec).ravel(),np.array(adata.obs["dpt_pseudotime"]))[0]
+        gene_cor[gene] = corr
+
+
 
     try:
         for k in corelations.keys():
