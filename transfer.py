@@ -483,14 +483,20 @@ def run_main(args):
             ytarget_allPred = target_model(X_allTensor).detach().cpu().numpy()
             ytarget_allPred = ytarget_allPred.argmax(axis=1)
 
-            adata,attrp1,df_p10_genes,df_p11_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="positive",target=ytarget_allPred
-                                        ,adata=adata,n_genes=args.n_DL_genes
-                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+"1positive"+now)
+            adata,attrp1,senNeu_c0_genes,senNeu_c1_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="positive",target=ytarget_allPred
+                                        ,adata=adata
+                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+"sensNeuron"+now)
 
-            adata,attrn1,df_n10_genes,df_n11_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="negative",target=ytarget_allPred
-                                        ,adata=adata,n_genes=args.n_DL_genes
-                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+"1negative"+now)
-            
+            adata,attrn1,resNeu_c0_genes,resNeu_c1_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="negative",target=ytarget_allPred
+                                        ,adata=adata
+                                        ,save_name=reduce_model + args.predictor+ prediction + select_drug+"restNeuron"+now)
+
+
+            sc.pl.heatmap(attrp1, senNeu_c0_genes, groupby='sensitive', cmap='RdBu_r',save=data_name+args.transfer+args.dimreduce+"_seNc0_"+now,show=False)   
+            sc.pl.heatmap(attrp1, senNeu_c1_genes, groupby='sensitive', cmap='RdBu_r',save=data_name+args.transfer+args.dimreduce+"_seNc1_"+now,show=False)
+            sc.pl.heatmap(attrn1, resNeu_c0_genes, groupby='sensitive', cmap='RdBu_r',save=data_name+args.transfer+args.dimreduce+"_reNc0_"+now,show=False)
+            sc.pl.heatmap(attrn1, resNeu_c1_genes, groupby='sensitive', cmap='RdBu_r',save=data_name+args.transfer+args.dimreduce+"_reNc1_"+now,show=False)
+
             # CHI2 Test on predictive features
             SFD = SelectFdr(chi2)
             SFD.fit(adata.raw.X, ytarget_allPred)
@@ -749,11 +755,11 @@ def run_main(args):
     report_df['ari_trans_umap'] = transfer_ari_score
 
     # Trajectory of adata
-    adata,corelations = trajectory(adata,root_key='sensitive',genes_vis=df_p10_genes.head().names,root=1,now=now,plot=True)
+    adata,corelations = trajectory(adata,root_key='sensitive',genes_vis=senNeu_c0_genes.names,root=1,now=now,plot=True)
     
     gene_cor = {}
     # Trajectory
-    for g in np.array(df_p10_genes.head().names):
+    for g in np.array(senNeu_c0_genes):
         gene = g
         express_vec = adata[:,gene].X
         corr = pearsonr(np.array(express_vec).ravel(),np.array(adata.obs["dpt_pseudotime"]))[0]
