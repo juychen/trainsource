@@ -755,7 +755,7 @@ def run_main(args):
     report_df['ari_trans_umap'] = transfer_ari_score
 
     # Trajectory of adata
-    adata,corelations = trajectory(adata,root_key='sensitive',genes_vis=senNeu_c0_genes.names,root=1,now=now,plot=True)
+    adata,corelations = trajectory(adata,root_key='sensitive',genes_vis=senNeu_c0_genes,root=1,now=now,plot=True)
     
     gene_cor = {}
     # Trajectory
