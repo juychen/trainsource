@@ -484,11 +484,11 @@ def run_main(args):
             ytarget_allPred = ytarget_allPred.argmax(axis=1)
 
             adata,attrp1,senNeu_c0_genes,senNeu_c1_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="positive",target=ytarget_allPred
-                                        ,adata=adata
+                                        ,adata=adata,ig_fc=1
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+"sensNeuron"+now)
 
             adata,attrn1,resNeu_c0_genes,resNeu_c1_genes = ut.integrated_gradient_differential(net=target_model,input=X_allTensor,clip="negative",target=ytarget_allPred
-                                        ,adata=adata
+                                        ,adata=adata,ig_fc=1
                                         ,save_name=reduce_model + args.predictor+ prediction + select_drug+"restNeuron"+now)
 
 
@@ -755,7 +755,7 @@ def run_main(args):
     report_df['ari_trans_umap'] = transfer_ari_score
 
     # Trajectory of adata
-    adata,corelations = trajectory(adata,root_key='sensitive',genes_vis=senNeu_c0_genes,root=1,now=now,plot=True)
+    adata,corelations = trajectory(adata,root_key='sensitive',genes_vis=senNeu_c0_genes[:5],root=1,now=now,plot=True)
     
     gene_cor = {}
     # Trajectory
