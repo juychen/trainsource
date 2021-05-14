@@ -211,7 +211,10 @@ def run_main(args):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # Assuming that we are on a CUDA machine, this should print a CUDA device:
     logging.info(device)
-    torch.cuda.set_device(device)
+    try:
+        torch.cuda.set_device(device)
+    except:
+        logging.warning("No GPU detected, will apply cpu to process")
 
     # Construct datasets and data loaders
     Xtarget_trainTensor = torch.FloatTensor(Xtarget_train).to(device)
@@ -755,7 +758,7 @@ def run_main(args):
     report_df['ari_trans_umap'] = transfer_ari_score
 
     # Trajectory of adata
-    adata,corelations = trajectory(adata,root_key='sensitive',genes_vis=senNeu_c0_genes.names,root=1,now=now,plot=True)
+    adata,corelations = trajectory(adata,root_key='sensitive',genes_vis=senNeu_c0_genes,root=1,now=now,plot=True)
     
     gene_cor = {}
     # Trajectory
