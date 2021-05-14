@@ -44,8 +44,7 @@ def trajectory(adata,now,color="leiden",neigbhor_keys=None,root_key='sensitive',
     if (plot==True):
         sc.pl.draw_graph(adata, color=['sens_preds','1_score','0_score', 'dpt_pseudotime'], legend_loc='on data',save="Pseudotime_graph"+now, show=False)
         if (genes_vis != None):
-            sc.pl.draw_graph(adata, color=None, legend_loc='on data',save="Pseudotime_graph_genes"+now, show=False)
-
+            sc.pl.draw_graph(adata, color=genes_vis, legend_loc='on data',save="Pseudotime_graph_genes"+now, show=False)
     
     # Using Trans features
     sc.tl.diffmap(adata,neighbors_key="Trans")

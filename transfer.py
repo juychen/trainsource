@@ -768,8 +768,6 @@ def run_main(args):
         corr = pearsonr(np.array(express_vec).ravel(),np.array(adata.obs["dpt_pseudotime"]))[0]
         gene_cor[gene] = corr
 
-
-
     try:
         for k in corelations.keys():
             report_df['cor_dpt_'+k] = corelations[k][0]
