@@ -211,7 +211,10 @@ def run_main(args):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # Assuming that we are on a CUDA machine, this should print a CUDA device:
     logging.info(device)
-    torch.cuda.set_device(device)
+    try:
+        torch.cuda.set_device(device)
+    except:
+        logging.warning("No GPU detected, will apply cpu to process")
 
     # Construct datasets and data loaders
     Xtarget_trainTensor = torch.FloatTensor(Xtarget_train).to(device)
