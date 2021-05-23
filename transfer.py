@@ -714,7 +714,8 @@ def run_main(args):
 
         # sc.pl.umap(adata,color=c0_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes0_TL"+now,show=False)
         # sc.pl.umap(adata,color=c1_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes1_TL"+now,show=False)
-    except:
+    except Exception as e:
+        logging.warning(e)
         logging.warning("IG results not avaliable")
 
     # Run embeddings using transfered embeddings
@@ -755,24 +756,22 @@ def run_main(args):
     report_df['ari_trans_umap'] = transfer_ari_score
 
     # Trajectory of adata
-    adata,corelations = trajectory(adata,root_key='sensitive',genes_vis=senNeu_c0_genes[:5],root=1,now=now,plot=True)
-    
-    gene_cor = {}
-    # Trajectory
-    for g in np.array(senNeu_c0_genes):
-        gene = g
-        express_vec = adata[:,gene].X
-        corr = pearsonr(np.array(express_vec).ravel(),np.array(adata.obs["dpt_pseudotime"]))[0]
-        gene_cor[gene] = corr
-
-
-
     try:
+        adata,corelations = trajectory(adata,root_key='sensitive',genes_vis=senNeu_c0_genes[:5],root=1,now=now,plot=True)
+        
+        gene_cor = {}
+        # Trajectory
+        for g in np.array(senNeu_c0_genes):
+            gene = g
+            express_vec = adata[:,gene].X
+            corr = pearsonr(np.array(express_vec).ravel(),np.array(adata.obs["dpt_pseudotime"]))[0]
+            gene_cor[gene] = corr
         for k in corelations.keys():
             report_df['cor_dpt_'+k] = corelations[k][0]
             report_df['cor_pvl_'+k] = corelations[k][1]
-    except:
-        logging.warning("Some of the coorelation cannot be reterived from the dictional")
+    except Exception as e:
+        logging.warning(e)
+        logging.warning("Trajectory partially failed")
 ################################################# END SECTION OF ANALYSIS AND POST PROCESSING #################################################
 
 ################################################# START SECTION OF ANALYSIS FOR BULK DATA #################################################

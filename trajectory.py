@@ -31,7 +31,7 @@ def trajectory(adata,now,color="leiden",neigbhor_keys=None,root_key='sensitive',
     if (plot==True):
         sc.pl.draw_graph(adata, color=['leiden'], legend_loc='on data',save="Paga_initialization_graph"+now, show=False)
         sc.pl.paga_compare(
-            adata, threshold=0.03, title='', right_margin=0.2, size=10,
+            adata,threshold=0.03, title='', right_margin=0.2, size=10,
             edge_width_scale=0.5,legend_fontsize=12, fontsize=12, frameon=False,
             edges=True,save="Paga_cp1"+now, show=False)
     adata.uns['iroot'] = np.flatnonzero(adata.obs[root_key]  == root)[0]
@@ -43,6 +43,11 @@ def trajectory(adata,now,color="leiden",neigbhor_keys=None,root_key='sensitive',
 
     if (plot==True):
         sc.pl.draw_graph(adata, color=['sens_preds','1_score','0_score', 'dpt_pseudotime'], legend_loc='on data',save="Pseudotime_graph"+now, show=False)
+        sc.pl.paga_compare(
+            adata, color="dpt_pseudotime",threshold=0.03, title='', right_margin=0.2, size=10,
+            edge_width_scale=0.5,legend_fontsize=12, fontsize=12, frameon=False,
+            edges=True,save="Paga_cp2"+now, show=False)
+            
         if (genes_vis != None):
             sc.pl.draw_graph(adata, color=genes_vis, legend_loc='on data',save="Pseudotime_graph_genes"+now, show=False)
 
