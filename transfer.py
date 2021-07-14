@@ -716,7 +716,7 @@ def run_main(args):
         # sc.pl.umap(adata,color=c1_genes,neighbors_key="Trans",save=data_name+args.transfer+args.dimreduce+"_cgenes1_TL"+now,show=False)
     except Exception as e:
         logging.warning(e)
-        logging.warning("IG results not avaliable")
+        logging.warning("IG umap results not avaliable")
 
     # Run embeddings using transfered embeddings
     sc.pp.neighbors(adata,use_rep='X_Trans',key_added="Trans")
