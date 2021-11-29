@@ -8,7 +8,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from models import vae_loss
+from models import vae_loss,TargetModel
 
 import DaNN.mmd as mmd
 import utils as ut
@@ -581,6 +581,13 @@ def train_DaNN_model(net,source_loader,target_loader,
     dataset_sizes = {x: source_loader[x].dataset.tensors[0].shape[0] for x in ['train', 'val']}
     loss_train = {}
     mmd_train = {}
+    accu_train = {}
+
+    val_predictor = net.source_model
+    val_encoder = net.target_model
+    val_model = TargetModel(val_predictor,val_encoder)
+
+
     
     best_model_wts = copy.deepcopy(net.state_dict())
     best_loss = np.inf
@@ -604,6 +611,7 @@ def train_DaNN_model(net,source_loader,target_loader,
 
             running_loss = 0.0
             running_mmd = 0.0
+            running_valloss = 0.0
 
             batch_j = 0
             list_src, list_tar = list(enumerate(source_loader[phase])), list(enumerate(target_loader[phase]))
@@ -662,11 +670,18 @@ def train_DaNN_model(net,source_loader,target_loader,
             # Step schedular
             if phase == 'train':
                 scheduler.step(epoch_loss)
+            else:
+                # Validate the label
+                ytarget_val = val_model(x_tar)
+                loss_val_tar = loss_function(ytarget_val, y_src)   
+                running_valloss += loss_val_tar.item()
             
             # Savle loss
             last_lr = scheduler.optimizer.param_groups[0]['lr']
             loss_train[epoch,phase] = epoch_loss
             mmd_train[epoch,phase] = epoch_mmd
+            accu_train[epoch,phase] = running_valloss
+
 
             logging.info('{} Loss: {:.8f}. Learning rate = {}'.format(phase, epoch_loss,last_lr))
             
@@ -691,7 +706,7 @@ def train_DaNN_model(net,source_loader,target_loader,
         net.load_state_dict((torch.load(save_path+"_bestcahce.pkl")))
         torch.save(net.state_dict(), save_path)
 
-    return net, [loss_train,mmd_train]
+    return net, [loss_train,mmd_train,accu_train]
 
 
 

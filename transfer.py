@@ -185,7 +185,12 @@ def run_main(args):
     sc.pl.umap(adata,color=['leiden'],save=data_name+'umap'+now,show=False)
     adata.obs['leiden_origin']= adata.obs['leiden']
     adata.obsm['X_umap_origin']= adata.obsm['X_umap']
-    data_c = adata.obs['leiden'].astype("long").to_list()
+
+    if reduce_model == "CVAE":
+        data_c = adata.obs['leiden'].astype("long").to_list()
+    else:
+        data_c = adata.obs['sensitive'].astype("long").to_list()
+
 ################################################# END SECTION OF SINGLE CELL DATA REPROCESSING #################################################
 
 ################################################# START SECTION OF LOADING SC DATA TO THE TENSORS #################################################
@@ -857,7 +862,7 @@ if __name__ == '__main__':
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
     parser.add_argument('--batch_id', type=str, default="HN137")
-    parser.add_argument('--load_target_model', type=int, default=1)
+    parser.add_argument('--load_target_model', type=int, default=0)
     parser.add_argument('--GAMMA_mmd', type=int, default=1000)
 
     parser.add_argument('--runs', type=int, default=1)
