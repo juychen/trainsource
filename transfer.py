@@ -808,12 +808,12 @@ def run_main(args):
     # except:
     #     logging.warning("Bulk level gene score not exist")    
     
-    # Save adata
-    adata.write("saved/adata/"+data_name+now+".h5ad")
+    # # Save adata
+    # adata.write("saved/adata/"+data_name+now+".h5ad")
 
-    # Save report
-    report_df = report_df.T
-    report_df.to_csv("saved/results/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
+    # # Save report
+    # report_df = report_df.T
+    # report_df.to_csv("saved/results/report" + reduce_model + args.predictor+ prediction + select_drug+now + '.csv')
     
 
 
@@ -839,20 +839,20 @@ if __name__ == '__main__':
     parser.add_argument('--mmd_weight', type=float, default=0.25)
 
     # train
-    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/BET_dw_512_AE.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/GSE110894_I-BET-762512AE')
-    parser.add_argument('--pretrain', type=str, default='saved/models/GSE110894_I-BET-762_512_ae.pkl')
+    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/BET_dw_256_AE.pkl')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/GSE110894_I-BET-762256AE')
+    parser.add_argument('--pretrain', type=str, default='saved/models/GSE110894_I-BET-762_256_ae.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
-    parser.add_argument('--bottleneck', type=int, default=512)
+    parser.add_argument('--bottleneck', type=int, default=256)
     parser.add_argument('--dimreduce', type=str, default="AE")
     parser.add_argument('--predictor', type=str, default="DNN")
     parser.add_argument('--freeze_pretrain', type=int, default=0)
-    parser.add_argument('--source_h_dims', type=str, default="2048,1024")
-    parser.add_argument('--target_h_dims', type=str, default="2048,1024")
+    parser.add_argument('--source_h_dims', type=str, default="256,256")
+    parser.add_argument('--target_h_dims', type=str, default="256,256")
     parser.add_argument('--p_h_dims', type=str, default="128,64")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
