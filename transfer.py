@@ -473,6 +473,8 @@ def run_main(args):
         if(load_model==False):
             ut.plot_loss(report_[0],path="figures/train_loss_"+now+".pdf")
             ut.plot_loss(report_[1],path="figures/mmd_loss_"+now+".pdf",set_ylim=False)
+            ut.plot_loss(report_[-1],path="figures/ce_loss_"+now+".pdf",set_ylim=False)
+
 
         if(args.dimreduce!='CVAE'):
             # Attribute test using integrated gradient
