@@ -168,7 +168,7 @@ def run_main(args):
         r_genes = REMOVE_GENES
     #Preprocess data by filtering
     if data_name not in ['GSE112274','GSE140440']:
-        adata = pp.receipe_my(adata,l_n_genes=min_n_genes,r_n_genes=max_n_genes,filter_mincells=args.min_c,percent_mito = 50
+        adata = pp.receipe_my(adata,l_n_genes=min_n_genes,r_n_genes=max_n_genes,filter_mincells=args.min_c,percent_mito = 50,
                             filter_mingenes=args.min_g,normalize=True,log=True,remove_genes=r_genes)
     else:
         adata = pp.receipe_my(adata,l_n_genes=min_n_genes,r_n_genes=max_n_genes,filter_mincells=args.min_c,percent_mito = 100,
