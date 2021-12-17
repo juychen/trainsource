@@ -400,10 +400,10 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     # data 
-    parser.add_argument('--data_path', type=str, default='data/GDSC2_expression.csv')
-    parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
+    parser.add_argument('--data_path', type=str, default='data/ALL_expression.csv')
+    parser.add_argument('--label_path', type=str, default='data/ALL_label_binary_wf.csv')
     parser.add_argument('--result_path', type=str, default='saved/logs/result_')
-    parser.add_argument('--drug', type=str, default='Cisplatin')
+    parser.add_argument('--drug', type=str, default='CISPLATIN')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
@@ -412,8 +412,8 @@ if __name__ == '__main__':
     parser.add_argument('--PCA_dim', type=int, default=0)
 
     # trainv
-    parser.add_argument('--encoder_path','-e', type=str, default='saved/models/encoder_ae.pkl')
-    parser.add_argument('--pretrain', type=int, default=0)
+    parser.add_argument('--encoder_path','-e', type=str, default='saved/models/encoder_NEW_ae.pkl')
+    parser.add_argument('--pretrain', type=int, default=1)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--batch_size', type=int, default=200)
@@ -424,7 +424,7 @@ if __name__ == '__main__':
     parser.add_argument('--freeze_pretrain', type=int, default=1)
     parser.add_argument('--encoder_h_dims', type=str, default="512,256")
     parser.add_argument('--predictor_h_dims', type=str, default="16,8")
-    parser.add_argument('--GCNreduce_path', type=str, default='saved/models/encoder_ae.pkl')
+    parser.add_argument('--GCNreduce_path', type=str, default='saved/models/encoder_NEW_ae.pkl')
     parser.add_argument('--binarizied', type=int, default=0)
     parser.add_argument('--GCNfeature', type=str, default="z")
     parser.add_argument('--VAErepram', type=int, default=0)
@@ -434,7 +434,7 @@ if __name__ == '__main__':
     # misc
     parser.add_argument('--message', '-m',  type=str, default='')
     parser.add_argument('--output_name', '-n',  type=str, default='')
-    parser.add_argument('--source_model_path', '-p',  type=str, default='saved/models/source_model_')
+    parser.add_argument('--source_model_path', '-p',  type=str, default='saved/models/source_model_NEW_')
     parser.add_argument('--logging_file', '-l',  type=str, default='saved/logs/log')
     parser.add_argument('--load_source_model',  type=int, default=0)
     warnings.filterwarnings("ignore")
