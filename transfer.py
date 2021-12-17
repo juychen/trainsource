@@ -55,7 +55,8 @@ DATA_MAP={
 "GSE140440":"data/GSE140440/GSE140440.csv",
 "GSE129730":"data/GSE129730/GSE129730.h5ad",
 "GSE149383":"../data/GSE149383/erl_total_data_2K.csv",
-"GSE110894_small":"data/GSE110894/GSE110894_small.h5ad"
+"GSE110894_small":"data/GSE110894/GSE110894_small.h5ad",
+"MIX-Seq":"data/10298696"
 
 }
 
@@ -120,28 +121,35 @@ def run_main(args):
 
 ################################################# START SECTION OF SINGLE CELL DATA REPROCESSING #################################################
     # Load data and preprocessing
-    adata = pp.read_sc_file(data_path)
-    
-    if data_name == 'GSE117872':
-        adata =  ut.specific_process(adata,dataname=data_name,select_origin=args.batch_id)
-    elif data_name =='GSE122843':
-        adata =  ut.specific_process(adata,dataname=data_name)
-    elif data_name =='GSE110894':
-        adata =  ut.specific_process(adata,dataname=data_name)
-    elif data_name =='GSE112274':
-        adata =  ut.specific_process(adata,dataname=data_name)
-    elif data_name =='GSE116237':
-        adata =  ut.specific_process(adata,dataname=data_name)
-    elif data_name =='GSE108383':
-        adata =  ut.specific_process(adata,dataname=data_name)
-    elif data_name =='GSE140440':
-        adata =  ut.specific_process(adata,dataname=data_name)
-    elif data_name =='GSE129730':
-        adata =  ut.specific_process(adata,dataname=data_name)
-    elif data_name =='GSE149383':
-        adata =  ut.specific_process(adata,dataname=data_name)
+    if(data_name!="MIX-Seq"):
+        adata = pp.read_sc_file(data_path)
+        
+        if data_name == 'GSE117872':
+            adata =  ut.specific_process(adata,dataname=data_name,select_origin=args.batch_id)
+        elif data_name =='GSE122843':
+            adata =  ut.specific_process(adata,dataname=data_name)
+        elif data_name =='GSE110894':
+            adata =  ut.specific_process(adata,dataname=data_name)
+        elif data_name =='GSE112274':
+            adata =  ut.specific_process(adata,dataname=data_name)
+        elif data_name =='GSE116237':
+            adata =  ut.specific_process(adata,dataname=data_name)
+        elif data_name =='GSE108383':
+            adata =  ut.specific_process(adata,dataname=data_name)
+        elif data_name =='GSE140440':
+            adata =  ut.specific_process(adata,dataname=data_name)
+        elif data_name =='GSE129730':
+            adata =  ut.specific_process(adata,dataname=data_name)
+        elif data_name =='GSE149383':
+            adata =  ut.specific_process(adata,dataname=data_name)
+        else:
+            adata=adata
     else:
-        adata=adata
+        # Can be expt1, expt3, and expt10
+        # Add process mix-seq
+        expID = args.batch_id
+        drug_path = args.drug.capitalize()
+        adata = ut.process_mix_seq(drug=drug_path,expt=expID)
 
     sc.pp.filter_cells(adata, min_genes=200)
     sc.pp.filter_genes(adata, min_cells=3)
@@ -160,7 +168,7 @@ def run_main(args):
         r_genes = REMOVE_GENES
     #Preprocess data by filtering
     if data_name not in ['GSE112274','GSE140440']:
-        adata = pp.receipe_my(adata,l_n_genes=min_n_genes,r_n_genes=max_n_genes,filter_mincells=args.min_c,
+        adata = pp.receipe_my(adata,l_n_genes=min_n_genes,r_n_genes=max_n_genes,filter_mincells=args.min_c,percent_mito = 50
                             filter_mingenes=args.min_g,normalize=True,log=True,remove_genes=r_genes)
     else:
         adata = pp.receipe_my(adata,l_n_genes=min_n_genes,r_n_genes=max_n_genes,filter_mincells=args.min_c,percent_mito = 100,
@@ -831,8 +839,8 @@ if __name__ == '__main__':
     # data 
     parser.add_argument('--source_data', type=str, default='data/GDSC2_expression.csv')
     parser.add_argument('--label_path', type=str, default='data/GDSC2_label_9drugs_binary.csv')
-    parser.add_argument('--target_data', type=str, default="GSE110894")
-    parser.add_argument('--drug', type=str, default='I-BET-762')
+    parser.add_argument('--target_data', type=str, default="MIX-Seq")
+    parser.add_argument('--drug', type=str, default='TRAMETINIB')
     parser.add_argument('--missing_value', type=int, default=1)
     parser.add_argument('--test_size', type=float, default=0.2)
     parser.add_argument('--valid_size', type=float, default=0.2)
@@ -846,9 +854,9 @@ if __name__ == '__main__':
     parser.add_argument('--mmd_weight', type=float, default=0.25)
 
     # train
-    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/BET_dw_256_AE.pkl')
-    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/GSE110894_I-BET-762256AE')
-    parser.add_argument('--pretrain', type=str, default='saved/models/GSE110894_I-BET-762_256_ae.pkl')
+    parser.add_argument('--source_model_path','-s', type=str, default='saved/models/TRA_dw_256_AE.pkl')
+    parser.add_argument('--target_model_path', '-p',  type=str, default='saved/models/MIX-Seq_TRA_256AE')
+    parser.add_argument('--pretrain', type=str, default='saved/models/MIX-Seq_TRA_256_ae.pkl')
     parser.add_argument('--transfer', type=str, default="DaNN")
 
     parser.add_argument('--lr', type=float, default=1e-2)
@@ -863,7 +871,7 @@ if __name__ == '__main__':
     parser.add_argument('--p_h_dims', type=str, default="128,64")
     parser.add_argument('--predition', type=str, default="classification")
     parser.add_argument('--VAErepram', type=int, default=1)
-    parser.add_argument('--batch_id', type=str, default="HN137")
+    parser.add_argument('--batch_id', type=str, default="expt1")
     parser.add_argument('--load_target_model', type=int, default=0)
     parser.add_argument('--GAMMA_mmd', type=int, default=1000)
 

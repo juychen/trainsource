@@ -2,6 +2,7 @@ import copy
 import logging
 import os
 import re
+import glob
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -363,6 +364,51 @@ def process_149383(adata,**kargs):
         n_genes = kargs['num_de']
     adata = de_score(adata=adata,clustername="sensitivity",pval=pval,n=n_genes)    
     return adata
+
+
+def process_mix_seq(drug,expt,**kargs):
+    # Data specific preprocessing of cell info
+    treated_file_paths = glob.glob('data/10298696/'+drug+"*"+expt)
+    untreated_file_paths = glob.glob('data/10298696/DMSO*'+expt)+glob.glob('data/10298696/Untreated*'+expt)
+
+    file_paths = treated_file_paths+untreated_file_paths
+    adatas = []
+    
+    for f in file_paths:
+
+        # Read 10x
+        adata = sc.read_10x_mtx(f)
+        # Read meta file
+        meta_file_name = f+"/classifications.csv" # change it to the name of your excel file
+        df_cellinfo = pd.read_csv(meta_file_name,index_col=0)
+        # Get cells that have metea data
+        idx = adata.obs.index.intersection(df_cellinfo.index)
+        adata = adata[idx]
+        adata.obs = df_cellinfo.loc[idx,:]
+        # Add sensitive label
+        if(f in untreated_file_paths):
+            sensitive = 1
+            sens_ = 'Sensitive'
+        else:
+            sensitive = 0
+            sens_ = 'Resistant'
+
+        adata.obs['sensitive'] = sensitive
+        adata.obs['sensitivity'] = sens_
+        adatas.append(adata)
+    # Concat the data file
+    adata_cat = adatas[0].concatenate(adatas[1:])
+    adata_cat.raw = adata_cat    
+
+    # Add n_genes and pval and descore
+    pval = 0.05
+    n_genes = 50
+    if "pval_thres" in kargs:
+        pval=kargs['pval_thres']
+    if "num_de" in kargs:
+        n_genes = kargs['num_de']
+    adata_cat = de_score(adata=adata_cat,clustername="sensitivity",pval=pval,n=n_genes)    
+    return adata_cat
 
 def integrated_gradient_check(net,input,target,adata,n_genes,target_class=1,test_value="expression",save_name="feature_gradients",batch_size=100):
         ig = IntegratedGradients(net)
